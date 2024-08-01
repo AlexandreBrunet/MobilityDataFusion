@@ -1,0 +1,5 @@
+# Environnements virtuels
+venv/
+.env/
+tests/__pychache__
+.DS_Store
