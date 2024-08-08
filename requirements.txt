@@ -9,3 +9,6 @@ six==1.16.0
 tzdata==2024.1
 zipp==3.19.2
 pytest==8.3.2
+plotly==5.23.0
+pydeck==0.9.1
+geojson==3.1.0
