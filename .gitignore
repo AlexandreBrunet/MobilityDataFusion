@@ -1,6 +1,6 @@
 # Environnements virtuels
 venv/
 .env/
-tests/__pychache__/
 .DS_Store
-src/__pychache__/
+src/__pycache__/
+tests/__pycache__/
