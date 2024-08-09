@@ -45,8 +45,6 @@ def test_read_geojson_success(tmpdir):
 
 
 def test_read_file_not_found():
-    # Appeler la fonction read_file avec un chemin de fichier inexistant
     result = file_type("non_existent_file.txt")
     
-    # Vérifier le message d'erreur
     assert result["error"] == "File not found"
