@@ -1,6 +1,7 @@
 import mimetypes
 import pandas as pd
 import geopandas as gdp
+from typing import Optional
 
 def file_type(file_path):
     try:
@@ -26,11 +27,21 @@ def files_to_df(file_path, file_type):
     else:
         raise ValueError("Unsupported file type. Please use 'csv' or 'geojson'.")
     
-def check_geometry_column(df):
+def check_geometry_column(df: pd.DataFrame) -> Optional[str]:
     geom_columns = ['geom', 'geo', 'geometry']
     for col in geom_columns:
         if col in df.columns:
-            print(f"The dataframe contains a {col} column.")
             return col
-    print("The dataframe does not contain a geom/geo/geometry column.")
     return None
+
+def rename_geometry_column():
+    #TODO: creer une fonction qui va renommer colonne geo, geom pour geometry
+    None
+
+def check_geometry_type(gdf: gdp.GeoDataFrame) -> str:
+    unique_geom_types = gdf.geom_type.unique()
+
+    if unique_geom_types.size == 1:
+        return unique_geom_types[0]
+    else:
+        raise ValueError("Les données contiennent plusieurs types de géométrie.")
