@@ -34,9 +34,13 @@ def check_geometry_column(df: pd.DataFrame) -> Optional[str]:
             return col
     return None
 
-def rename_geometry_column():
-    #TODO: creer une fonction qui va renommer colonne geo, geom pour geometry
-    None
+def rename_geometry_column(df: pd.DataFrame) -> pd.DataFrame:
+    geometry_column = check_geometry_column(df)
+
+    if geometry_column in ['geo', 'geom']:
+        df = df.rename(columns={geometry_column: 'geometry'})
+        print(f"Renamed column '{geometry_column}' to 'geometry'.")
+    return df
 
 def check_geometry_type(gdf: gdp.GeoDataFrame) -> str:
     unique_geom_types = gdf.geom_type.unique()
