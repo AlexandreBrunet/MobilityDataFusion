@@ -13,3 +13,4 @@ plotly==5.23.0
 pydeck==0.9.1
 geojson==3.1.0
 requests==2.32.3
+openpyxl==3.1.5
