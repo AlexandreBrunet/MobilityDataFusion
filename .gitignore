@@ -6,4 +6,5 @@ src/__pycache__/
 tests/__pycache__/
 src/data/
 src/map.html
-utils/__pycache__/
+**/__pycache__/
+
