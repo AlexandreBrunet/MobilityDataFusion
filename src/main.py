@@ -5,22 +5,16 @@ import utils.buffer as buffer
 import geopandas as gpd
 
 first_df = './data/bus_stops.geojson'
-
-first_gdf = gpd.read_file(first_df)
-
-first_gdf = first_gdf.set_crs(epsg=2950, allow_override=True)
-first_gdf = first_gdf.to_crs(epsg=4326)
-
-first_gdf['lon'] = first_gdf.geometry.x
-first_gdf['lat'] = first_gdf.geometry.y
-
 second_df = './data/stations_bixi.geojson'
 
+first_gdf = gpd.read_file(first_df)
 second_gdf = gpd.read_file(second_df)
-second_gdf = second_gdf.to_crs(epsg=4326)
 
-second_gdf['lon'] = second_gdf.geometry.x
-second_gdf['lat'] = second_gdf.geometry.y
+first_gdf = utils.check_and_correct_crs(first_gdf)
+second_gdf = utils.check_and_correct_crs(second_gdf)
+
+first_gdf = utils.add_lon_lat_columns(first_gdf)
+second_gdf = utils.add_lon_lat_columns(second_gdf)
 
 buffer_gdf = buffer.buffer_oiseau(second_gdf, 'buffer', 0.001)
 buffer_gdf = buffer_gdf.to_crs(epsg=4326)
