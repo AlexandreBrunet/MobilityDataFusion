@@ -73,3 +73,7 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf['lon'] = gdf.geometry.x
     gdf['lat'] = gdf.geometry.y
     return gdf
+
+def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    gdf = check_and_correct_crs(gdf)
+    return add_lon_lat_columns(gdf)

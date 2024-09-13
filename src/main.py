@@ -4,32 +4,45 @@ import utils.visualisation as visualisation
 import utils.buffer as buffer
 import geopandas as gpd
 
-first_df = './data/bus_stops.geojson'
-second_df = './data/stations_bixi.geojson'
+# Paths to data files
+bus_stops_file = './data/bus_stops.geojson'
+bixi_stations_file = './data/stations_bixi.geojson'
 
-first_gdf = gpd.read_file(first_df)
-second_gdf = gpd.read_file(second_df)
+# Load GeoJSON data
+bus_stops_gdf = gpd.read_file(bus_stops_file)
+bixi_stations_gdf = gpd.read_file(bixi_stations_file)
 
-first_gdf = utils.check_and_correct_crs(first_gdf)
-second_gdf = utils.check_and_correct_crs(second_gdf)
+# Prepare the GeoDataFrames
+bus_stops_gdf = utils.prepare_gdf(bus_stops_gdf)
+bixi_stations_gdf = utils.prepare_gdf(bixi_stations_gdf)
 
-first_gdf = utils.add_lon_lat_columns(first_gdf)
-second_gdf = utils.add_lon_lat_columns(second_gdf)
+# Create buffer for BIXI stations
+bixi_buffer_gdf = buffer.buffer_oiseau(bixi_stations_gdf, 'buffer', 0.001)
+bixi_buffer_gdf = utils.prepare_gdf(bixi_buffer_gdf)
 
-buffer_gdf = buffer.buffer_oiseau(second_gdf, 'buffer', 0.001)
-buffer_gdf = utils.check_and_correct_crs(buffer_gdf)
-buffer_gdf = utils.add_lon_lat_columns(buffer_gdf)
-buffer_gdf['buffer_coordinates'] = buffer_gdf['buffer'].apply(lambda geom: [[x, y] for x, y in zip(geom.exterior.coords.xy[0], geom.exterior.coords.xy[1])])
+# Extract buffer coordinates for visualization
+bixi_buffer_gdf['buffer_coordinates'] = bixi_buffer_gdf['buffer'].apply(
+    lambda geom: [[x, y] for x, y in zip(geom.exterior.coords.xy[0], geom.exterior.coords.xy[1])]
+)
 
-second_gdf = second_gdf.drop(columns=['buffer'])
+# Select only the necessary columns for buffer GeoDataFrame
+buffer_gdf = bixi_buffer_gdf[['name', 'lon', 'lat', 'buffer_coordinates']].copy()
 
-buffer_gdf = buffer_gdf[['name','lon', 'lat', 'buffer_coordinates']].copy()
+# Drop unnecessary 'buffer' column from BIXI stations GeoDataFrame
+bixi_stations_gdf = bixi_stations_gdf.drop(columns=['buffer'])
 
-initial_view = visualisation.create_initial_view(first_gdf)
-vert = '[0, 200, 0, 160]'
-rouge = '[200, 30, 0, 160]'
-bleu = '[0, 30, 200, 160]'
-first_layer = visualisation.create_point_layer(first_gdf, rouge)
-second_layer = visualisation.create_point_layer(second_gdf, vert)
+# Create initial map view
+initial_view = visualisation.create_initial_view(bus_stops_gdf)
+
+# Define colors
+color_red = '[200, 30, 0, 160]'
+color_green = '[0, 200, 0, 160]'
+color_blue = '[0, 30, 200, 160]'
+
+# Create map layers
+bus_stops_layer = visualisation.create_point_layer(bus_stops_gdf, color_red)
+bixi_stations_layer = visualisation.create_point_layer(bixi_stations_gdf, color_green)
 buffer_layer = visualisation.create_polygon_layer(buffer_gdf)
-visualisation.create_map_layers([first_layer, second_layer, buffer_layer], initial_view)
+
+# Render the map with all layers
+visualisation.create_map_layers([bus_stops_layer, bixi_stations_layer, buffer_layer], initial_view)
