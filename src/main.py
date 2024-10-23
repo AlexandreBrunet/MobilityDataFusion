@@ -1,6 +1,5 @@
 import utils.utils as utils
 import geopandas as gpd
-import pydeck as pdk
 import utils.utils as utils
 import utils.visualisation as visualisation
 
