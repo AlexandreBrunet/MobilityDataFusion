@@ -2,13 +2,19 @@ import pydeck as pdk
 import geopandas as gpd
 from typing import List
 
-def create_initial_view(gdf: gpd.GeoDataFrame) -> pdk.ViewState:
+def create_initial_view() -> pdk.ViewState:
+    # Coordonnées de Montréal
+    latitude = 45.5017
+    longitude = -73.5673
+    zoom = 12  # Ajustez le niveau de zoom selon vos besoins
+    pitch = 0
+    
     view_state = pdk.ViewState(
-        latitude=gdf['lat'].mean(),
-        longitude=gdf['lon'].mean(),
-        zoom=14,
-        pitch=0,
-        )
+        latitude=latitude,
+        longitude=longitude,
+        zoom=zoom,
+        pitch=pitch,
+    )
     return view_state
 
 def create_point_layer(gdf: gpd.GeoDataFrame, color: List[int]):
@@ -42,14 +48,3 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState):
         map_style='dark'
         )
     r.to_html('map.html', open_browser=True)
-
-
-# second_df['coordinates'] = second_df['geometry'].apply(lambda geom: [[x, y] for x, y in zip(geom.exterior.coords.xy[0], geom.exterior.coords.xy[1])])
-# second_layer = pdk.Layer(
-#     'PolygonLayer',
-#     data=second_df,
-#     get_polygon='coordinates',
-#     get_fill_color='[0, 255, 0, 50]',
-#     get_line_color='[0, 255, 0, 200]',
-#     pickable=True
-# )
