@@ -29,11 +29,11 @@ def create_point_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     return point_layer
 
 #TODO: FIX COLOR
-def create_polygon_layer(gdf: gpd.GeoDataFrame):
+def create_polygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     polygon_layer = pdk.Layer(
         'PolygonLayer',
         data=gdf,
-        get_polygon='buffer_coordinates',
+        get_polygon='coordinates',
         get_fill_color='[0, 0, 200, 50]',
         get_line_color='[0, 0, 200, 200]',
         pickable=True
