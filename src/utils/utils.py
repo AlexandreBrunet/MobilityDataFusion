@@ -1,7 +1,31 @@
 import mimetypes
 import pandas as pd
 import geopandas as gpd
-from typing import Optional
+from typing import Optional, Dict
+import fiona
+from shapely.geometry import shape
+
+def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]:
+
+    geodataframes = []
+
+    for name, file_path in data_files.items():
+        geometries = []
+        properties = []
+
+        # Charger et filtrer les géométries
+        with fiona.open(file_path, "r") as src:
+            for feature in src:
+                geom = shape(feature['geometry']) if feature['geometry'] is not None else None
+                if geom is not None:
+                    geometries.append(geom)
+                    properties.append(feature.get('properties', {}))  # Ajouter un dictionnaire vide si properties est None
+
+        # Créer le GeoDataFrame sans valeurs None
+        gdf = gpd.GeoDataFrame(properties, geometry=geometries)
+        geodataframes.append((name, gdf))
+
+    return geodataframes
 
 def file_type(file_path):
     try:

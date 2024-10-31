@@ -16,22 +16,10 @@ data_files = {
 layers = []
 colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]', 'evaluation_fonciere': '[0, 30, 200, 160]'}
 
-# Fonction pour charger les données et créer des couches pour points et polygones
-for name, file_path in data_files.items():
-    geometries = []
-    properties = []
 
-    # Charger et filtrer les géométries
-    with fiona.open(file_path, "r") as src:
-        for feature in src:
-            geom = shape(feature['geometry']) if feature['geometry'] is not None else None
-            if geom is not None:
-                geometries.append(geom)
-                properties.append(feature.get('properties', {}))  # Ajouter un dictionnaire vide si properties est None
+geodataframes = utils.load_files_to_gdf(data_files)
 
-    # Créer le GeoDataFrame sans valeurs None
-    gdf = gpd.GeoDataFrame(properties, geometry=geometries)
-    
+for name, gdf in geodataframes:   
     # Vérifier et définir le CRS uniquement pour les points
     if gdf.crs is None:
         if name == "bus_stops":
