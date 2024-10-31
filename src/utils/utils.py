@@ -75,22 +75,17 @@ def check_geometry_type(gdf: gpd.GeoDataFrame) -> str:
         raise ValueError("Les données contiennent plusieurs types de géométrie.")
 
 
-def check_and_correct_crs(gdf, expected_crs=4326, true_crs=2950):
-    """Vérifie si le CRS est correctement étiqueté, et corrige si nécessaire."""
-    # Si le CRS est EPSG:4326 mais les coordonnées semblent incorrectes
-    if gdf.crs.to_string() == f'EPSG:{expected_crs}':
-        # Vérification manuelle (par exemple : si les valeurs sont trop grandes pour des lat/lon en degrés)
-        if gdf.total_bounds[0] > 180 or gdf.total_bounds[1] > 90:
-            print("Les coordonnées semblent incorrectes pour EPSG:4326. Forçage à EPSG:2950.")
-            gdf = gdf.set_crs(epsg=true_crs, allow_override=True)
-            gdf = gdf.to_crs(epsg=expected_crs)
-        else:
-            print("CRS est déjà EPSG:4326 et semble correct.")
-    else:
-        print(f"CRS actuel : {gdf.crs.to_string()}. Reprojection vers EPSG:{expected_crs}.")
-        gdf = gdf.to_crs(epsg=expected_crs)
-    
-    return gdf
+def determine_crs(gdf: gpd.GeoDataFrame) -> str:
+    # Filtrer uniquement les géométries de type Point
+    point_geometries = gdf[gdf.geometry.type == "Point"]
+    # Extraire les coordonnées x pour estimation du CRS
+    if not point_geometries.empty:
+        x_coords = point_geometries.geometry.x
+        # Si les coordonnées x sont grandes, on suppose qu'elles sont en EPSG:32188 (coordonnées projetées)
+        if x_coords.mean() > 180:
+            return "EPSG:32188"
+    # Par défaut, si on a des petites valeurs de x ou pas de points, on utilise EPSG:4326
+    return "EPSG:4326"
 
 def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Ajoute les colonnes 'lon' et 'lat' à partir de la géométrie."""
@@ -99,5 +94,5 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gdf
 
 def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    gdf = check_and_correct_crs(gdf)
+    gdf = determine_crs(gdf)
     return add_lon_lat_columns(gdf)
