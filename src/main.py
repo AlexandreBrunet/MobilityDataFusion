@@ -20,17 +20,15 @@ colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]',
 geodataframes = utils.load_files_to_gdf(data_files)
 
 for name, gdf in geodataframes:   
-    # Vérifier et définir le CRS uniquement pour les points
+    # Déterminer le CRS en fonction des coordonnées si le CRS est absent
     if gdf.crs is None:
-        if name == "bus_stops":
-            gdf.set_crs("EPSG:32188", inplace=True)
-        else:
-            gdf.set_crs("EPSG:4326", inplace=True)
+        gdf.set_crs(utils.determine_crs(gdf), inplace=True)
     
     # Convertir en EPSG:4326 si nécessaire
     if gdf.crs != "EPSG:4326":
         gdf = gdf.to_crs("EPSG:4326")
     
+    # Remplir les valeurs manquantes par 0
     gdf = gdf.fillna(0)
 
     # Séparer points et polygones
