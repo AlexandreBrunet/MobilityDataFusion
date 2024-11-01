@@ -7,9 +7,13 @@ import pydeck as pdk
 
 # Liste des fichiers de données
 data_files = {
-    "bus_stops": './data/bus_stops.geojson',
+    "bus_stops": './data/stm_bus_stops.geojson',
     "bixi_stations": './data/stations_bixi.geojson',
     "evaluation_fonciere": './data/uniteevaluationfoncieretest.geojson'
+}
+
+buffer_layers = {
+    "bixi_stations": 100  # Nom de la couche : distance du buffer en mètres
 }
 
 # Initialiser les listes de couches de points et de polygones
@@ -19,7 +23,7 @@ colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]',
 
 geodataframes = utils.load_files_to_gdf(data_files)
 
-for name, gdf in geodataframes:   
+for layer_name, gdf in geodataframes:   
     # Déterminer le CRS en fonction des coordonnées si le CRS est absent
     if gdf.crs is None:
         gdf.set_crs(utils.determine_crs(gdf), inplace=True)
@@ -36,13 +40,14 @@ for name, gdf in geodataframes:
     if not points_gdf.empty:
         points_gdf['lon'] = points_gdf.geometry.x
         points_gdf['lat'] = points_gdf.geometry.y
-        points_layer = visualisation.create_point_layer(points_gdf, colors[name])
+        points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
         layers.append(points_layer)
 
-        if name == "bixi_stations":
+    for buffer_layer_name, buffer_distance in buffer_layers.items():
+        if layer_name == buffer_layer_name:
             buffer_gdf = points_gdf.copy()
             buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Changer le CRS pour le buffer
-            buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(100)
+            buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
             buffer_gdf = buffer_gdf.to_crs(epsg=4326)
             buffer_gdf['coordinates'] = buffer_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
             buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
@@ -51,7 +56,7 @@ for name, gdf in geodataframes:
     polygons_gdf = gdf[gdf.geometry.type == "Polygon"].copy()
     if not polygons_gdf.empty:
         polygons_gdf['coordinates'] = polygons_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
-        polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[name])
+        polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
         layers.append(polygons_layer)
 
 # Initialiser la vue de la carte
