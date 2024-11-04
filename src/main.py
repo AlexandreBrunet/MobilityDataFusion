@@ -41,7 +41,12 @@ for layer_name, gdf in geodataframes:
 
     points_gdf = gdfExtraction.extract_points_gdf(gdf)
     points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
+
+    polygons_gdf = gdfExtraction.extract_polygons_gdf(gdf)
+    polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
+
     layers.append(points_layer)
+    layers.append(polygons_layer)
 
     for buffer_layer_name, buffer_distance in buffer_layers.items():
         if layer_name == buffer_layer_name:
@@ -49,14 +54,10 @@ for layer_name, gdf in geodataframes:
             buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Changer le CRS pour le buffer
             buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
             buffer_gdf = buffer_gdf.to_crs(epsg=4326)
-            
-            buffer_gdf['coordinates'] = buffer_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
+            buffer_gdf = gdfExtraction.extract_poly_coordinates(buffer_gdf)
             buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
             layers.append(buffer_layer)
 
-    polygons_gdf = gdfExtraction.extract_polygons_gdf(gdf)
-    polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
-    layers.append(polygons_layer)
 
 # Initialiser la vue de la carte
 initial_view = visualisation.create_initial_view()
