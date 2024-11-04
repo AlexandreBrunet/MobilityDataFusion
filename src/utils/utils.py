@@ -1,4 +1,3 @@
-import mimetypes
 import pandas as pd
 import geopandas as gpd
 from typing import Optional, Dict
@@ -72,8 +71,3 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf = determine_crs(gdf)
     return add_lon_lat_columns(gdf)
-
-def extract_poly_coordinates(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Ajoute une colonne 'coordinates' contenant les coordonnées des géométries du GeoDataFrame."""
-    polygons_gdf['coordinates'] = polygons_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
-    return polygons_gdf
