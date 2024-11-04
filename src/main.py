@@ -1,4 +1,5 @@
 import utils.utils as utils
+import utils.gdfExtraction as gdfExtraction
 import geopandas as gpd
 import utils.visualisation as visualisation
 import fiona
@@ -37,13 +38,10 @@ for layer_name, gdf in geodataframes:
     gdf = gdf.fillna(0)
 
     # Séparer points et polygones
-    points_gdf = gdf[gdf.geometry.type == "Point"].copy()
-    if not points_gdf.empty:
-        points_gdf['lon'] = points_gdf.geometry.x
-        points_gdf['lat'] = points_gdf.geometry.y
 
-        points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
-        layers.append(points_layer)
+    points_gdf = gdfExtraction.extract_points_gdf(gdf)
+    points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
+    layers.append(points_layer)
 
     for buffer_layer_name, buffer_distance in buffer_layers.items():
         if layer_name == buffer_layer_name:
@@ -56,11 +54,9 @@ for layer_name, gdf in geodataframes:
             buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
             layers.append(buffer_layer)
 
-    polygons_gdf = gdf[gdf.geometry.type == "Polygon"].copy()
-    if not polygons_gdf.empty:
-        polygons_gdf = utils.extract_poly_coordinates(polygons_gdf)
-        polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
-        layers.append(polygons_layer)
+    polygons_gdf = gdfExtraction.extract_polygons_gdf(gdf)
+    polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
+    layers.append(polygons_layer)
 
 # Initialiser la vue de la carte
 initial_view = visualisation.create_initial_view()
