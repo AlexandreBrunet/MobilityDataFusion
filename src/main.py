@@ -12,8 +12,9 @@ data_files = {
     "evaluation_fonciere": './data/uniteevaluationfoncieretest.geojson'
 }
 
+# Nom de la couche : distance du buffer en mètres
 buffer_layers = {
-    "bixi_stations": 100  # Nom de la couche : distance du buffer en mètres
+    "bixi_stations": 100
 }
 
 # Initialiser les listes de couches de points et de polygones
@@ -40,6 +41,7 @@ for layer_name, gdf in geodataframes:
     if not points_gdf.empty:
         points_gdf['lon'] = points_gdf.geometry.x
         points_gdf['lat'] = points_gdf.geometry.y
+
         points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
         layers.append(points_layer)
 
@@ -49,13 +51,14 @@ for layer_name, gdf in geodataframes:
             buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Changer le CRS pour le buffer
             buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
             buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+            
             buffer_gdf['coordinates'] = buffer_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
             buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
             layers.append(buffer_layer)
 
     polygons_gdf = gdf[gdf.geometry.type == "Polygon"].copy()
     if not polygons_gdf.empty:
-        polygons_gdf['coordinates'] = polygons_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
+        polygons_gdf = utils.extract_poly_coordinates(polygons_gdf)
         polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
         layers.append(polygons_layer)
 
@@ -64,3 +67,5 @@ initial_view = visualisation.create_initial_view()
 
 # Créer la carte avec les couches de points, polygones et buffers
 visualisation.create_map_layers(layers, initial_view)
+
+##les gens vont vouloir un gros ficher avec toutes les colonnes

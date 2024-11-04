@@ -26,30 +26,6 @@ def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]
         geodataframes.append((name, gdf))
 
     return geodataframes
-
-def file_type(file_path):
-    try:
-        mimetypes.add_type('application/geo+json', '.geojson')
-            
-        file_type, encoding = mimetypes.guess_type(file_path)
-            
-        if file_type == 'application/geo+json':
-            file_type = 'geojson'
-                        
-        return file_type
-
-    except FileNotFoundError:
-        return "File not found"
-    except Exception as e:
-        return str(e)
-
-def files_to_df(file_path, file_type):
-    if file_type == 'csv':
-        return pd.read_csv(file_path)
-    elif file_type == 'geojson':
-        return gpd.read_file(file_path)
-    else:
-        raise ValueError("Unsupported file type. Please use 'csv' or 'geojson'.")
     
 def check_geometry_column(df: pd.DataFrame) -> Optional[str]:
     geom_columns = ['geom', 'geo', 'geometry']
@@ -96,3 +72,8 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf = determine_crs(gdf)
     return add_lon_lat_columns(gdf)
+
+def extract_poly_coordinates(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ajoute une colonne 'coordinates' contenant les coordonnées des géométries du GeoDataFrame."""
+    polygons_gdf['coordinates'] = polygons_gdf['geometry'].apply(lambda geom: geom.__geo_interface__['coordinates'])
+    return polygons_gdf
