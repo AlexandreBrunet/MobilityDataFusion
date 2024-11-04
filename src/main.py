@@ -1,4 +1,5 @@
 import utils.utils as utils
+import utils.buffer as buffer
 import utils.gdfExtraction as gdfExtraction
 import geopandas as gpd
 import utils.visualisation as visualisation
@@ -48,15 +49,10 @@ for layer_name, gdf in geodataframes:
     layers.append(points_layer)
     layers.append(polygons_layer)
 
-    for buffer_layer_name, buffer_distance in buffer_layers.items():
-        if layer_name == buffer_layer_name:
-            buffer_gdf = points_gdf.copy()
-            buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Changer le CRS pour le buffer
-            buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
-            buffer_gdf = buffer_gdf.to_crs(epsg=4326)
-            buffer_gdf = gdfExtraction.extract_poly_coordinates(buffer_gdf)
-            buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
-            layers.append(buffer_layer)
+    buffer_gdf = buffer.apply_buffer(points_gdf, layer_name, buffer_layers)
+    buffer_gdf = gdfExtraction.extract_poly_coordinates(buffer_gdf)
+    buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[200, 100, 50, 60]')
+    layers.append(buffer_layer)
 
 
 # Initialiser la vue de la carte
