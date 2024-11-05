@@ -1,11 +1,7 @@
 import utils.utils as utils
 import utils.buffer as buffer
 import utils.gdfExtraction as gdfExtraction
-import geopandas as gpd
 import utils.visualisation as visualisation
-import fiona
-from shapely.geometry import shape
-import pydeck as pdk
 
 # Liste des fichiers de données
 data_files = {
@@ -40,15 +36,14 @@ for layer_name, gdf in geodataframes:
 
     # Créer les gdf pour les points, les polygones et le buffer
     points_gdf = gdfExtraction.extract_points_gdf(gdf)
-
     polygons_gdf = gdfExtraction.extract_polygons_gdf(gdf)
-    
     buffer_gdf = buffer.apply_buffer(points_gdf, layer_name, buffer_layers)
-    buffer_gdf = gdfExtraction.extract_poly_coordinates(buffer_gdf)
+
+    buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf)
 
     points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
     polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
-    buffer_layer = visualisation.create_polygon_layer(buffer_gdf, '[128, 0, 128, 200]')
+    buffer_layer = visualisation.create_polygon_layer(buffer_gdf_coord, '[128, 0, 128, 200]')
 
     layers.append(points_layer)
     layers.append(polygons_layer)
