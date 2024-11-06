@@ -55,8 +55,8 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs
 
     # Créer les couches pour chaque GeoDataFrame
     for layer_name in geodataframes.keys():
-        # Vérifier si buffer_gdfs contient un objet valide pour la couche
-        buffer_gdf = buffer_gdfs.get(layer_name)
+        # Vérifier si buffer_gdfs contient un objet valide pour la couche (ajout du suffixe "_buffer")
+        buffer_gdf = buffer_gdfs.get(f"{layer_name}_buffer")  # Utiliser le nom modifié ici
         buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf) if buffer_gdf is not None else None
 
         # Créer les couches de points, de polygones et de buffers
