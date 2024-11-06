@@ -39,6 +39,6 @@ buffer_gdfs = {f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_nam
 
 merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
-merged_gdf.to_csv("./data/ouput/data_fusion_output.csv")
+merged_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
 
 visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)
