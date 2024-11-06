@@ -1,5 +1,23 @@
 import geopandas as gpd
-import pandas as pd
+from typing import Dict
+
+def process_geodataframes(geodataframes: Dict[str, gpd.GeoDataFrame], utils) -> Dict[str, gpd.GeoDataFrame]:
+    for layer_name, gdf in geodataframes.items():
+        # Déterminer le CRS en fonction des coordonnées si le CRS est absent
+        if gdf.crs is None:
+            gdf.set_crs(utils.determine_crs(gdf), inplace=True)
+        
+        # Convertir en EPSG:4326 si nécessaire
+        if gdf.crs != "EPSG:4326":
+            gdf = gdf.to_crs("EPSG:4326")
+        
+        # Remplir les valeurs manquantes par 0 et appliquer infer_objects()
+        gdf = gdf.fillna(0).infer_objects(copy=False)
+        
+        # Mettre à jour le GeoDataFrame traité
+        geodataframes[layer_name] = gdf
+    
+    return geodataframes
 
 def extract_points_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     points_gdf = gdf[gdf.geometry.type == "Point"].copy()
