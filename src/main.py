@@ -7,9 +7,9 @@ import geopandas as gpd
 
 # Liste des fichiers de données
 data_files = {
-    "bus_stops": './data/stm_bus_stops.geojson',
-    "bixi_stations": './data/stations_bixi.geojson',
-    "evaluation_fonciere": './data/uniteevaluationfoncieretest.geojson'
+    "bus_stops": './data/input/stm_bus_stops.geojson',
+    "bixi_stations": './data/input/stations_bixi.geojson',
+    "evaluation_fonciere": './data/input/uniteevaluationfoncieretest.geojson'
 }
 
 # Nom de la couche : distance du buffer en mètres
@@ -33,11 +33,12 @@ points_gdfs = {layer_name: gdfExtraction.extract_points_gdf(gdf).assign(layer_na
 polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(layer_name=layer_name) 
                  for layer_name, gdf in geodataframes.items()}
 
-buffer_gdfs = {layer_name: buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers).assign(layer_name=layer_name) 
+# Créer les GeoDataFrames pour les buffers avec un nom de couche différent (e.g., 'bixi_stations_buffer')
+buffer_gdfs = {f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers).assign(layer_name=f"{layer_name}_buffer") 
                for layer_name in buffer_layers}
 
 merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
-merged_gdf.to_csv("allo.csv")
+merged_gdf.to_csv("./data/ouput/data_fusion_output.csv")
 
 visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)
