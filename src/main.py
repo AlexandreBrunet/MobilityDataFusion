@@ -1,7 +1,7 @@
 import utils.utils as utils
-import utils.buffer as buffer
-import utils.gdfExtraction as gdfExtraction
-import utils.visualisation as visualisation
+import utils.buffer.buffer as buffer
+import utils.gdf.gdfExtraction as gdfExtraction
+import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
 
