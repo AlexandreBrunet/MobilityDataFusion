@@ -4,6 +4,7 @@ import utils.gdf.gdfExtraction as gdfExtraction
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
+import itertools
 
 # Liste des fichiers de données
 data_files = {
@@ -34,8 +35,13 @@ polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(laye
                  for layer_name, gdf in geodataframes.items()}
 
 # Créer les GeoDataFrames pour les buffers avec un nom de couche différent (e.g., 'bixi_stations_buffer')
-buffer_gdfs = {f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers).assign(layer_name=f"{layer_name}_buffer") 
-               for layer_name in buffer_layers}
+unique_id_counter = itertools.count(1)
+buffer_gdfs = {
+    f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers)
+                                   .assign(layer_name=f"{layer_name}_buffer",
+                                           buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+    for layer_name in buffer_layers
+}
 
 merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
