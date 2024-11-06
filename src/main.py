@@ -2,6 +2,8 @@ import utils.utils as utils
 import utils.buffer as buffer
 import utils.gdfExtraction as gdfExtraction
 import utils.visualisation as visualisation
+import pandas as pd
+import geopandas as gpd
 
 # Liste des fichiers de données
 data_files = {
@@ -19,39 +21,23 @@ buffer_layers = {
 layers = []
 colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]', 'evaluation_fonciere': '[0, 30, 200, 160]'}
 
-
+# Charger tous les GeoDataFrames en une fois
 geodataframes = utils.load_files_to_gdf(data_files)
 
-for layer_name, gdf in geodataframes:   
-    # Déterminer le CRS en fonction des coordonnées si le CRS est absent
-    if gdf.crs is None:
-        gdf.set_crs(utils.determine_crs(gdf), inplace=True)
-    
-    # Convertir en EPSG:4326 si nécessaire
-    if gdf.crs != "EPSG:4326":
-        gdf = gdf.to_crs("EPSG:4326")
-    
-    # Remplir les valeurs manquantes par 0
-    gdf = gdf.fillna(0)
+gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-    # Créer les gdf pour les points, les polygones et le buffer
-    points_gdf = gdfExtraction.extract_points_gdf(gdf)
-    polygons_gdf = gdfExtraction.extract_polygons_gdf(gdf)
-    buffer_gdf = buffer.apply_buffer(points_gdf, layer_name, buffer_layers)
+# Créer les GeoDataFrames pour les points, les polygones et les buffers en dehors de la boucle de création de couches
+points_gdfs = {layer_name: gdfExtraction.extract_points_gdf(gdf).assign(layer_name=layer_name) 
+               for layer_name, gdf in geodataframes.items()}
 
-    buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf)
+polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(layer_name=layer_name) 
+                 for layer_name, gdf in geodataframes.items()}
 
-    points_layer = visualisation.create_point_layer(points_gdf, colors[layer_name])
-    polygons_layer = visualisation.create_polygon_layer(polygons_gdf, colors[layer_name])
-    buffer_layer = visualisation.create_polygon_layer(buffer_gdf_coord, '[128, 0, 128, 200]')
+buffer_gdfs = {layer_name: buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers).assign(layer_name=layer_name) 
+               for layer_name in buffer_layers}
 
-    layers.append(points_layer)
-    layers.append(polygons_layer)
-    layers.append(buffer_layer)
+merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
+merged_gdf.to_csv("allo.csv")
 
-# Initialiser la vue de la carte
-initial_view = visualisation.create_initial_view()
-
-# Créer la carte avec les couches de points, polygones et buffers
-visualisation.create_map_layers(layers, initial_view)
+visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)

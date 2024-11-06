@@ -1,6 +1,7 @@
 import pydeck as pdk
 import geopandas as gpd
 from typing import List
+import utils.gdfExtraction as gdfExtraction
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -48,3 +49,30 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState):
         map_style='dark'
         )
     r.to_html('map.html', open_browser=True)
+
+def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors):
+    layers = []
+
+    # Créer les couches pour chaque GeoDataFrame
+    for layer_name in geodataframes.keys():
+        # Vérifier si buffer_gdfs contient un objet valide pour la couche
+        buffer_gdf = buffer_gdfs.get(layer_name)
+        buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf) if buffer_gdf is not None else None
+
+        # Créer les couches de points, de polygones et de buffers
+        points_layer = create_point_layer(points_gdfs[layer_name], colors[layer_name])
+        polygons_layer = create_polygon_layer(polygons_gdfs[layer_name], colors[layer_name])
+        
+        layers.append(points_layer)
+        layers.append(polygons_layer)
+
+        # Ajouter la couche de buffer si elle existe
+        if buffer_gdf_coord is not None:
+            buffer_layer = create_polygon_layer(buffer_gdf_coord, '[128, 0, 128, 200]')
+            layers.append(buffer_layer)
+
+    # Initialiser la vue de la carte
+    initial_view = create_initial_view()
+
+    # Créer la carte avec les couches de points, polygones et buffers
+    create_map_layers(layers, initial_view)
