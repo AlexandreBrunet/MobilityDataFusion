@@ -4,8 +4,8 @@ venv/
 .DS_Store
 src/__pycache__/
 tests/__pycache__/
-src/data/input/
-src/data/ouput/
+src/data/input/*
+src/data/ouput/*
 src/map.html
 **/__pycache__/
 
