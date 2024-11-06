@@ -1,7 +1,7 @@
 import pydeck as pdk
 import geopandas as gpd
 from typing import List
-import utils.gdfExtraction as gdfExtraction
+import utils.gdf.gdfExtraction as gdfExtraction
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
