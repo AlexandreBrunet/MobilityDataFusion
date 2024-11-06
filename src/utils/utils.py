@@ -5,8 +5,8 @@ import fiona
 from shapely.geometry import shape
 
 def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]:
-
-    geodataframes = []
+    
+    geodataframes = {}
 
     for name, file_path in data_files.items():
         geometries = []
@@ -22,7 +22,7 @@ def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]
 
         # Créer le GeoDataFrame sans valeurs None
         gdf = gpd.GeoDataFrame(properties, geometry=geometries)
-        geodataframes.append((name, gdf))
+        geodataframes[name] = gdf  # Ajouter le GeoDataFrame au dictionnaire avec le nom comme clé
 
     return geodataframes
     
