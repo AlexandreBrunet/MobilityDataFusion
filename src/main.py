@@ -34,6 +34,9 @@ points_gdfs = {layer_name: gdfExtraction.extract_points_gdf(gdf).assign(layer_na
 polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(layer_name=layer_name) 
                  for layer_name, gdf in geodataframes.items()}
 
+multipolygons_gdfs = {layer_name: gdfExtraction.extract_multipolygons_gdf(gdf).assign(layer_name=layer_name) 
+                 for layer_name, gdf in geodataframes.items()}
+
 # Créer les GeoDataFrames pour les buffers avec un nom de couche différent (e.g., 'bixi_stations_buffer')
 unique_id_counter = itertools.count(1)
 buffer_gdfs = {
@@ -43,7 +46,7 @@ buffer_gdfs = {
     for layer_name in buffer_layers
 }
 
-merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
+merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 merged_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
 
 bus_stops_gdf = points_gdfs["bus_stops"]
@@ -68,4 +71,4 @@ all_buffer_joins = pd.concat(buffer_joins, ignore_index=True)
 
 all_buffer_joins.to_csv("./data/ouput/agg_data_fusion_output.csv")
 
-visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)
+# visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)

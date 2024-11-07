@@ -42,3 +42,13 @@ def extract_points_coordinates(points_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame
         points_gdf['lon'] = points_gdf.geometry.x
         points_gdf['lat'] = points_gdf.geometry.y
     return points_gdf
+
+def extract_multipolygons_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Extrait les géométries de type MultiPolygon et ajoute une colonne 'coordinates' contenant leurs coordonnées."""
+    multipolygons_gdf = gdf[gdf.geometry.type == "MultiPolygon"].copy()
+    
+    multipolygons_gdf['coordinates'] = multipolygons_gdf['geometry'].apply(
+        lambda geom: [poly.__geo_interface__['coordinates'] for poly in geom.geoms]
+    )
+    
+    return multipolygons_gdf
