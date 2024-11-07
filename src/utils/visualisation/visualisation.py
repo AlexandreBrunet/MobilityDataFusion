@@ -41,6 +41,28 @@ def create_polygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         )
     return polygon_layer
 
+def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
+    # Fonction pour extraire les coordonnées des MultiPolygon
+    def get_multipolygon_coordinates(geom):
+        if geom.geom_type == 'MultiPolygon':
+            # Extraire les coordonnées de chaque Polygon dans un MultiPolygon
+            return [poly.__geo_interface__['coordinates'] for poly in geom.geoms]
+        return None
+
+    # Appliquer la fonction pour extraire les coordonnées des MultiPolygon
+    gdf['coordinates'] = gdf['geometry'].apply(get_multipolygon_coordinates)
+    
+    # Créer la couche PolygonLayer pour les MultiPolygon
+    multipolygon_layer = pdk.Layer(
+        'PolygonLayer',
+        data=gdf,
+        get_polygon='coordinates',  # Utiliser la colonne 'coordinates' pour les MultiPolygons
+        get_fill_color=color,
+        get_line_color='[0, 0, 200, 200]',
+        pickable=True
+    )
+    
+    return multipolygon_layer
 
 def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState):
     r = pdk.Deck(
@@ -50,7 +72,7 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState):
         )
     r.to_html('map.html', open_browser=True)
 
-def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors):
+def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors):
     layers = []
 
     # Créer les couches pour chaque GeoDataFrame
@@ -62,9 +84,11 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs
         # Créer les couches de points, de polygones et de buffers
         points_layer = create_point_layer(points_gdfs[layer_name], colors[layer_name])
         polygons_layer = create_polygon_layer(polygons_gdfs[layer_name], colors[layer_name])
+        multilpolygons_layer = create_multipolygon_layer(multipolygons_gdfs[layer_name], colors[layer_name])
         
         layers.append(points_layer)
         layers.append(polygons_layer)
+        layers.append(multilpolygons_layer)
 
         # Ajouter la couche de buffer si elle existe
         if buffer_gdf_coord is not None:
