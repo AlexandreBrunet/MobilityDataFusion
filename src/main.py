@@ -67,8 +67,6 @@ for layer_name, buffer_gdf in buffer_gdfs.items():
 # Concaténer tous les résultats de jointure en un seul DataFrame
 all_buffer_joins = pd.concat(buffer_joins, ignore_index=True)
 
-
-
 all_buffer_joins.to_csv("./data/ouput/agg_data_fusion_output.csv")
 
-# visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)
+visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors)
