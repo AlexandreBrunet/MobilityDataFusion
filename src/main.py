@@ -46,8 +46,7 @@ buffer_gdfs = {
     for layer_name in buffer_layers
 }
 
-merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
-merged_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
+raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
 bus_stops_gdf = points_gdfs["bus_stops"]
 evaluation_fonciere_gdf = polygons_gdfs["evaluation_fonciere"]
@@ -65,8 +64,9 @@ for layer_name, buffer_gdf in buffer_gdfs.items():
     buffer_joins.append(evaluation_fonciere_join)
 
 # Concaténer tous les résultats de jointure en un seul DataFrame
-all_buffer_joins = pd.concat(buffer_joins, ignore_index=True)
+agg_fusion_gdf = pd.concat(buffer_joins, ignore_index=True)
 
-all_buffer_joins.to_csv("./data/ouput/agg_data_fusion_output.csv")
+raw_fusion_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
+agg_fusion_gdf.to_csv("./data/ouput/agg_data_fusion_output.csv")
 
 visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors)
