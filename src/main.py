@@ -5,8 +5,7 @@ import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
 import itertools
-import plotly.graph_objects as go
-import webbrowser
+import utils.metrics.metrics as metrics
 
 # Liste des fichiers de données
 data_files = {
@@ -69,42 +68,14 @@ for layer_name, buffer_gdf in buffer_gdfs.items():
 # Concaténer tous les résultats de jointure en un seul DataFrame
 agg_fusion_gdf = pd.concat(buffer_joins, ignore_index=True)
 
-# Sélection des colonnes nécessaires et agrégation
-agg_stats = agg_fusion_gdf.groupby(['buffer_id','name']).agg({
-    'NOMBRE_LOGEMENT': ['min', 'max', 'mean'],
-    'SUPERFICIE_BATIMENT': ['min', 'max', 'mean'],
-    'SUPERFICIE_TERRAIN': ['min', 'max', 'mean'],
-    'capacity': ['min', 'max', 'mean'],
-    'stop_id': 'count' 
-}).reset_index().round(2)
-
-# Renommer les colonnes pour plus de lisibilité, si souhaité
-agg_stats.columns = ['buffer_id', 'name',
-                     'nb_log_min', 'nb_log_max', 'nb_log_moy',
-                     'sup_bat_min', 'sup_bat_max', 'sup_bat_moy',
-                     'sup_ter_min', 'sup_ter_max', 'sup_ter_moy',
-                     'cap_station_min', 'cap_station_max', 'cap_station_moy',
-                     'bus_stops_count']
-
-print(agg_stats)
-
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
 
-fig = go.Figure(data=[go.Table(
-    header=dict(
-        values=list(agg_stats.columns),
-        font=dict(size=10),  # Réduit la taille de la police des en-têtes
-        align="center"
-    ),
-    cells=dict(
-        values=[agg_stats[col] for col in agg_stats.columns],
-        align="left",
-        height=50   # Ajuste la hauteur de chaque cellule pour plus de lisibilité
-    )
-)])
+agg_columns = ['NOMBRE_LOGEMENT', 'SUPERFICIE_BATIMENT', 'SUPERFICIE_TERRAIN', 'capacity']
+count_columns = ['stop_id']
+groupby_columns = ['buffer_id', 'name']
 
-fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
-fig.write_html("./data/ouput/visualisation/tableau.html")
+agg_stats_gdf = metrics.aggregate_stats(agg_fusion_gdf, groupby_columns, agg_columns, count_columns)
 
+visualisation.create_table_visualisation(agg_stats_gdf)
 visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors)
