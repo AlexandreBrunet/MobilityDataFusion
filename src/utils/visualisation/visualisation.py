@@ -64,13 +64,13 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     
     return multipolygon_layer
 
-def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState):
+def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filename="map.html"):
     r = pdk.Deck(
         layers= layers,
         initial_view_state=view_state,
         map_style='dark'
         )
-    r.to_html('map.html', open_browser=True)
+    r.to_html(filename, open_browser=False)
 
 def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors):
     layers = []
@@ -98,5 +98,5 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
     # Initialiser la vue de la carte
     initial_view = create_initial_view()
 
-    # Créer la carte avec les couches de points, polygones et buffers
-    create_map_layers(layers, initial_view)
+    # Créer la carte avec les couches et l'enregistrer sans ouvrir
+    create_map_layers(layers, initial_view, filename="./data/ouput/visualisation/carte.html")

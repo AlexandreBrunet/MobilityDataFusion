@@ -5,6 +5,8 @@ import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
 import itertools
+import plotly.graph_objects as go
+import webbrowser
 
 # Liste des fichiers de données
 data_files = {
@@ -48,12 +50,13 @@ buffer_gdfs = {
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
+##TODO: enlever la hardcoded
 bus_stops_gdf = points_gdfs["bus_stops"]
 evaluation_fonciere_gdf = polygons_gdfs["evaluation_fonciere"]
 
 # Effectuer la jointure spatiale sur chaque buffer avec bus_stops et evaluation_fonciere
 buffer_joins = []
-
+##TODO: enlever la bus_stops et evaluation_fonciere
 for layer_name, buffer_gdf in buffer_gdfs.items():
     # Jointure avec bus_stops
     bus_stops_join = gpd.sjoin(buffer_gdf, bus_stops_gdf, how="inner", predicate="contains").assign(buffer_layer=layer_name, join_type="bus_stops")
@@ -66,7 +69,42 @@ for layer_name, buffer_gdf in buffer_gdfs.items():
 # Concaténer tous les résultats de jointure en un seul DataFrame
 agg_fusion_gdf = pd.concat(buffer_joins, ignore_index=True)
 
-raw_fusion_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
-agg_fusion_gdf.to_csv("./data/ouput/agg_data_fusion_output.csv")
+# Sélection des colonnes nécessaires et agrégation
+agg_stats = agg_fusion_gdf.groupby(['buffer_id','name']).agg({
+    'NOMBRE_LOGEMENT': ['min', 'max', 'mean'],
+    'SUPERFICIE_BATIMENT': ['min', 'max', 'mean'],
+    'SUPERFICIE_TERRAIN': ['min', 'max', 'mean'],
+    'capacity': ['min', 'max', 'mean'],
+    'stop_id': 'count' 
+}).reset_index().round(2)
+
+# Renommer les colonnes pour plus de lisibilité, si souhaité
+agg_stats.columns = ['buffer_id', 'name',
+                     'nb_log_min', 'nb_log_max', 'nb_log_moy',
+                     'sup_bat_min', 'sup_bat_max', 'sup_bat_moy',
+                     'sup_ter_min', 'sup_ter_max', 'sup_ter_moy',
+                     'cap_station_min', 'cap_station_max', 'cap_station_moy',
+                     'bus_stops_count']
+
+print(agg_stats)
+
+raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
+agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
+
+fig = go.Figure(data=[go.Table(
+    header=dict(
+        values=list(agg_stats.columns),
+        font=dict(size=10),  # Réduit la taille de la police des en-têtes
+        align="center"
+    ),
+    cells=dict(
+        values=[agg_stats[col] for col in agg_stats.columns],
+        align="left",
+        height=50   # Ajuste la hauteur de chaque cellule pour plus de lisibilité
+    )
+)])
+
+fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
+fig.write_html("./data/ouput/visualisation/tableau.html")
 
 visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors)
