@@ -2,6 +2,7 @@ import pydeck as pdk
 import geopandas as gpd
 from typing import List
 import utils.gdf.gdfExtraction as gdfExtraction
+import plotly.graph_objects as go
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -100,3 +101,20 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
 
     # Créer la carte avec les couches et l'enregistrer sans ouvrir
     create_map_layers(layers, initial_view, filename="./data/ouput/visualisation/carte.html")
+
+def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
+    fig = go.Figure(data=[go.Table(
+        header=dict(
+            values=list(agg_stats_gdf.columns),
+            font=dict(size=10),  # Réduit la taille de la police des en-têtes
+            align="center"
+        ),
+        cells=dict(
+            values=[agg_stats_gdf[col] for col in agg_stats_gdf.columns],
+            align="left",
+            height=50   # Ajuste la hauteur de chaque cellule pour plus de lisibilité
+        )
+    )])
+
+    fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
+    fig.write_html("./data/ouput/visualisation/tableau.html")
