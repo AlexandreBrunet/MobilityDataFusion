@@ -5,7 +5,7 @@ import utils.gdf.extractGeo as extractGeo
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
-import itertools
+import utils.gdf.joins as joins
 import utils.metrics.metrics as metrics
 
 # Liste des fichiers de données
@@ -20,8 +20,12 @@ buffer_layers = {
     "bixi_stations": 100
 }
 
+join_layers = {
+    "points": {"type": "contains"},
+    "polygons": {"type": "intersects"}
+}
+
 # Initialiser les listes de couches de points et de polygones
-layers = []
 colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]', 'evaluation_fonciere': '[0, 30, 200, 160]'}
 
 # Charger tous les GeoDataFrames en une fois
@@ -35,27 +39,12 @@ buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layers)
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
-##TODO: enlever la hardcoded
-bus_stops_gdf = points_gdfs["bus_stops"]
-evaluation_fonciere_gdf = polygons_gdfs["evaluation_fonciere"]
-
-# Effectuer la jointure spatiale sur chaque buffer avec bus_stops et evaluation_fonciere
-buffer_joins = []
-##TODO: enlever la bus_stops et evaluation_fonciere
-for layer_name, buffer_gdf in buffer_gdfs.items():
-    # Jointure avec bus_stops
-    bus_stops_join = gpd.sjoin(buffer_gdf, bus_stops_gdf, how="inner", predicate="contains").assign(buffer_layer=layer_name, join_type="bus_stops")
-    buffer_joins.append(bus_stops_join)
-    
-    # Jointure avec evaluation_fonciere
-    evaluation_fonciere_join = gpd.sjoin(buffer_gdf, evaluation_fonciere_gdf, how="inner", predicate="intersects").assign(buffer_layer=layer_name, join_type="evaluation_fonciere")
-    buffer_joins.append(evaluation_fonciere_join)
-
-# Concaténer tous les résultats de jointure en un seul DataFrame
-agg_fusion_gdf = pd.concat(buffer_joins, ignore_index=True)
+join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, join_layers)
+agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
+
 
 agg_columns = ['NOMBRE_LOGEMENT', 'SUPERFICIE_BATIMENT', 'SUPERFICIE_TERRAIN', 'capacity']
 count_columns = ['stop_id']
