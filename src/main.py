@@ -1,34 +1,25 @@
 import utils.utils as utils
-import utils.buffer.buffer as buffer
 import utils.gdf.gdfExtraction as gdfExtraction
 import utils.gdf.extractGeo as extractGeo
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
-import utils.gdf.joins as joins
-import utils.metrics.metrics as metrics
+import yaml
 
-# Liste des fichiers de données
-data_files = {
-    "bus_stops": './data/input/stm_bus_stops.geojson',
-    "bixi_stations": './data/input/stations_bixi.geojson',
-    "evaluation_fonciere": './data/input/uniteevaluationfoncieretest.geojson'
-}
+# Charger la configuration depuis le fichier YAML
+with open("config.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
-# Nom de la couche : distance du buffer en mètres
-buffer_layers = {
-    "bixi_stations": 100
-}
+# Accéder aux paramètres de configuration
+data_files = config["data_files"]
+buffer_layers = config["buffer_layers"]
+join_layers = config["join_layers"]
+colors = config["colors"]
+agg_columns = config["agg_columns"]
+count_columns = config["count_columns"]
+groupby_columns = config["groupby_columns"]
 
-join_layers = {
-    "points": {"type": "contains"},
-    "polygons": {"type": "intersects"}
-}
-
-# Initialiser les listes de couches de points et de polygones
-colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]', 'evaluation_fonciere': '[0, 30, 200, 160]'}
-
-# Charger tous les GeoDataFrames en une fois
+# Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
@@ -44,11 +35,6 @@ agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers
 
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
-
-
-agg_columns = ['NOMBRE_LOGEMENT', 'SUPERFICIE_BATIMENT', 'SUPERFICIE_TERRAIN', 'capacity']
-count_columns = ['stop_id']
-groupby_columns = ['buffer_id', 'name']
 
 agg_stats_gdf = metrics.aggregate_stats(agg_fusion_gdf, groupby_columns, agg_columns, count_columns)
 
