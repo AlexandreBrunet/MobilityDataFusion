@@ -11,6 +11,9 @@ join_layers:
     type: "contains"
   polygons:
     type: "intersects"
+  multipolygons:
+    type: "intersects"
+
 
 colors:
   bus_stops: "[0, 200, 0, 160]"

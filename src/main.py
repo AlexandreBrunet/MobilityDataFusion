@@ -32,7 +32,7 @@ buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layers)
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
-join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, join_layers)
+join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
