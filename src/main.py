@@ -1,6 +1,7 @@
 import utils.utils as utils
 import utils.buffer.buffer as buffer
 import utils.gdf.gdfExtraction as gdfExtraction
+import utils.gdf.extractGeo as extractGeo
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
@@ -28,24 +29,9 @@ geodataframes = utils.load_files_to_gdf(data_files)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-# Créer les GeoDataFrames pour les points, les polygones et les buffers en dehors de la boucle de création de couches
-points_gdfs = {layer_name: gdfExtraction.extract_points_gdf(gdf).assign(layer_name=layer_name) 
-               for layer_name, gdf in geodataframes.items()}
+points_gdfs, polygons_gdfs, multipolygons_gdfs = extractGeo.extract_geometries(gdf)
 
-polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(layer_name=layer_name) 
-                 for layer_name, gdf in geodataframes.items()}
-
-multipolygons_gdfs = {layer_name: gdfExtraction.extract_multipolygons_gdf(gdf).assign(layer_name=layer_name) 
-                 for layer_name, gdf in geodataframes.items()}
-
-# Créer les GeoDataFrames pour les buffers avec un nom de couche différent (e.g., 'bixi_stations_buffer')
-unique_id_counter = itertools.count(1)
-buffer_gdfs = {
-    f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers)
-                                   .assign(layer_name=f"{layer_name}_buffer",
-                                           buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
-    for layer_name in buffer_layers
-}
+buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layers)
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
