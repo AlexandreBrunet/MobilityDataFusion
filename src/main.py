@@ -1,50 +1,44 @@
 import utils.utils as utils
-import utils.buffer.buffer as buffer
 import utils.gdf.gdfExtraction as gdfExtraction
+import utils.gdf.extractGeo as extractGeo
+import utils.gdf.joins as joins
+import utils.metrics.metrics as metrics
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
-import itertools
+import yaml
 
-# Liste des fichiers de données
-data_files = {
-    "bus_stops": './data/input/stm_bus_stops.geojson',
-    "bixi_stations": './data/input/stations_bixi.geojson',
-    "evaluation_fonciere": './data/input/uniteevaluationfoncieretest.geojson'
-}
+# Charger la configuration depuis le fichier YAML
+with open("config.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
-# Nom de la couche : distance du buffer en mètres
-buffer_layers = {
-    "bixi_stations": 100
-}
+# Accéder aux paramètres de configuration
+data_files = config["data_files"]
+buffer_layers = config["buffer_layers"]
+join_layers = config["join_layers"]
+colors = config["colors"]
+agg_columns = config["agg_columns"]
+count_columns = config["count_columns"]
+groupby_columns = config["groupby_columns"]
 
-# Initialiser les listes de couches de points et de polygones
-layers = []
-colors = {'bus_stops': '[0, 200, 0, 160]', 'bixi_stations': '[200, 30, 0, 160]', 'evaluation_fonciere': '[0, 30, 200, 160]'}
-
-# Charger tous les GeoDataFrames en une fois
+# Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-# Créer les GeoDataFrames pour les points, les polygones et les buffers en dehors de la boucle de création de couches
-points_gdfs = {layer_name: gdfExtraction.extract_points_gdf(gdf).assign(layer_name=layer_name) 
-               for layer_name, gdf in geodataframes.items()}
+points_gdfs, polygons_gdfs, multipolygons_gdfs = extractGeo.extract_geometries(gdf)
 
-polygons_gdfs = {layer_name: gdfExtraction.extract_polygons_gdf(gdf).assign(layer_name=layer_name) 
-                 for layer_name, gdf in geodataframes.items()}
+buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layers)
 
-# Créer les GeoDataFrames pour les buffers avec un nom de couche différent (e.g., 'bixi_stations_buffer')
-unique_id_counter = itertools.count(1)
-buffer_gdfs = {
-    f"{layer_name}_buffer": buffer.apply_buffer(points_gdfs[layer_name], layer_name, buffer_layers)
-                                   .assign(layer_name=f"{layer_name}_buffer",
-                                           buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
-    for layer_name in buffer_layers
-}
+raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
-merged_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
+join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, join_layers)
+agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
-merged_gdf.to_csv("./data/ouput/raw_data_fusion_output.csv")
+raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
+agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
 
-visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, buffer_gdfs, colors)
+agg_stats_gdf = metrics.aggregate_stats(agg_fusion_gdf, groupby_columns, agg_columns, count_columns)
+
+visualisation.create_table_visualisation(agg_stats_gdf)
+visualisation.create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors)
