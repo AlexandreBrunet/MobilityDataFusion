@@ -8,4 +8,4 @@ src/data/input/*
 !src/data/input/stations_bixi.geojson
 src/map.html
 **/__pycache__/
-
+cache/

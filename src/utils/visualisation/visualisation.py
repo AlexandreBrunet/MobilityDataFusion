@@ -3,6 +3,7 @@ import geopandas as gpd
 from typing import List
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
+import utils.utils as utils
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal

@@ -1,9 +1,10 @@
 data_files:
-  bus_stops: "./data/input/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/uniteevaluationfoncieretest.geojson"
+  bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
 
-buffer_layers:
+buffer_layer:
   bixi_stations: 100
 
 join_layers:
@@ -19,6 +20,7 @@ colors:
   bus_stops: "[0, 200, 0, 160]"
   bixi_stations: "[200, 30, 0, 160]"
   evaluation_fonciere: "[0, 30, 200, 160]"
+  menage_2018: "[255, 255, 0, 160]"
 
 agg_columns:
   - "NOMBRE_LOGEMENT"
@@ -28,7 +30,10 @@ agg_columns:
 
 count_columns:
   - "stop_id"
+  - "feuillet"
 
 groupby_columns:
   - "buffer_id"
   - "name"
+
+activate_visualisation: false
