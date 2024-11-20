@@ -5,7 +5,7 @@ venv/
 src/__pycache__/
 tests/__pycache__/
 src/data/input/*
-!src/data/input/stations_bixi.geojson
+src/data/output/*
 src/map.html
 **/__pycache__/
 cache/
