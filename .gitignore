@@ -5,7 +5,7 @@ venv/
 src/__pycache__/
 tests/__pycache__/
 src/data/input/*
-src/data/ouput/data/*.csv
+src/data/ouput/data/*
 src/map.html
 **/__pycache__/
 cache/
