@@ -3,29 +3,63 @@ import geopandas as gpd
 from typing import Optional, Dict
 import fiona
 from shapely.geometry import shape
+import os
+import time
+import logging
+
+# Configurer le logger
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+
+def log_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        logging.info(f"Début de la fonction : {func.__name__}")
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"Fin de la fonction : {func.__name__} | Temps d'exécution : {elapsed_time:.2f} secondes")
+        return result
+    return wrapper
 
 def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]:
-    
     geodataframes = {}
 
     for name, file_path in data_files.items():
-        geometries = []
-        properties = []
+        # Générer le chemin pour le fichier Parquet
+        parquet_path = file_path.replace("/geojson/", "/parquet/").replace(".geojson", ".parquet")
 
-        # Charger et filtrer les géométries
-        with fiona.open(file_path, "r") as src:
-            for feature in src:
-                geom = shape(feature['geometry']) if feature['geometry'] is not None else None
-                if geom is not None:
-                    geometries.append(geom)
-                    properties.append(feature.get('properties', {}))  # Ajouter un dictionnaire vide si properties est None
+        # Vérifier si le dossier de sortie pour les fichiers Parquet existe, sinon le créer
+        parquet_dir = os.path.dirname(parquet_path)
+        if not os.path.exists(parquet_dir):
+            os.makedirs(parquet_dir)
 
-        # Créer le GeoDataFrame sans valeurs None
-        gdf = gpd.GeoDataFrame(properties, geometry=geometries)
-        geodataframes[name] = gdf  # Ajouter le GeoDataFrame au dictionnaire avec le nom comme clé
+        # Si le fichier Parquet existe déjà, le charger
+        if os.path.exists(parquet_path):
+            print(f"Chargement de {parquet_path}...")
+            gdf = gpd.read_parquet(parquet_path)
+        else:
+            # Charger le fichier GeoJSON et convertir en GeoDataFrame
+            print(f"Chargement de {file_path} et conversion en Parquet...")
+            geometries = []
+            properties = []
+
+            with fiona.open(file_path, "r") as src:
+                for feature in src:
+                    geom = shape(feature['geometry']) if feature['geometry'] is not None else None
+                    if geom is not None:
+                        geometries.append(geom)
+                        properties.append(feature.get('properties', {}))  # Ajouter un dictionnaire vide si properties est None
+
+            gdf = gpd.GeoDataFrame(properties, geometry=geometries)
+
+            # Écrire en Parquet pour les utilisations futures
+            gdf.to_parquet(parquet_path)
+
+        # Ajouter le GeoDataFrame au dictionnaire
+        geodataframes[name] = gdf
 
     return geodataframes
-    
+
 def check_geometry_column(df: pd.DataFrame) -> Optional[str]:
     geom_columns = ['geom', 'geo', 'geometry']
     for col in geom_columns:
@@ -48,7 +82,6 @@ def check_geometry_type(gdf: gpd.GeoDataFrame) -> str:
         return unique_geom_types[0]
     else:
         raise ValueError("Les données contiennent plusieurs types de géométrie.")
-
 
 def determine_crs(gdf: gpd.GeoDataFrame) -> str:
     # Filtrer uniquement les géométries de type Point

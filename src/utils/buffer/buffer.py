@@ -1,5 +1,5 @@
 import geopandas as gpd
-import pandas as pd
+import utils.utils as utils
 
 def apply_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
     """
