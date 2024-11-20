@@ -7,6 +7,9 @@ import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
 import yaml
+import time
+
+start_time = time.time()
 
 # Charger la configuration depuis le fichier YAML
 with open("config.yaml", "r") as file:
@@ -18,9 +21,6 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
-agg_columns = config.get("agg_columns")
-count_columns = config.get("count_columns")
-groupby_columns = config.get("groupby_columns")
 
 # Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
@@ -39,7 +39,18 @@ agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
 
-agg_stats_gdf = metrics.aggregate_stats(agg_fusion_gdf, groupby_columns, agg_columns, count_columns)
+metrics_config = {
+    "max": config["max_columns"],
+    "min": config["min_columns"],
+    "mean": config["mean_columns"],
+    "count": config["count_columns"],
+}
+
+agg_stats_gdf = metrics.calculate_metrics(
+    gdf=agg_fusion_gdf,
+    groupby_columns=config["groupby_columns"],
+    metrics_config=metrics_config,
+)
 
 visualisation.create_table_visualisation(agg_stats_gdf)
 
@@ -50,3 +61,8 @@ if activate_visualisation:
     )
 else:
     print("Visualisation désactivée.")
+
+end_time = time.time()
+execution_time = end_time - start_time
+
+print(f"Temps d'exécution total : {execution_time:.2f} secondes.")
