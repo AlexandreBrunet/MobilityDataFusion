@@ -13,6 +13,9 @@ min_columns:
 mean_columns:
   - "NOMBRE_LOGEMENT"
 
+std_columns:
+  - "NOMBRE_LOGEMENT"
+
 count_columns:
   - "stop_id"
   - "feuillet"

@@ -43,7 +43,8 @@ metrics_config = {
     "max": config["max_columns"],
     "min": config["min_columns"],
     "mean": config["mean_columns"],
-    "count": config["count_columns"],
+    "std": config["std_columns"],
+    "count": config["count_columns"]
 }
 
 agg_stats_gdf = metrics.calculate_metrics(
