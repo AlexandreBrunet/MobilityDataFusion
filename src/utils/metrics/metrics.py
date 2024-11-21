@@ -7,7 +7,7 @@ def calculate_max(gdf, groupby_columns, max_columns):
 def calculate_min(gdf, groupby_columns, min_columns):
     agg_dict = {col: 'min' for col in min_columns}
     min_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    min_stats = min_stats.rename(columns={col: f"{col}_max" for col in min_columns})
+    min_stats = min_stats.rename(columns={col: f"{col}_min" for col in min_columns})
     return min_stats.round(2)
 
 def calculate_mean(gdf, groupby_columns, mean_columns):
@@ -28,22 +28,9 @@ def calculate_count(gdf, groupby_columns, count_columns):
     count_stats = count_stats.rename(columns={col: f"{col}_count" for col in count_columns})
     return count_stats
 
-def calculate_ratio(gdf, numerator_col, denominator_col, ratio_col_name='ratio'):
-    if numerator_col not in gdf.columns or denominator_col not in gdf.columns:
-        raise ValueError("Les colonnes spécifiées doivent exister dans le GeoDataFrame.")
-    
-    # Calculer le ratio en évitant les divisions par zéro
-    gdf[ratio_col_name] = gdf.apply(
-        lambda row: row[numerator_col] / row[denominator_col] if row[denominator_col] != 0 else None,
-        axis=1
-    )
-    
-    return gdf
-
 def calculate_metrics(gdf, groupby_columns, metrics_config):
     agg_dict = {}
     for func, cols in metrics_config.items():
-        # Vérifier que la liste de colonnes n'est pas vide avant d'ajouter à agg_dict
         if cols:
             for col in cols:
                 agg_dict[f"{col}_{func}"] = (col, func)
