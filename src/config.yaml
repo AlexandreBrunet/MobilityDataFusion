@@ -4,14 +4,18 @@ data_files:
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
   menage_2018: "./data/input/geojson/od_2018test.geojson"
 
-max_columns:
+ratio_columns:
   - "NOMBRE_LOGEMENT"
+  - "NOMBRE_LOGEMENT"
+
+max_columns:
+  - "NOMBRE_LOGEMENT as allo"
 
 min_columns:
-  - "NOMBRE_LOGEMENT"
+  - "NOMBRE_LOGEMENT as test_@"
 
 mean_columns:
-  - "NOMBRE_LOGEMENT"
+  - "NOMBRE_LOGEMENT as uoi"
 
 std_columns:
   - "NOMBRE_LOGEMENT"

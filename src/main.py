@@ -44,6 +44,7 @@ metrics_config = {
     "min": config["min_columns"],
     "mean": config["mean_columns"],
     "std": config["std_columns"],
+    "ratio": config["ratio_columns"],
     "count": config["count_columns"]
 }
 
