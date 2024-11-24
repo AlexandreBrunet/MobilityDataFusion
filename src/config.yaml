@@ -1,37 +1,45 @@
+##TODO ajouter sum
+##TODO ajouter renaming groupby_columns
+##TODO improve speed for network buffer
+##TODO find a solution for improving map performance
+##TODO Regarder pour utiliser cache pour tableau
+##TODO changer formatage du ratio_colums pour prendre une liste.
+
+# Temps d'exécution total : 200.95 secondes. ~3 minutes 30 sans la map
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
 
 ratio_columns:
-  - "NOMBRE_LOGEMENT"
-  - "NOMBRE_LOGEMENT"
+  - "permis"
+  - "perslogi"
 
 max_columns:
-  - "NOMBRE_LOGEMENT as allo"
+  - "SUPERFICIE_TERRAIN as max_superficie_terrain"
 
 min_columns:
-  - "NOMBRE_LOGEMENT as test_@"
+  - "SUPERFICIE_TERRAIN as min_superficie_terrain"
 
 mean_columns:
-  - "NOMBRE_LOGEMENT as uoi"
+  - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
 
 std_columns:
-  - "NOMBRE_LOGEMENT"
 
 count_columns:
-  - "stop_id"
-  - "feuillet"
+  - "stop_id as count_arret_bus"
+  - "feuillet as count_nb_menage"
+  - "ID_UEV as count_num_bati"
 
 groupby_columns:
   - "buffer_id"
   - "name"
 
-activate_visualisation: false
-
 buffer_layer:
   bixi_stations: 100
+
+  activate_visualisation: false
 
 join_layers:
   points:

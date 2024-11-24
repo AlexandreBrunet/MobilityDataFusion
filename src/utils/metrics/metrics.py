@@ -46,6 +46,7 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
     gdf[ratio_name] = gdf[numerator] / gdf[denominator]
     ratio_stats = gdf.groupby(groupby_columns).agg({ratio_name: 'mean'}).reset_index()
     return ratio_stats.round(2)
+
 def calculate_metrics(gdf, groupby_columns, metrics_config):
     agg_dict = {}
     for func, cols in metrics_config.items():
