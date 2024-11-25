@@ -4,8 +4,24 @@
 ##TODO find a solution for improving map performance
 ##TODO Regarder pour utiliser cache pour tableau
 ##TODO changer formatage du ratio_colums pour prendre une liste.
+##TODO Validation données et jointure (Revoir multipolygon).
+##TODO pouvoir gérer plusieurs data input.
+##TODO ajouter commentaire + README
+##TODO ajouter des distributions
+##TODO check if two columns have the same name
+##TODO ajouter naming pour buffer
+##TODO check comment il ferme le buffer convex hull, ligne droite ??
+##TODO TODO ajouter buffer autour lignes, polygons et multipolygon
+##TODO ajouter logique du code dans memoire
+##TODO un point peut avoir une ponderation e.g (une station bixi avec 3 points ancrage vs 50 pts)
+##TODO commencer un chapitre resultat (presentation de l'outil)
+##TODO ajouter matrice lien entre les objets
+##TODO methode des noyaux
+##TODO isochrones
+##TODO AJOUTER FILTERING
+##TODO presentaiton prendre source de donnee random et tester
 
-# Temps d'exécution total : 200.95 secondes. ~3 minutes 30 sans la map
+# Temps d'exécution total : 132.06 secondes.
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
@@ -37,10 +53,13 @@ groupby_columns:
   - "name"
 
 buffer_layer:
-  bixi_stations: 100
+  menage_2018: 100
 
-  activate_visualisation: false
+activate_visualisation: false
 
+###########################################
+## This configuration can stay unchanged ##
+###########################################
 join_layers:
   points:
     type: "contains"

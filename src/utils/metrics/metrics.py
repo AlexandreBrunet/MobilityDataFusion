@@ -1,9 +1,9 @@
 import pandas as pd
+
 def calculate_max(gdf, groupby_columns, max_columns):
     parsed_columns = [parse_column_name(col) for col in max_columns]
     agg_dict = {original: 'max' for original, _ in parsed_columns}
     max_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    # Renommer les colonnes
     max_stats = max_stats.rename(columns={original: f"{renamed}_max" for original, renamed in parsed_columns})
     return max_stats.round(2)
 
