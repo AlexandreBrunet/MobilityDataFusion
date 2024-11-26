@@ -23,10 +23,10 @@
 
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
 
 ratio_columns:
   - "permis"
@@ -51,10 +51,12 @@ groupby_columns:
   - "buffer_id"
   - "name"
 
-buffer_layer:
-  bixi_stations: 100
+buffer_type: "apply_buffer" #apply_isochrones
 
-activate_visualisation: false
+buffer_layer:
+  bixi_stations: 1000
+
+activate_visualisation: true
 
 join_layers:
   points:
@@ -69,4 +71,4 @@ colors:
   bixi_stations: "[200, 30, 0, 160]"
   evaluation_fonciere: "[0, 30, 200, 160]"
   menage_2018: "[255, 255, 0, 160]"
-  # reseau_cyclable: "[255, 165, 0, 160]"
+  reseau_cyclable: "[255, 165, 0, 160]"

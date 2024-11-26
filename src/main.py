@@ -21,6 +21,7 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
+buffer_type = config.get("buffer_type")
 
 # Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
@@ -29,7 +30,7 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
 
-buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layer)
+buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layer, buffer_type)
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *linestrings_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 
