@@ -21,12 +21,12 @@
 ##TODO AJOUTER FILTERING
 ##TODO presentaiton prendre source de donnee random et tester
 
-# Temps d'exécution total : 132.06 secondes.
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
 
 ratio_columns:
   - "permis"
@@ -53,9 +53,9 @@ groupby_columns:
   - "name"
 
 buffer_layer:
-  menage_2018: 100
+  bixi_stations: 100
 
-activate_visualisation: false
+activate_visualisation: true
 
 ###########################################
 ## This configuration can stay unchanged ##
@@ -73,3 +73,4 @@ colors:
   bixi_stations: "[200, 30, 0, 160]"
   evaluation_fonciere: "[0, 30, 200, 160]"
   menage_2018: "[255, 255, 0, 160]"
+  reseau_cyclable: "[255, 165, 0, 160]"

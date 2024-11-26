@@ -19,6 +19,11 @@ def process_geodataframes(geodataframes: Dict[str, gpd.GeoDataFrame], utils) -> 
     
     return geodataframes
 
+def extract_linestrings_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    linestrings_gdf = gdf[gdf.geometry.type == "LineString"].copy()
+    linestrings_gdf = extract_line_coordinates(linestrings_gdf)
+    return linestrings_gdf
+
 def extract_points_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     points_gdf = gdf[gdf.geometry.type == "Point"].copy()
     points_gdf = extract_points_coordinates(points_gdf)
@@ -28,6 +33,14 @@ def extract_polygons_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     polygons_gdf = gdf[gdf.geometry.type == "Polygon"].copy()
     polygons_gdf = extract_poly_coordinates(polygons_gdf)
     return polygons_gdf
+
+def extract_line_coordinates(linestrings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ajoute une colonne 'coordinates' contenant les coordonnées des géométries de type LineString."""
+    if not linestrings_gdf.empty:
+        linestrings_gdf['coordinates'] = linestrings_gdf['geometry'].apply(
+            lambda geom: list(geom.coords)
+        )
+    return linestrings_gdf
 
 def extract_poly_coordinates(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Ajoute une colonne 'coordinates' contenant les coordonnées des géométries du GeoDataFrame."""

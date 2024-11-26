@@ -20,6 +20,18 @@ def create_initial_view() -> pdk.ViewState:
     )
     return view_state
 
+def create_linestring_layer(gdf: gpd.GeoDataFrame, color: List[int]):
+    linestring_layer = pdk.Layer(
+        'PathLayer',
+        data=gdf,
+        get_path='coordinates',  # Utilise les coordonnées des LineStrings
+        get_color=color,
+        width_scale=20,
+        width_min_pixels=2,
+        pickable=True
+    )
+    return linestring_layer
+
 def create_point_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     point_layer = pdk.Layer(
         'ScatterplotLayer',
@@ -74,7 +86,7 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filena
         )
     r.to_html(filename, open_browser=False)
 
-def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors):
+def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, buffer_gdfs, colors):
     layers = []
 
     # Créer les couches pour chaque GeoDataFrame
@@ -83,14 +95,16 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
         buffer_gdf = buffer_gdfs.get(f"{layer_name}_buffer")  # Utiliser le nom modifié ici
         buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf) if buffer_gdf is not None else None
 
-        # Créer les couches de points, de polygones et de buffers
+        # Créer les couches de points, de polygones, de multipolygones et de lignes
         points_layer = create_point_layer(points_gdfs[layer_name], colors[layer_name])
         polygons_layer = create_polygon_layer(polygons_gdfs[layer_name], colors[layer_name])
-        multilpolygons_layer = create_multipolygon_layer(multipolygons_gdfs[layer_name], colors[layer_name])
-        
+        multipolygons_layer = create_multipolygon_layer(multipolygons_gdfs[layer_name], colors[layer_name])
+        linestrings_layer = create_linestring_layer(linestrings_gdfs[layer_name], colors[layer_name])
+
         layers.append(points_layer)
         layers.append(polygons_layer)
-        layers.append(multilpolygons_layer)
+        layers.append(multipolygons_layer)
+        layers.append(linestrings_layer)
 
         # Ajouter la couche de buffer si elle existe
         if buffer_gdf_coord is not None:
