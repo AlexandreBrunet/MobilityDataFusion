@@ -15,7 +15,7 @@ start_time = time.time()
 with open("config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
-# Accéder aux paramètres de configuration
+# Accéder aux paramètres de configuration 
 activate_visualisation = config.get("activate_visualisation")
 data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")

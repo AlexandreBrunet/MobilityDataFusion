@@ -80,7 +80,7 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
 
 def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filename="map.html"):
     r = pdk.Deck(
-        layers= layers,
+        layers=layers,
         initial_view_state=view_state,
         map_style='dark'
         )
@@ -105,6 +105,7 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
         layers.append(polygons_layer)
         layers.append(multipolygons_layer)
         layers.append(linestrings_layer)
+
 
         # Ajouter la couche de buffer si elle existe
         if buffer_gdf_coord is not None:

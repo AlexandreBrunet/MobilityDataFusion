@@ -10,7 +10,7 @@ def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_
         join_data["polygons"] = polygons_gdfs
     if "multipolygons" in join_layers:
         join_data["multipolygons"] = multipolygons_gdfs
-    if "linestrings" in join_layers:  # Ajout de la condition pour les LineStrings
+    if "linestrings" in join_layers: 
         join_data["linestrings"] = linestrings_gdfs
     return join_data
 
