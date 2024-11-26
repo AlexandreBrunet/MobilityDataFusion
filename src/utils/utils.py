@@ -104,3 +104,21 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf = determine_crs(gdf)
     return add_lon_lat_columns(gdf)
+
+import geopandas as gpd
+
+def detect_utm_crs(gdf: gpd.GeoDataFrame) -> str:
+    if gdf.crs is None or gdf.crs.to_epsg() != 4326:
+        raise ValueError("Le GeoDataFrame doit être en WGS 84 (EPSG:4326) pour détecter l'UTM.")
+    
+    # Calcul de la longitude moyenne
+    lon_mean = gdf.geometry.centroid.x.mean()
+    
+    # Déterminer la zone UTM basée sur la longitude
+    utm_zone = int((lon_mean + 180) // 6) + 1
+    
+    # Déterminer l'hémisphère
+    is_northern = gdf.geometry.centroid.y.mean() >= 0
+    epsg_code = 32600 + utm_zone if is_northern else 32700 + utm_zone
+    
+    return f"EPSG:{epsg_code}"

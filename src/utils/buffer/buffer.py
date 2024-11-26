@@ -2,28 +2,26 @@ import geopandas as gpd
 import utils.utils as utils
 
 def apply_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
-    """
-    Applique un buffer aux géométries de type 'Point' dans un GeoDataFrame pour une couche spécifique.
+    if not layer_name in buffer_layers:
+        raise ValueError(f"La couche '{layer_name}' n'est pas définie dans buffer_layers.")
     
-    Paramètres :
-    - points_gdf : GeoDataFrame contenant des points.
-    - layer_name : nom de la couche pour laquelle appliquer le buffer.
-    - buffer_layers : dictionnaire où les clés sont les noms de couche et les valeurs sont les distances de buffer en mètres.
+    if not points_gdf.geometry.geom_type.eq('Point').all():
+        raise TypeError("Le GeoDataFrame doit contenir uniquement des géométries de type 'Point'.")
     
-    Retourne :
-    - buffer_gdf : GeoDataFrame avec le buffer appliqué si la couche correspond.
-    """
+    buffer_distance = buffer_layers[layer_name]
     buffer_gdf = points_gdf.copy()
     
-    # Vérifie si la couche correspond à une entrée dans le dictionnaire de buffers
-    if layer_name in buffer_layers:
-        buffer_distance = buffer_layers[layer_name]
-        
-        # Reprojeter en CRS UTM pour appliquer le buffer en mètres
-        buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Remplacer 32618 par l'EPSG adapté à la région si nécessaire
-        buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
-        
-        # Reprojeter en WGS 84 pour revenir aux coordonnées d'origine
-        buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+    # Reprojection dynamique pour appliquer le buffer en mètres
+    utm_crs = utils.detect_utm_crs(buffer_gdf)  # Implémente une fonction pour détecter l'UTM
+    buffer_gdf = buffer_gdf.to_crs(utm_crs)
+    
+    buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
+    
+    # Reprojeter en WGS 84 (EPSG:4326) pour la sortie
+    buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+    
+    # Ajouter des métadonnées
+    buffer_gdf['buffer_layer'] = layer_name
+    buffer_gdf['buffer_distance_m'] = buffer_distance
     
     return buffer_gdf

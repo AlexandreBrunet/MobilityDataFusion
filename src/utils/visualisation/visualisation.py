@@ -24,7 +24,7 @@ def create_linestring_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     linestring_layer = pdk.Layer(
         'PathLayer',
         data=gdf,
-        get_path='coordinates',  # Utilise les coordonnées des LineStrings
+        get_path='coordinates',
         get_color=color,
         width_scale=20,
         width_min_pixels=2,
