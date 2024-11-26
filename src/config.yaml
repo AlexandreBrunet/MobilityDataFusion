@@ -25,15 +25,25 @@ data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+
+filter_columns:
+  bus_stops:
+    column:
+    value:
+  bixi_stations:
+    column: "capacity"
+    value: 50
+    operator: ">="
 
 ratio_columns:
   - "permis"
   - "perslogi"
 
 max_columns:
-
+  - "capacity"
+  
 min_columns:
 
 mean_columns:
@@ -54,9 +64,9 @@ groupby_columns:
 buffer_type: "apply_buffer" #apply_isochrones
 
 buffer_layer:
-  bixi_stations: 100
+  bixi_stations: 1000
 
-activate_visualisation: true
+activate_visualisation: false
 
 join_layers:
   points:
@@ -65,7 +75,9 @@ join_layers:
     type: "intersects"
   multipolygons:
     type: "intersects"
-
+  linestrings:
+    type: "intersects"
+  
 colors:
   bus_stops: "[0, 200, 0, 160]"
   bixi_stations: "[200, 30, 0, 160]"

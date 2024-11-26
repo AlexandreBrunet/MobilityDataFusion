@@ -3,6 +3,7 @@ import utils.gdf.gdfExtraction as gdfExtraction
 import utils.gdf.extractGeo as extractGeo
 import utils.gdf.joins as joins
 import utils.metrics.metrics as metrics
+import utils.metrics.filtering as filtering
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
 import geopandas as gpd
@@ -25,6 +26,8 @@ buffer_type = config.get("buffer_type")
 
 # Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
+
+geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 

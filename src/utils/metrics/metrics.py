@@ -64,7 +64,7 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
         ratio_stats = calculate_ratio(gdf, groupby_columns, ratio_columns)
         agg_stats = pd.merge(agg_stats, ratio_stats, on=groupby_columns, how='left')
 
-    return agg_stats
+    return agg_stats.round(2)
 
 def parse_column_name(column):
     if " as " in column:
