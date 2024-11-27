@@ -24,6 +24,16 @@ join_layers = config.get("join_layers")
 colors = config.get("colors")
 buffer_type = config.get("buffer_type")
 
+metrics_config = {
+    "sum": config["sum_columns"],
+    "max": config["max_columns"],
+    "min": config["min_columns"],
+    "mean": config["mean_columns"],
+    "std": config["std_columns"],
+    "ratio": config["ratio_columns"],
+    "count": config["count_columns"]
+}
+
 # Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
@@ -42,16 +52,6 @@ agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers
 
 raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
-
-metrics_config = {
-    "sum": config["sum_columns"],
-    "max": config["max_columns"],
-    "min": config["min_columns"],
-    "mean": config["mean_columns"],
-    "std": config["std_columns"],
-    "ratio": config["ratio_columns"],
-    "count": config["count_columns"]
-}
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=agg_fusion_gdf,
