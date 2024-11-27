@@ -22,7 +22,7 @@ def filter_gdf(gdf, column, value, op):
 
 def apply_layer_filtering(gdf, config, layer_name):
     """Applique le filtrage à une couche spécifique selon la configuration."""
-    filter_config = config['filter_columns'].get(layer_name)
+    filter_config = config['filter_files'].get(layer_name)
     
     if filter_config:
         column = filter_config['column']
@@ -47,7 +47,7 @@ def apply_filters_to_layers(geodataframes, config, filter_function):
     """
     for layer_name, gdf_layer in geodataframes.items():
         # Récupère la configuration pour cette couche
-        filter_config = config.get('filter_columns', {}).get(layer_name)
+        filter_config = config.get('filter_files', {}).get(layer_name)
         
         if not filter_config:
             # Skipper si aucune configuration n'est définie pour cette couche
@@ -72,4 +72,35 @@ def apply_filters_to_layers(geodataframes, config, filter_function):
             print(f"Erreur lors de l'application du filtre sur la couche {layer_name}: {e}")
 
     return geodataframes
+
+
+def apply_global_filters(gdf, config):
+    """
+    Applique des filtres globaux sur un GeoDataFrame.
+
+    Args:
+        gdf (GeoDataFrame): Le GeoDataFrame à filtrer.
+        config (dict): Configuration contenant les paramètres de filtrage.
+
+    Returns:
+        GeoDataFrame: Le GeoDataFrame filtré.
+    """
+    global_filters = config.get('filter_global', [])
+    
+    for filter_config in global_filters:
+        column = filter_config.get('column')
+        value = filter_config.get('value')
+        op = filter_config.get('operator', "==")  # Par défaut, utiliser l'égalité
+        
+        if column is None or value is None:
+            print(f"Filtre incomplet ignoré: {filter_config}")
+            continue
+        
+        try:
+            gdf = filter_gdf(gdf, column, value, op)
+        except Exception as e:
+            print(f"Erreur lors de l'application du filtre {filter_config}: {e}")
+    
+    return gdf
+
     

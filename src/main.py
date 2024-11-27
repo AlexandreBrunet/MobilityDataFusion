@@ -58,7 +58,9 @@ agg_stats_gdf = metrics.calculate_metrics(
     metrics_config=metrics_config,
 )
 
-visualisation.create_table_visualisation(agg_stats_gdf)
+final_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
+
+visualisation.create_table_visualisation(final_gdf)
 
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")

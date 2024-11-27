@@ -25,17 +25,17 @@ data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
 
-filter_columns:
+filter_files:
   bus_stops:
     column:
     value:
   bixi_stations:
-    column: "capacity"
-    value: 50
-    operator: ">="
+    column:
+    value:
+    operator:
 
 ratio_columns:
   - "permis"
@@ -43,7 +43,7 @@ ratio_columns:
 
 max_columns:
   - "capacity"
-  
+
 min_columns:
 
 mean_columns:
@@ -61,10 +61,19 @@ groupby_columns:
   - "buffer_id"
   - "name"
 
+##TODO fixer le name retirer les _
+filter_global:
+  - column:
+    value:
+    operator:
+  - column: "count_arret_bus_count"
+    value: 2
+    operator: "=="
+
 buffer_type: "apply_buffer" #apply_isochrones
 
 buffer_layer:
-  bixi_stations: 1000
+  bixi_stations: 100
 
 activate_visualisation: false
 
