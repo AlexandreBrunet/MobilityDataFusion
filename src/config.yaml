@@ -18,7 +18,6 @@
 ##TODO ajouter matrice lien entre les objets
 ##TODO methode des noyaux
 ##TODO isochrones
-##TODO AJOUTER FILTERING
 ##TODO presentaiton prendre source de donnee random et tester
 
 data_files:
@@ -33,14 +32,18 @@ filter_files:
     column:
     value:
   bixi_stations:
-    column:
-    value:
-    operator:
+    column: "capacity"
+    value: 30
+    operator: ">="
 
 ratio_columns:
-  - "permis"
-  - "perslogi"
-
+  permis_perslogi_ratio:
+    numerator: "permis"
+    denominator: "perslogi"
+  ratio2:
+    numerator:
+    denominator:
+    
 max_columns:
   - "capacity"
 

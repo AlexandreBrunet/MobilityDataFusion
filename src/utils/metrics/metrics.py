@@ -35,16 +35,41 @@ def calculate_count(gdf, groupby_columns, count_columns):
     count_stats = count_stats.rename(columns={original: f"{renamed}_count" for original, renamed in parsed_columns})
     return count_stats
 
-def calculate_ratio(gdf, groupby_columns, ratio_columns):
-    if len(ratio_columns) != 2:
-        raise ValueError("ratio_columns doit contenir exactement deux colonnes au format 'colonne_originale as colonne_renommée'.")
-    
-    parsed_columns = [parse_column_name(col) for col in ratio_columns]
-    numerator, denominator = [original for original, _ in parsed_columns]
-    ratio_name = f"{parsed_columns[0][1]}_to_{parsed_columns[1][1]}_ratio"
+import warnings
 
-    gdf[ratio_name] = gdf[numerator] / gdf[denominator]
-    ratio_stats = gdf.groupby(groupby_columns).agg({ratio_name: 'mean'}).reset_index()
+def calculate_ratio(gdf, groupby_columns, ratio_columns):
+    ratio_stats_list = []
+
+    for ratio_name, cols in ratio_columns.items():
+        numerator = cols.get("numerator")
+        denominator = cols.get("denominator")
+
+        if not numerator or not denominator:
+            warnings.warn(
+                f"Le ratio '{ratio_name}' est incomplet (numérateur ou dénominateur manquant). Il sera ignoré.",
+                UserWarning
+            )
+            continue
+
+        # Vérifier que les colonnes existent dans le DataFrame
+        if numerator not in gdf.columns or denominator not in gdf.columns:
+            warnings.warn(
+                f"Le ratio '{ratio_name}' ne peut pas être calculé car '{numerator}' ou '{denominator}' n'existe pas dans le GeoDataFrame. Il sera ignoré.",
+                UserWarning
+            )
+            continue
+
+        # Calculer le ratio et ajouter une colonne temporaire
+        gdf[ratio_name] = gdf[numerator] / gdf[denominator]
+        ratio_stat = gdf.groupby(groupby_columns).agg({ratio_name: 'mean'}).reset_index()
+        ratio_stats_list.append(ratio_stat)
+
+    # Fusionner tous les ratios calculés
+    if ratio_stats_list:
+        ratio_stats = pd.concat(ratio_stats_list, axis=1).loc[:, ~pd.concat(ratio_stats_list, axis=1).columns.duplicated()]
+    else:
+        ratio_stats = pd.DataFrame()
+
     return ratio_stats.round(2)
 
 def calculate_metrics(gdf, groupby_columns, metrics_config):
@@ -54,11 +79,9 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
             parsed_columns = [parse_column_name(col) for col in cols]
             for original, renamed in parsed_columns:
                 agg_dict[f"{renamed}_{func}"] = (original, func)
-    
-    # Calcul des métriques standards
+
     agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index() if agg_dict else gdf
 
-    # Gestion du ratio séparément
     if "ratio" in metrics_config and metrics_config["ratio"]:
         ratio_columns = metrics_config["ratio"]
         ratio_stats = calculate_ratio(gdf, groupby_columns, ratio_columns)
