@@ -1,4 +1,26 @@
 import pandas as pd
+import warnings
+
+def calculate_sum(gdf, groupby_columns, sum_columns):
+    # Parser les colonnes et extraire les noms d'origine et les noms renommés
+    parsed_columns = [parse_column_name(col) for col in sum_columns]
+
+    # Vérifier que toutes les colonnes existent dans le GeoDataFrame
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour la somme : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'sum' for original, _ in valid_columns}
+    sum_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
+
+    sum_stats = sum_stats.rename(columns={original: f"{renamed}_sum" for original, renamed in valid_columns})
+
+    return sum_stats.round(2)
 
 def calculate_max(gdf, groupby_columns, max_columns):
     parsed_columns = [parse_column_name(col) for col in max_columns]
@@ -34,8 +56,6 @@ def calculate_count(gdf, groupby_columns, count_columns):
     count_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
     count_stats = count_stats.rename(columns={original: f"{renamed}_count" for original, renamed in parsed_columns})
     return count_stats
-
-import warnings
 
 def calculate_ratio(gdf, groupby_columns, ratio_columns):
     ratio_stats_list = []

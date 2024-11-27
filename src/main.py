@@ -44,6 +44,7 @@ raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
 agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
 
 metrics_config = {
+    "sum": config["sum_columns"],
     "max": config["max_columns"],
     "min": config["min_columns"],
     "mean": config["mean_columns"],

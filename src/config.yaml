@@ -23,9 +23,9 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 
 filter_files:
   bus_stops:
@@ -43,7 +43,11 @@ ratio_columns:
   ratio2:
     numerator:
     denominator:
-    
+
+sum_columns:
+  - "permis as total_permis"
+  - "autologi as total_autologi"
+
 max_columns:
   - "capacity"
 
