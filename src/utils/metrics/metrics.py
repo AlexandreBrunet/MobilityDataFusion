@@ -2,10 +2,8 @@ import pandas as pd
 import warnings
 
 def calculate_sum(gdf, groupby_columns, sum_columns):
-    # Parser les colonnes et extraire les noms d'origine et les noms renommés
     parsed_columns = [parse_column_name(col) for col in sum_columns]
-
-    # Vérifier que toutes les colonnes existent dans le GeoDataFrame
+    
     valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
     invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
 
