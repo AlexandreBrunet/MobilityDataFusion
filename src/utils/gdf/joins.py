@@ -14,7 +14,6 @@ def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_
         join_data["linestrings"] = linestrings_gdfs
     return join_data
 
-# Appliquer les jointures sans hardcoding
 def perform_spatial_joins(buffer_gdfs, join_data, join_layers):
     buffer_joins = []
     for layer_name, buffer_gdf in buffer_gdfs.items():

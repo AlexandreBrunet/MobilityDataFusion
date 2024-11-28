@@ -106,7 +106,6 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
         layers.append(multipolygons_layer)
         layers.append(linestrings_layer)
 
-
         # Ajouter la couche de buffer si elle existe
         if buffer_gdf_coord is not None:
             buffer_layer = create_polygon_layer(buffer_gdf_coord, '[128, 0, 128, 200]')
@@ -116,7 +115,7 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
     initial_view = create_initial_view()
 
     # Créer la carte avec les couches et l'enregistrer sans ouvrir
-    create_map_layers(layers, initial_view, filename="./data/ouput/visualisation/carte.html")
+    create_map_layers(layers, initial_view, filename="./data/output/visualisation/carte.html")
 
 def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
     fig = go.Figure(data=[go.Table(
@@ -133,4 +132,4 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
     )])
 
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
-    fig.write_html("./data/ouput/visualisation/tableau.html")
+    fig.write_html("./data/output/visualisation/tableau.html")

@@ -23,9 +23,9 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
 
 filter_files:
   bus_stops:
@@ -82,7 +82,7 @@ buffer_type: "apply_buffer" #apply_isochrones
 buffer_layer:
   bixi_stations: 100
 
-activate_visualisation: false
+activate_visualisation: true
 
 join_layers:
   points:

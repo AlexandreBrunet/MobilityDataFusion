@@ -50,9 +50,6 @@ raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gd
 join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
-raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
-agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
-
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=agg_fusion_gdf,
     groupby_columns=config["groupby_columns"],
@@ -70,6 +67,9 @@ if activate_visualisation:
     )
 else:
     print("Visualisation désactivée.")
+
+raw_fusion_gdf.to_csv("./data/output/data/raw_data_fusion_output.csv")
+agg_fusion_gdf.to_csv("./data/output/data/agg_data_fusion_output.csv")
 
 end_time = time.time()
 execution_time = end_time - start_time
