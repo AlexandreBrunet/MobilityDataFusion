@@ -6,8 +6,8 @@ src/__pycache__/
 tests/__pycache__/
 src/data/input/geojson/*.geojson
 src/data/input/parquet/*.parquet
-src/data/ouput/data/*.csv
-src/data/ouput/visualisation/*.html
+src/data/output/data/*.csv
+src/data/output/visualisation/*.html
 src/map.html
 **/__pycache__/
 cache/
