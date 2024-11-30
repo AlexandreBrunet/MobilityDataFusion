@@ -30,7 +30,15 @@ data_files:
 buffer_type: "apply_buffer" #apply_isochrones
 
 buffer_layer:
-  reseau_cyclable: 100
+  bixi_stations:
+    distance: 100
+    geometry_type: Points
+  # reseau_cyclable:
+  #   distance: 50
+  #   geometry_type: LineStrings
+  # evaluation_fonciere:
+  #   distance: 200
+  #   geometry_type: Polygons
 
 filter_files:
   bus_stops:
@@ -71,7 +79,7 @@ count_columns:
 
 groupby_columns:
   - "buffer_id"
-  - "NOM_ARR_VILLE_DESC"
+  # - "name"
 
 ##TODO fixer le name retirer les _
 filter_global:

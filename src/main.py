@@ -5,11 +5,11 @@ import utils.gdf.joins as joins
 import utils.metrics.metrics as metrics
 import utils.metrics.filtering as filtering
 import utils.visualisation.visualisation as visualisation
-import pandas as pd
-import geopandas as gpd
 import yaml
 import time
 import utils.buffer.buffer as buffer
+import geopandas as gpd
+import pandas as pd
 
 start_time = time.time()
 
@@ -35,26 +35,33 @@ metrics_config = {
     "count": config["count_columns"]
 }
 
-# Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
 geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
+extracted_gdf = extractGeo.extract_geometries(gdf)
 
-gdfs_combined = {**points_gdfs, **polygons_gdfs, **multipolygons_gdfs, **linestrings_gdfs}
+points_gdfs = extracted_gdf["points"].dropna(axis=1, how="all")
+polygons_gdfs = extracted_gdf["polygons"].dropna(axis=1, how="all")
+multipolygons_gdfs = extracted_gdf["multipolygons"].dropna(axis=1, how="all")
+linestrings_gdfs = extracted_gdf["linestrings"].dropna(axis=1, how="all")
 
-buffer_gdfs = buffer.create_buffers(gdfs_combined, buffer_layer)
+extracted_gdf = {
+    "points": points_gdfs,
+    "linestrings": linestrings_gdfs,
+    "polygons": polygons_gdfs,
+    "multipolygons": multipolygons_gdfs,
+}
 
-raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *linestrings_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
+buffer_gdfs = buffer.create_buffers(extracted_gdf, buffer_layer)
+buffer_gdf = gpd.GeoDataFrame(pd.concat(buffer_gdfs.values(), ignore_index=True)).dropna(axis=1, how="all")
 
-join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
-agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
+final_joined_gdf = joins.spatial_join_all_layers(extracted_gdf, buffer_gdf, join_layers)
 
 agg_stats_gdf = metrics.calculate_metrics(
-    gdf=agg_fusion_gdf,
+    gdf=final_joined_gdf,
     groupby_columns=config["groupby_columns"],
     metrics_config=metrics_config,
 )
@@ -70,9 +77,6 @@ if activate_visualisation:
     )
 else:
     print("Visualisation désactivée.")
-
-raw_fusion_gdf.to_csv("./data/output/data/raw_data_fusion_output.csv")
-agg_fusion_gdf.to_csv("./data/output/data/agg_data_fusion_output.csv")
 
 end_time = time.time()
 execution_time = end_time - start_time
