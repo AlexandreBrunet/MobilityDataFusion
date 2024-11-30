@@ -3,8 +3,9 @@ import utils.utils as utils
 import networkx as nx
 import osmnx as ox
 from shapely.geometry import MultiPolygon, Polygon
+import itertools
 
-def apply_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
+def apply_point_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
     if not layer_name in buffer_layers:
         raise ValueError(f"La couche '{layer_name}' n'est pas définie dans buffer_layers.")
     
@@ -15,7 +16,58 @@ def apply_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: d
     buffer_gdf = points_gdf.copy()
     
     # Reprojection dynamique pour appliquer le buffer en mètres
-    utm_crs = utils.detect_utm_crs(buffer_gdf)  # Implémente une fonction pour détecter l'UTM
+    utm_crs = buffer_gdf.estimate_utm_crs()  # Implémente une fonction pour détecter l'UTM
+    buffer_gdf = buffer_gdf.to_crs(utm_crs)
+    
+    buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
+    
+    # Reprojeter en WGS 84 (EPSG:4326) pour la sortie
+    buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+    
+    # Ajouter des métadonnées
+    buffer_gdf['buffer_layer'] = layer_name
+    buffer_gdf['buffer_distance_m'] = buffer_distance
+    
+    return buffer_gdf
+
+def apply_line_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
+    if not layer_name in buffer_layers:
+        raise ValueError(f"La couche '{layer_name}' n'est pas définie dans buffer_layers.")
+    
+    if not lines_gdf.geometry.geom_type.eq('LineString').all():
+        raise TypeError("Le GeoDataFrame doit contenir uniquement des géométries de type 'LineString'.")
+    
+    buffer_distance = buffer_layers[layer_name]
+    buffer_gdf = lines_gdf.copy()
+    
+    # Reprojection dynamique pour appliquer le buffer en mètres
+    utm_crs = buffer_gdf.estimate_utm_crs()  # Implémente une fonction pour détecter l'UTM
+    buffer_gdf = buffer_gdf.to_crs(utm_crs)
+    
+    buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
+    
+    # Reprojeter en WGS 84 (EPSG:4326) pour la sortie
+    buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+    
+    # Ajouter des métadonnées
+    buffer_gdf['buffer_layer'] = layer_name
+    buffer_gdf['buffer_distance_m'] = buffer_distance
+    
+    return buffer_gdf
+
+
+def apply_polygon_buffer(polygons_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
+    if not layer_name in buffer_layers:
+        raise ValueError(f"La couche '{layer_name}' n'est pas définie dans buffer_layers.")
+    
+    if not polygons_gdf.geometry.geom_type.eq('Polygon').all():
+        raise TypeError("Le GeoDataFrame doit contenir uniquement des géométries de type 'Polygon'.")
+    
+    buffer_distance = buffer_layers[layer_name]
+    buffer_gdf = polygons_gdf.copy()
+    
+    # Reprojection dynamique pour appliquer le buffer en mètres
+    utm_crs = buffer_gdf.estimate_utm_crs()  # Implémente une fonction pour détecter l'UTM
     buffer_gdf = buffer_gdf.to_crs(utm_crs)
     
     buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
@@ -83,3 +135,66 @@ def apply_isochrones(points_gdf: gpd.GeoDataFrame, layer_name: str, isochrone_la
     )
     
     return isochrone_gdf
+
+def create_buffers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, buffer_layers, buffer_type):
+    unique_id_counter = itertools.count(1)
+    
+    buffer_gdfs = {}
+    
+    # Combiner tous les GeoDataFrames en un seul dictionnaire
+    all_gdfs = {
+        'Point': points_gdfs,
+        'Polygon': polygons_gdfs,
+        'MultiPolygon': multipolygons_gdfs,
+        'LineString': linestrings_gdfs
+    }
+    
+    for layer_name, buffer_distance in buffer_layers.items():
+        # Identifier le type de géométrie correspondant pour chaque couche
+        layer_gdf = None
+        for geom_type, gdf in all_gdfs.items():
+            if layer_name in gdf:
+                layer_gdf = gdf[layer_name]
+                layer_geom_type = geom_type
+                break
+        
+        if layer_gdf is None:
+            raise ValueError(f"La couche '{layer_name}' n'est pas définie dans les géométries.")
+        
+        # Vérifier la validité des géométries avant de créer le buffer
+        if not layer_gdf.is_valid.all():
+            raise ValueError(f"Des géométries invalides sont présentes dans la couche '{layer_name}'.")
+
+        # Appliquer le buffer en fonction du type de géométrie
+        if layer_geom_type == 'Point':
+            apply_buffer_func = apply_point_buffer
+        elif layer_geom_type == 'LineString':
+            apply_buffer_func = apply_line_buffer
+        elif layer_geom_type == 'Polygon' or layer_geom_type == 'MultiPolygon':
+            apply_buffer_func = apply_polygon_buffer
+        else:
+            raise TypeError(f"Le type de géométrie '{layer_geom_type}' pour la couche '{layer_name}' est incompatible.")
+
+        # Appliquer le buffer selon le type spécifié
+        if buffer_type == "apply_buffer":
+            buffer_gdfs[f"{layer_name}_buffer"] = apply_buffer_func(
+                layer_gdf, 
+                layer_name, 
+                buffer_layers
+            ).assign(
+                layer_name=f"{layer_name}_buffer",
+                buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))]
+            )
+        elif buffer_type == "apply_isochrones":
+            buffer_gdfs[f"{layer_name}_isochrones"] = apply_isochrones(
+                layer_gdf, 
+                layer_name, 
+                buffer_layers
+            ).assign(
+                layer_name=f"{layer_name}_isochrones",
+                buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))]
+            )
+        else:
+            raise ValueError(f"Le type de buffer '{buffer_type}' n'est pas valide.")
+    
+    return buffer_gdfs

@@ -6,6 +6,8 @@ from shapely.geometry import shape
 import os
 import time
 import logging
+import geopandas as gpd
+from pyproj import CRS
 
 # Configurer le logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
