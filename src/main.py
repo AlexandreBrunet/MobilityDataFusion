@@ -44,31 +44,9 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
 
-# # Avant d'appeler estimate_utm_crs, assure-toi que les géométries sont valides
-# for layer_name, linestrings_gdf in linestrings_gdfs.items():
-#     # Vérifie et filtre les géométries invalides ou manquantes
-#     valid_linestrings_gdf = linestrings_gdf[linestrings_gdf.geometry.notnull() & linestrings_gdf.geometry.is_valid]
+gdfs_combined = {**points_gdfs, **polygons_gdfs, **multipolygons_gdfs, **linestrings_gdfs}
 
-#     # Vérifie si après le filtrage, il reste des géométries valides
-#     if not valid_linestrings_gdf.empty:
-#         try:
-#             # Estime le CRS UTM pour les géométries valides
-#             estimated_crs = valid_linestrings_gdf.estimate_utm_crs()
-#             print(f"CRS estimé pour le layer {layer_name}: {estimated_crs}")
-#         except ValueError as e:
-#             print(f"Erreur lors de l'estimation du CRS UTM pour {layer_name}: {e}")
-#     else:
-#         print(f"Aucune géométrie valide trouvée dans {layer_name}.")
-
-
-buffer_gdfs = buffer.create_buffers(
-    points_gdfs, 
-    polygons_gdfs, 
-    multipolygons_gdfs, 
-    linestrings_gdfs, 
-    buffer_layer, 
-    buffer_type
-)
+buffer_gdfs = buffer.create_buffers(gdfs_combined, buffer_layer)
 
 raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *linestrings_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
 

@@ -25,12 +25,12 @@ data_files:
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
   menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 
 buffer_type: "apply_buffer" #apply_isochrones
 
 buffer_layer:
-  bixi_stations: 100
+  reseau_cyclable: 100
 
 filter_files:
   bus_stops:
@@ -71,7 +71,7 @@ count_columns:
 
 groupby_columns:
   - "buffer_id"
-  - "name"
+  - "NOM_ARR_VILLE_DESC"
 
 ##TODO fixer le name retirer les _
 filter_global:
