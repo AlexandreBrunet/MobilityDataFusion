@@ -5,26 +5,55 @@ data_files:
   menage_2018: "./data/input/geojson/od_2018test.geojson"
   reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 
+filter_files:
+  bus_stops:
+    column:
+    value:
+  # bixi_stations:
+  #   column: "capacity"
+  #   value: 30
+  #   operator: ">="
+
+ratio_columns:
+  permis_perslogi_ratio:
+    numerator: "permis"
+    denominator: "perslogi"
+  ratio2:
+    numerator:
+    denominator:
+
+sum_columns:
+  - "permis as total_permis"
+  - "autologi as total_autologi"
+
 max_columns:
-  - "NOMBRE_LOGEMENT"
-  - "LONGUEUR"
+  - "capacity"
 
 min_columns:
-  - "NOMBRE_LOGEMENT"
 
 mean_columns:
-  - "NOMBRE_LOGEMENT"
+  - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
+  - "LONGUEUR as moy_long_piste_cy"
 
 std_columns:
-  - "NOMBRE_LOGEMENT"
 
 count_columns:
-  - "stop_id"
-  - "feuillet"
+  - "stop_id as count_arret_bus"
+  - "feuillet as count_nb_menage"
+  - "ID_UEV as count_num_bati"
 
 groupby_columns:
   - "buffer_id"
   - "name"
+
+##TODO fixer le name retirer les _
+filter_global:
+  - column:
+    value:
+    operator:
+  - column:
+    value:
+    operator:
 
 activate_visualisation: true
 

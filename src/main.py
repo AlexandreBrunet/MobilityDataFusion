@@ -37,10 +37,12 @@ agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers
 
 
 metrics_config = {
+    "sum": config["sum_columns"],
     "max": config["max_columns"],
     "min": config["min_columns"],
     "mean": config["mean_columns"],
     "std": config["std_columns"],
+    "ratio": config["ratio_columns"],
     "count": config["count_columns"]
 }
 
