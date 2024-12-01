@@ -30,7 +30,12 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
 
-buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
+for layer_name in buffer_layer:
+    geometry_type = buffer_layer[layer_name].get('geometry_type', None)
+    if geometry_type == "Points":
+        buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
+    elif geometry_type == "LineStrings":
+        buffer_gdfs = buffer.create_buffers(linestrings_gdfs, buffer_layer)
 
 join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)

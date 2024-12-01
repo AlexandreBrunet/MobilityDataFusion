@@ -44,7 +44,7 @@ count_columns:
 
 groupby_columns:
   - "buffer_id"
-  - "name"
+  - "feuillet"
 
 ##TODO fixer le name retirer les _
 filter_global:
@@ -55,11 +55,11 @@ filter_global:
     value:
     operator:
 
-activate_visualisation: false
+activate_visualisation: trues
 
 buffer_layer:
-  bixi_stations:
-    distance: 500  # Distance du buffer en mètres
+  menage_2018:
+    distance: 100  # Distance du buffer en mètres
     geometry_type: "Points"  # Type de géométrie
 
 join_layers:
