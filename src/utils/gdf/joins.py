@@ -2,14 +2,16 @@ import geopandas as gpd
 import pandas as pd
 
 # Fonction pour récupérer les couches de points et de polygones pour les jointures
-def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, join_layers):
+def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers):
     join_data = {}
     if "points" in join_layers:
         join_data["points"] = points_gdfs
     if "polygons" in join_layers:
         join_data["polygons"] = polygons_gdfs
-    if "multipolygons":
+    if "multipolygons" in join_layers:
         join_data["multipolygons"] = multipolygons_gdfs
+    if "linestrings" in join_layers: 
+        join_data["linestrings"] = linestrings_gdfs
     return join_data
 
 # Appliquer les jointures sans hardcoding

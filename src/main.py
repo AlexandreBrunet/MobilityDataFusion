@@ -28,11 +28,11 @@ geodataframes = utils.load_files_to_gdf(data_files)
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-points_gdfs, polygons_gdfs, multipolygons_gdfs = extractGeo.extract_geometries(gdf)
+points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
 
 buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
 
-join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, join_layers)
+join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
 
@@ -55,7 +55,7 @@ visualisation.create_table_visualisation(agg_stats_gdf)
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
     visualisation.create_layers_and_map(
-        geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, buffer_gdfs, colors
+        geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, buffer_gdfs, colors
     )
 else:
     print("Visualisation désactivée.")

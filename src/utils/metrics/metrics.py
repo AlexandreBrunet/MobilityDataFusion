@@ -45,4 +45,4 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
         .agg(**agg_dict)
         .reset_index()
     )
-    return agg_stats
+    return agg_stats.round(2)

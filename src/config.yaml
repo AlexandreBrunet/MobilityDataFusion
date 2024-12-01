@@ -1,11 +1,13 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
   menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 
 max_columns:
   - "NOMBRE_LOGEMENT"
+  - "LONGUEUR"
 
 min_columns:
   - "NOMBRE_LOGEMENT"
@@ -24,7 +26,7 @@ groupby_columns:
   - "buffer_id"
   - "name"
 
-activate_visualisation: false
+activate_visualisation: true
 
 buffer_layer:
   bixi_stations: 100
@@ -36,9 +38,12 @@ join_layers:
     type: "intersects"
   multipolygons:
     type: "intersects"
+  linestrings:
+    type: "intersects"
 
 colors:
   bus_stops: "[0, 200, 0, 160]"
   bixi_stations: "[200, 30, 0, 160]"
   evaluation_fonciere: "[0, 30, 200, 160]"
   menage_2018: "[255, 255, 0, 160]"
+  reseau_cyclable: "[255, 165, 0, 160]"
