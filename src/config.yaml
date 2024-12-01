@@ -55,10 +55,12 @@ filter_global:
     value:
     operator:
 
-activate_visualisation: true
+activate_visualisation: false
 
 buffer_layer:
-  bixi_stations: 100
+  bixi_stations:
+    distance: 500  # Distance du buffer en mètres
+    geometry_type: "Points"  # Type de géométrie
 
 join_layers:
   points:

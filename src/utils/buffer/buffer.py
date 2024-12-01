@@ -7,7 +7,8 @@ def apply_points_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_la
     
     # Vérifie si la couche correspond à une entrée dans le dictionnaire de buffers
     if layer_name in buffer_layers:
-        buffer_distance = buffer_layers[layer_name]
+        buffer_distance = buffer_layers[layer_name].get("distance", 0)
+        geometry_type = buffer_layers[layer_name].get('geometry_type', None) 
         
         # Reprojeter en CRS UTM pour appliquer le buffer en mètres
         buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Remplacer 32618 par l'EPSG adapté à la région si nécessaire
