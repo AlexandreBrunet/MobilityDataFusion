@@ -2,7 +2,6 @@ import geopandas as gpd
 import itertools
 import utils.buffer.buffer as buffer
 import geopandas as gpd
-from shapely.geometry import Point
 
 def apply_points_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
     buffer_gdf = points_gdf.copy()

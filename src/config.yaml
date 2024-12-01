@@ -1,9 +1,14 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
   reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+
+buffer_layer:
+  bixi_stations:
+    distance: 200  # Distance du buffer en mètres
+    geometry_type: "Points"  # Type de géométrie
 
 filter_files:
   bus_stops:
@@ -44,7 +49,7 @@ count_columns:
 
 groupby_columns:
   - "buffer_id"
-  - "feuillet"
+  - "name"
 
 ##TODO fixer le name retirer les _
 filter_global:
@@ -56,11 +61,6 @@ filter_global:
     operator:
 
 activate_visualisation: trues
-
-buffer_layer:
-  menage_2018:
-    distance: 100  # Distance du buffer en mètres
-    geometry_type: "Points"  # Type de géométrie
 
 join_layers:
   points:
