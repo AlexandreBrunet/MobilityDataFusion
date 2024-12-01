@@ -118,4 +118,4 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
     )])
 
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
-    fig.write_html("./data/ouput/visualisation/tableau.html")
+    fig.write_html("./data/output/visualisation/tableau.html")

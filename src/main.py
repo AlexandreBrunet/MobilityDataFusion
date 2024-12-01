@@ -2,6 +2,7 @@ import utils.utils as utils
 import utils.gdf.gdfExtraction as gdfExtraction
 import utils.gdf.extractGeo as extractGeo
 import utils.gdf.joins as joins
+import utils.buffer.buffer as buffer
 import utils.metrics.metrics as metrics
 import utils.visualisation.visualisation as visualisation
 import pandas as pd
@@ -29,15 +30,11 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdfs, polygons_gdfs, multipolygons_gdfs = extractGeo.extract_geometries(gdf)
 
-buffer_gdfs = extractGeo.create_buffers(points_gdfs, buffer_layer)
-
-raw_fusion_gdf = gpd.GeoDataFrame(pd.concat([*points_gdfs.values(), *polygons_gdfs.values(), *multipolygons_gdfs.values(), *buffer_gdfs.values()], ignore_index=True))
+buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
 
 join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
-raw_fusion_gdf.to_csv("./data/ouput/data/raw_data_fusion_output.csv")
-agg_fusion_gdf.to_csv("./data/ouput/data/agg_data_fusion_output.csv")
 
 metrics_config = {
     "max": config["max_columns"],
