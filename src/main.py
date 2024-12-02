@@ -48,7 +48,6 @@ for layer_name in buffer_layer:
 join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
 
-
 metrics_config = {
     "sum": config["sum_columns"],
     "max": config["max_columns"],
@@ -65,7 +64,8 @@ agg_stats_gdf = metrics.calculate_metrics(
     metrics_config=metrics_config,
 )
 
-visualisation.create_table_visualisation(agg_stats_gdf)
+distance = buffer_layer[layer_name].get('distance')
+visualisation.create_table_visualisation(agg_stats_gdf, distance)
 
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")

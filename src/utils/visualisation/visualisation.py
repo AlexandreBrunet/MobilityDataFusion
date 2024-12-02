@@ -118,7 +118,7 @@ def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygo
     create_map_layers(layers, initial_view, filename="./data/output/visualisation/carte.html")
 
 
-def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
+def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, distance: str):
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=list(agg_stats_gdf.columns),
@@ -133,4 +133,4 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame):
     )])
 
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
-    fig.write_html("./data/output/visualisation/tableau.html")
+    fig.write_html(f"./data/output/visualisation/tableau_{distance}m.html")
