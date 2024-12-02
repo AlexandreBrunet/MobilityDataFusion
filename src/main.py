@@ -5,8 +5,6 @@ import utils.gdf.joins as joins
 import utils.buffer.buffer as buffer
 import utils.metrics.metrics as metrics
 import utils.visualisation.visualisation as visualisation
-import pandas as pd
-import geopandas as gpd
 import yaml
 import time
 

@@ -45,7 +45,7 @@ std_columns:
 count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati"
+  - "ID_UEV as count_num_bati_test"
 
 groupby_columns:
   - "buffer_id"
@@ -60,7 +60,7 @@ filter_global:
     value:
     operator:
 
-activate_visualisation: trues
+activate_visualisation: false
 
 join_layers:
   points:
