@@ -30,10 +30,17 @@ points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.ex
 
 for layer_name in buffer_layer:
     geometry_type = buffer_layer[layer_name].get('geometry_type', None)
-    if geometry_type == "Points":
+
+    if geometry_type == "Point":
         buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
-    elif geometry_type == "LineStrings":
+    elif geometry_type == "LineString":
         buffer_gdfs = buffer.create_buffers(linestrings_gdfs, buffer_layer)
+    elif geometry_type == "Polygon":
+        buffer_gdfs = buffer.create_buffers(polygons_gdfs, buffer_layer)
+    elif geometry_type == "MultiPolygon":
+        buffer_gdfs = buffer.create_buffers(multipolygons_gdfs, buffer_layer)
+    else:
+        print("The geometry_type is unsupported either: Point, LineString, Polygon or MultiPolygon")
 
 join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
 agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)

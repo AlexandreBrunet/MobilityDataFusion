@@ -8,7 +8,7 @@ data_files:
 buffer_layer:
   bixi_stations:
     distance: 200  # Distance du buffer en mètres
-    geometry_type: "Points"  # Type de géométrie
+    geometry_type: "Point"  # Type de géométrie
 
 filter_files:
   bus_stops:
@@ -45,7 +45,7 @@ std_columns:
 count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati_test"
+  - "ID_UEV as count_num_bati_test2"
 
 groupby_columns:
   - "buffer_id"
