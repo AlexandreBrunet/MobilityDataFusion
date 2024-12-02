@@ -7,6 +7,9 @@ import utils.metrics.metrics as metrics
 import utils.visualisation.visualisation as visualisation
 import yaml
 import time
+import pandas as pd
+
+pd.set_option("future.no_silent_downcasting", True)
 
 start_time = time.time()
 
