@@ -6,9 +6,11 @@ from shapely.geometry import shape
 import os
 import time
 import logging
+from shapely.errors import WKTReadingError
 
 # Configurer le logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 def log_execution_time(func):
     def wrapper(*args, **kwargs):
@@ -25,38 +27,47 @@ def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]
     geodataframes = {}
 
     for name, file_path in data_files.items():
-        # Générer le chemin pour le fichier Parquet
         parquet_path = file_path.replace("/geojson/", "/parquet/").replace(".geojson", ".parquet")
-
-        # Vérifier si le dossier de sortie pour les fichiers Parquet existe, sinon le créer
         parquet_dir = os.path.dirname(parquet_path)
         if not os.path.exists(parquet_dir):
             os.makedirs(parquet_dir)
 
-        # Si le fichier Parquet existe déjà, le charger
-        if os.path.exists(parquet_path):
-            print(f"Chargement de {parquet_path}...")
-            gdf = gpd.read_parquet(parquet_path)
-        else:
-            # Charger le fichier GeoJSON et convertir en GeoDataFrame
-            print(f"Chargement de {file_path} et conversion en Parquet...")
-            geometries = []
-            properties = []
+        try:
+            if os.path.exists(parquet_path):
+                logger.info(f"Chargement de {parquet_path}...")
+                gdf = gpd.read_parquet(parquet_path)
+            else:
+                logger.info(f"Chargement de {file_path} et conversion en Parquet...")
+                geometries = []
+                properties = []
 
-            with fiona.open(file_path, "r") as src:
-                for feature in src:
-                    geom = shape(feature['geometry']) if feature['geometry'] is not None else None
-                    if geom is not None:
-                        geometries.append(geom)
-                        properties.append(feature.get('properties', {}))  # Ajouter un dictionnaire vide si properties est None
+                with fiona.open(file_path, "r") as src:
+                    for feature in src:
+                        try:
+                            # Convertir la géométrie en utilisant Shapely
+                            geom = shape(feature['geometry']) if feature['geometry'] is not None else None
+                            if geom is not None:
+                                geometries.append(geom)
+                                properties.append(feature.get('properties', {}))
+                        except (TypeError, WKTReadingError) as e:
+                            logger.warning(f"Géométrie invalide ignorée dans {file_path}: {e}")
 
-            gdf = gpd.GeoDataFrame(properties, geometry=geometries)
+                gdf = gpd.GeoDataFrame(properties, geometry=geometries, crs=src.crs)
 
-            # Écrire en Parquet pour les utilisations futures
-            gdf.to_parquet(parquet_path)
+                # Écrire en Parquet pour les utilisations futures
+                gdf.to_parquet(parquet_path)
 
-        # Ajouter le GeoDataFrame au dictionnaire
-        geodataframes[name] = gdf
+            # Identifier et filtrer les géométries invalides
+            invalid_count = (~gdf.is_valid).sum()
+            if invalid_count > 0:
+                logger.warning(f"{invalid_count} géométrie(s) invalide(s) trouvée(s) dans {file_path} et supprimée(s).")
+            gdf = gdf[gdf.is_valid]
+
+            # Ajouter au dictionnaire
+            geodataframes[name] = gdf
+
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement de {file_path}: {e}")
 
     return geodataframes
 

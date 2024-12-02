@@ -2,12 +2,12 @@ data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 
 buffer_layer:
   bixi_stations:
-    distance: 200  # Distance du buffer en mètres
+    distance: 300  # Distance du buffer en mètres
     geometry_type: "Point"  # Type de géométrie
 
 filter_files:
@@ -45,7 +45,7 @@ std_columns:
 count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati_test2"
+  - "ID_UEV as count_num_bati_test"
 
 groupby_columns:
   - "buffer_id"
