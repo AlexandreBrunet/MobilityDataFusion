@@ -1,5 +1,6 @@
 import geopandas as gpd
 import pandas as pd
+from typing import Dict, Union
 
 # Fonction pour récupérer les couches de points et de polygones pour les jointures
 def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers):
@@ -14,8 +15,12 @@ def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_
         join_data["linestrings"] = linestrings_gdfs
     return join_data
 
-def perform_spatial_joins(buffer_gdfs, join_data, join_layers):
-    buffer_joins = []
+from typing import Dict, Union
+import geopandas as gpd
+import pandas as pd
+
+def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: Dict[str, Dict[str, gpd.GeoDataFrame]], join_layers: Dict[str, Dict[str, str]]) -> pd.DataFrame:
+    buffer_joins: list[pd.DataFrame] = []
     for layer_name, buffer_gdf in buffer_gdfs.items():
         for geom_type, gdfs in join_data.items():
             join_type = join_layers[geom_type]["type"]
