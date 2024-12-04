@@ -33,7 +33,7 @@ ratio_columns:
   permis_perslogi_ratio:
     numerator: "permis"
     denominator: "perslogi"
-  ratio2:
+  ratio_test:
     numerator:
     denominator:
 
@@ -73,12 +73,12 @@ groupby_columns:
 # Paramètre permettant de filtrer sur les agrégations, et les colonnes choisis ci-dessus
 ##TODO fixer le name retirer les _
 filter_global:
-  - column: "count_arret_bus"
-    value: ">="
-    operator: 2
-  - column:
-    value:
-    operator:
+  - column: "count_arret_bus_count"
+    value: 2
+    operator: "=="
+  # - column:
+  #   value:
+  #   operator:
 
 activate_visualisation: false
 

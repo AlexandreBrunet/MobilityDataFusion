@@ -4,6 +4,7 @@ import utils.gdf.extractGeo as extractGeo
 import utils.gdf.joins as joins
 import utils.buffer.buffer as buffer
 import utils.metrics.metrics as metrics
+import utils.metrics.filtering as filtering
 import utils.visualisation.visualisation as visualisation
 import yaml
 import time
@@ -63,6 +64,8 @@ agg_stats_gdf = metrics.calculate_metrics(
     groupby_columns=config["groupby_columns"],
     metrics_config=metrics_config,
 )
+
+agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 distance = buffer_layer[layer_name].get('distance')
 visualisation.create_table_visualisation(agg_stats_gdf, distance)
