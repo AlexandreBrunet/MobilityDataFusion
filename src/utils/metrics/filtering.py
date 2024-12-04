@@ -16,20 +16,6 @@ def filter_gdf(gdf, column, value, op):
     
     gdf_filtered = gdf[OPERATORS[op](gdf[column], value)]
     return gdf_filtered
-
-
-def apply_layer_filtering(gdf, config, layer_name):
-    """Applique le filtrage à une couche spécifique selon la configuration."""
-    filter_config = config['filter_data_files'].get(layer_name)
-    
-    if filter_config:
-        column = filter_config['column']
-        value = filter_config['value']
-        op = filter_config.get('operator', "==")  # Par défaut, utiliser l'égalité
-        return filter_gdf(gdf, column, value, op)
-    else:
-        print(f"Aucun filtre trouvé pour la couche: {layer_name}")
-        return gdf
     
 def apply_filters_to_layers(geodataframes, config, filter_function):
     """
