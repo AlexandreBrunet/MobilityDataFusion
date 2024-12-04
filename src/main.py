@@ -41,15 +41,15 @@ geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filteri
 
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
+points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf = extractGeo.extract_geometries(gdf)
 
-buffer_gdfs = calculate_buffer.calculate_buffer(buffer_layer, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs)
+buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
 
-join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
-agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
+join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
+fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
 
 agg_stats_gdf = metrics.calculate_metrics(
-    gdf=agg_fusion_gdf,
+    gdf=fusion_gdf,
     groupby_columns=config["groupby_columns"],
     metrics_config=metrics_config,
 )
@@ -65,7 +65,7 @@ visualisation.create_table_visualisation(agg_stats_gdf, distance)
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
     visualisation.create_layers_and_map(
-        geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, buffer_gdfs, colors
+        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors
     )
 else:
     print("Visualisation désactivée.")
