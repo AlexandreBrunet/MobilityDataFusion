@@ -1,24 +1,34 @@
+# Ajouter les fichers que vous souhaitez analyser sous la section data_files. Le code commenté est un exemple.
+# La structure est la suivante: nom desiré pour votre ficher: nom du ficher sous le repertoire /data/input/geojson/.
+# Vous pouvez ajouter un nombre illmité de ficher, par contre plus que les fichers sont gros plus que le programme prendra du temps à rouler
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
 
+# Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
+# Le deuxième paramètre permet de configurer la distance du buffer en mètre
+# Le troisième paramètre permet de configurer le type d'objet du buffer (Point, Polygon, LineString ou MultiPolygon)
 buffer_layer:
   bixi_stations:
-    distance: 600 # Distance du buffer en mètres
+    distance: 100 # Distance du buffer en mètres
     geometry_type: "Point"  # Type de géométrie
 
-filter_files:
+# Paramètre permettant de filtrer au niveau des fichers data_files avec les operateurs suivants (==, >=, <=, >, <, !=)
+filter_data_files:
   bus_stops:
     column:
     value:
-  # bixi_stations:
-  #   column: "capacity"
-  #   value: 30
-  #   operator: ">="
+  bixi_stations:
+    column: "capacity"
+    value: 0
+    operator: ">="
 
+# Paramètre permettant de calculer un ratio sur deux colonnes
+# Le premier parametre (e.g permis_perslogi_ratio) sera le nom de la colonne
+# Les paramètres numerator et denominator prennent comme valeur les deux colonnes utilisées pour le calcul
 ratio_columns:
   permis_perslogi_ratio:
     numerator: "permis"
@@ -27,41 +37,52 @@ ratio_columns:
     numerator:
     denominator:
 
+# Paramètre permettant de calculer la somme de colonnes aux choix avec la possiblé de renommer la colonne
 sum_columns:
   - "permis as total_permis"
   - "autologi as total_autologi"
 
+# Paramètre permettant de calculer le maximum de colonnes aux choix avec la possiblé de renommer la colonne
 max_columns:
-  - "capacity"
+  - "capacity as max_capacity"
 
+# Paramètre permettant de calculer le minimum de colonnes aux choix avec la possiblé de renommer la colonne
 min_columns:
+  - "capacity as min_capacity"
 
+# Paramètre permettant de calculer la moyenne de colonnes aux choix avec la possiblé de renommer la colonne
 mean_columns:
   - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
   - "LONGUEUR as moy_long_piste_cy"
 
+# Paramètre permettant de calculer l'écart type de colonnes aux choix avec la possiblé de renommer la colonne
 std_columns:
+  - "SUPERFICIE_TERRAIN as std_superficie_terrain"
 
+# Paramètre permettant de compter le nombre d'occurence de colonnes aux choix avec la possiblé de renommer la colonne
 count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
   - "ID_UEV as count_num_bati_test"
 
+# Paramètre permettant de grouper les metriques
 groupby_columns:
   - "buffer_id"
   - "name"
 
+# Paramètre permettant de filtrer sur les agrégations, et les colonnes choisis ci-dessus
 ##TODO fixer le name retirer les _
 filter_global:
-  - column:
-    value:
-    operator:
+  - column: "count_arret_bus"
+    value: ">="
+    operator: 2
   - column:
     value:
     operator:
 
 activate_visualisation: false
 
+# Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:
   points:
     type: "contains"
