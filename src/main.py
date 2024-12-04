@@ -28,6 +28,8 @@ colors = config.get("colors")
 # Charger les fichers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
+geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
+
 gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)

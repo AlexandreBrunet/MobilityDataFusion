@@ -24,7 +24,7 @@ filter_data_files:
   bixi_stations:
     column: "capacity"
     value: 0
-    operator: ">="
+    operator: ">"
 
 # Paramètre permettant de calculer un ratio sur deux colonnes
 # Le premier parametre (e.g permis_perslogi_ratio) sera le nom de la colonne
