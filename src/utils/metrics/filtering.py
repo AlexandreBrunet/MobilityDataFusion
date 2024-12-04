@@ -20,7 +20,7 @@ def filter_gdf(gdf, column, value, op):
 
 def apply_layer_filtering(gdf, config, layer_name):
     """Applique le filtrage à une couche spécifique selon la configuration."""
-    filter_config = config['filter_files'].get(layer_name)
+    filter_config = config['filter_data_files'].get(layer_name)
     
     if filter_config:
         column = filter_config['column']
@@ -45,7 +45,7 @@ def apply_filters_to_layers(geodataframes, config, filter_function):
     """
     for layer_name, gdf_layer in geodataframes.items():
         # Récupère la configuration pour cette couche
-        filter_config = config.get('filter_files', {}).get(layer_name)
+        filter_config = config.get('filter_data_files', {}).get(layer_name)
         
         if not filter_config:
             # Skipper si aucune configuration n'est définie pour cette couche
