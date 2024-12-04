@@ -2,7 +2,7 @@ import utils.utils as utils
 import utils.gdf.gdfExtraction as gdfExtraction
 import utils.gdf.extractGeo as extractGeo
 import utils.gdf.joins as joins
-import utils.buffer.buffer as buffer
+import utils.buffer.calculation as calculate_buffer
 import utils.metrics.metrics as metrics
 import utils.metrics.filtering as filtering
 import utils.visualisation.visualisation as visualisation
@@ -24,33 +24,6 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
-
-# Charger les fichers geojson
-geodataframes = utils.load_files_to_gdf(data_files)
-
-geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
-
-gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
-
-points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
-
-for layer_name in buffer_layer:
-    geometry_type = buffer_layer[layer_name].get('geometry_type', None)
-
-    if geometry_type == "Point":
-        buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
-    elif geometry_type == "LineString":
-        buffer_gdfs = buffer.create_buffers(linestrings_gdfs, buffer_layer)
-    elif geometry_type == "Polygon":
-        buffer_gdfs = buffer.create_buffers(polygons_gdfs, buffer_layer)
-    elif geometry_type == "MultiPolygon":
-        buffer_gdfs = buffer.create_buffers(multipolygons_gdfs, buffer_layer)
-    else:
-        print("The geometry_type is unsupported either: Point, LineString, Polygon or MultiPolygon")
-
-join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
-agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
-
 metrics_config = {
     "sum": config["sum_columns"],
     "max": config["max_columns"],
@@ -61,6 +34,20 @@ metrics_config = {
     "count": config["count_columns"]
 }
 
+# Charger les fichers geojson
+geodataframes = utils.load_files_to_gdf(data_files)
+
+geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
+
+gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
+
+points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs = extractGeo.extract_geometries(gdf)
+
+buffer_gdfs = calculate_buffer.calculate_buffer(buffer_layer, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs)
+
+join_data = joins.get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, join_layers)
+agg_fusion_gdf = joins.perform_spatial_joins(buffer_gdfs, join_data, join_layers)
+
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=agg_fusion_gdf,
     groupby_columns=config["groupby_columns"],
@@ -69,7 +56,10 @@ agg_stats_gdf = metrics.calculate_metrics(
 
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
-distance = buffer_layer[layer_name].get('distance')
+for layer_name in buffer_layer:
+    distance = buffer_layer[layer_name].get('distance')
+    print(f"Calculating {distance} meters buffer for {layer_name}")
+
 visualisation.create_table_visualisation(agg_stats_gdf, distance)
 
 if activate_visualisation:
