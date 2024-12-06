@@ -1,9 +1,8 @@
 import pydeck as pdk
 import geopandas as gpd
-from typing import List
+from typing import List, Dict
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
-import utils.utils as utils
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -86,7 +85,7 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filena
         )
     r.to_html(filename, open_browser=False)
 
-def create_layers_and_map(geodataframes, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs, buffer_gdfs, colors):
+def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdfs: Dict[str, gpd.GeoDataFrame], polygons_gdfs: Dict[str, gpd.GeoDataFrame], multipolygons_gdfs: Dict[str, gpd.GeoDataFrame], linestrings_gdfs: Dict[str, gpd.GeoDataFrame], buffer_gdfs: Dict[str, gpd.GeoDataFrame], colors: Dict[str, str]):
     layers = []
 
     # Créer les couches pour chaque GeoDataFrame
