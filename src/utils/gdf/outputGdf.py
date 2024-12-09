@@ -56,7 +56,7 @@ def process_and_save_joined_data(gdf: gpd.GeoDataFrame, output_folder: str):
                 # Définir le nom du fichier de sortie
                 output_file = os.path.join(
                     output_folder,
-                    f"{buffer_layer}_{join_type}_{geom_col.replace('_geometry', '')}.geojson"
+                    f"{buffer_layer}_{geom_col.replace('_geometry', '')}.geojson"
                 )
 
                 # Sauvegarder en GeoJSON
