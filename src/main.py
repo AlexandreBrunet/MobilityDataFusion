@@ -71,7 +71,7 @@ buffers_gdf = gpd.GeoDataFrame(
         crs=list(buffers_gdf_dict.values())[0].crs  # Utilise le CRS du premier GeoDataFrame
     )
 
-output_file = os.path.join(output_path, "buffers_all.geojson")
+output_file = os.path.join(output_path, f"buffers_{distance}m.geojson")
 buffers_gdf.to_file(output_file, driver="GeoJSON")
 
 visualisation.create_table_visualisation(agg_stats_gdf, distance)
