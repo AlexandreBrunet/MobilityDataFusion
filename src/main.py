@@ -9,6 +9,9 @@ import utils.visualisation.visualisation as visualisation
 import yaml
 import time
 import pandas as pd
+import geopandas as gpd
+import utils.gdf.outputGdf as outputGdf
+import os
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -43,10 +46,10 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf = extractGeo.extract_geometries(gdf)
 
-buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
+buffers_gdf_dict = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
 
 join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
-fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
+fusion_gdf = joins.perform_spatial_joins(buffers_gdf_dict, join_data, join_layers)
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=fusion_gdf,
@@ -60,12 +63,23 @@ for layer_name in buffer_layer:
     distance = buffer_layer[layer_name].get('distance')
     print(f"Calculating {distance} meters buffer for {layer_name}")
 
+output_path = "./geojson_output"
+outputGdf.process_and_save_joined_data(fusion_gdf, output_folder=output_path)
+
+buffers_gdf = gpd.GeoDataFrame(
+        pd.concat(buffers_gdf_dict.values(), ignore_index=True),  # Combine les GeoDataFrames
+        crs=list(buffers_gdf_dict.values())[0].crs  # Utilise le CRS du premier GeoDataFrame
+    )
+
+output_file = os.path.join(output_path, "buffers_all.geojson")
+buffers_gdf.to_file(output_file, driver="GeoJSON")
+
 visualisation.create_table_visualisation(agg_stats_gdf, distance)
 
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
     visualisation.create_layers_and_map(
-        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors
+        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf_dict, colors
     )
 else:
     print("Visualisation désactivée.")
