@@ -49,10 +49,9 @@ def process_and_save_joined_data(gdf: gpd.GeoDataFrame, output_folder: str):
                 # Renommer la géométrie temporaire en `geometry`
                 non_empty = non_empty.rename_geometry('geometry')
 
-                # Conserver toutes les autres colonnes de propriétés
-                # Supprimer les autres colonnes géométriques supplémentaires
-                extra_geom_cols = [col for col in non_empty.columns if col not in ['geometry', 'buffer_layer', 'join_type']]
-                non_empty = non_empty.drop(columns=extra_geom_cols)
+                # Conserver `buffer_id` et toutes les autres colonnes importantes
+                keep_columns = ['geometry', 'buffer_id', 'buffer_layer', 'join_type']
+                non_empty = non_empty[keep_columns]
 
                 # Définir le nom du fichier de sortie
                 output_file = os.path.join(
