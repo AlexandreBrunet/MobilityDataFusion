@@ -50,7 +50,7 @@ def process_and_save_joined_data(gdf: gpd.GeoDataFrame, output_folder: str):
                 non_empty = non_empty.rename_geometry('geometry')
 
                 # Conserver `buffer_id` et toutes les autres colonnes importantes
-                keep_columns = ['geometry', 'buffer_id', 'buffer_layer', 'join_type']
+                keep_columns = ['geometry', 'buffer_layer', 'join_type']
                 non_empty = non_empty[keep_columns]
 
                 # Définir le nom du fichier de sortie
