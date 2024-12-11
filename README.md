@@ -1,10 +1,14 @@
 # MobilityDataFusion
 ```bash
-python3 -m venv venv
+python3.13 -m venv venv
 ```
 ## activer l'environnment
 ```bash
 source ./venv/bin/activate
+```
+## installer les packages
+```bash
+pip3 install -r ../requirements.txt
 ```
 ## rouler le code:
 ```bash
