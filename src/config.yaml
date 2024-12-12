@@ -80,7 +80,7 @@ filter_global:
   #   value:
   #   operator:
 
-activate_visualisation: false
+activate_visualisation: true
 
 # Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:

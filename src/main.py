@@ -9,6 +9,7 @@ import utils.visualisation.visualisation as visualisation
 import yaml
 import time
 import pandas as pd
+import geopandas as gpd
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -43,6 +44,11 @@ gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
 points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf = extractGeo.extract_geometries(gdf)
 
+simplified_points_gdf = extractGeo.simplify_geometries(points_gdf, tolerance=10)
+simplified_polygons_gdf = extractGeo.simplify_geometries(polygons_gdf, tolerance=10)
+simplified_multipolygons_gdf = extractGeo.simplify_geometries(multipolygons_gdf, tolerance=10)
+simplified_linestrings_gdf = extractGeo.simplify_geometries(linestrings_gdf, tolerance=10)
+
 buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
 
 join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
@@ -65,7 +71,7 @@ visualisation.create_table_visualisation(agg_stats_gdf, distance)
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
     visualisation.create_layers_and_map(
-        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors
+        geodataframes, simplified_points_gdf, simplified_polygons_gdf, simplified_multipolygons_gdf, simplified_linestrings_gdf, buffers_gdf, colors
     )
 else:
     print("Visualisation désactivée.")
