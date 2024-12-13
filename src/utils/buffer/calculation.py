@@ -1,7 +1,9 @@
 
 import utils.buffer.buffer as buffer
+from typing import Dict, Union
+import geopandas as gpd
 
-def calculate_buffer(buffer_layer, points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_gdfs):
+def calculate_buffer(buffer_layer: Dict[str, Dict[str, str]], points_gdfs: gpd.GeoDataFrame, polygons_gdfs: gpd.GeoDataFrame, multipolygons_gdfs: gpd.GeoDataFrame, linestrings_gdfs: gpd.GeoDataFrame) -> Union[gpd.GeoDataFrame, None]:
     for layer_name in buffer_layer:
         geometry_type = buffer_layer[layer_name].get('geometry_type', None)
 
