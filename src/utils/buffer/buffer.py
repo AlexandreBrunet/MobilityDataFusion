@@ -67,8 +67,11 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
 
     # Vérifie si la couche correspond à une entrée dans le dictionnaire de buffers
     if layer_name in buffer_layers:
-        buffer_distance = buffer_layers[layer_name].get("distance", 0)
-        geometry_type = buffer_layers[layer_name].get("geometry_type", None)
+        if layer_name == "zones":
+            return buffer_gdf
+        else:
+            buffer_distance = buffer_layers[layer_name].get("distance", 0)
+            geometry_type = buffer_layers[layer_name].get("geometry_type", None)
 
         # Vérifie si le type de géométrie est un Polygon ou MultiPolygon
         if geometry_type in ["Polygon", "MultiPolygon"]:
