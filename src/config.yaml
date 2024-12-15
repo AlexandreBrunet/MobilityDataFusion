@@ -4,9 +4,10 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
+  # zones: "./data/input/geojson/zonage.geojson"
 
 # Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
 # Le deuxième paramètre permet de configurer la distance du buffer en mètre
@@ -15,6 +16,9 @@ buffer_layer:
   bixi_stations:
     distance: 100 # Distance du buffer en mètres
     geometry_type: "Point"  # Type de géométrie
+  # zones:
+  #   distance: 0 # Distance du buffer en mètres
+  #   geometry_type: "MultiPolygon"  # Type de géométrie
 
 # Paramètre permettant de filtrer au niveau des fichers data_files avec les operateurs suivants (==, >=, <=, >, <, !=)
 filter_data_files:
@@ -24,7 +28,7 @@ filter_data_files:
   bixi_stations:
     column: "capacity"
     value: 0
-    operator: ">"
+    operator: ">="
 
 # Paramètre permettant de calculer un ratio sur deux colonnes
 # Le premier parametre (e.g permis_perslogi_ratio) sera le nom de la colonne
@@ -74,8 +78,8 @@ groupby_columns:
 ##TODO fixer le name retirer les _
 filter_global:
   - column: "count_arret_bus_count"
-    value: 2
-    operator: "=="
+    value: 0
+    operator: ">"
   # - column:
   #   value:
   #   operator:
@@ -99,3 +103,4 @@ colors:
   evaluation_fonciere: "[0, 30, 200, 160]"
   menage_2018: "[255, 255, 0, 160]"
   reseau_cyclable: "[255, 165, 0, 160]"
+  zones: "[255, 165, 0, 160]"
