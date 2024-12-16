@@ -16,6 +16,9 @@ buffer_layer:
   bixi_stations:
     distance: 100 # Distance du buffer en mètres
     geometry_type: "Point"  # Type de géométrie
+    buffer_type: "grid" # either grid or circular
+    wide: 100
+    length: 100
   # zones:
   #   distance: 0 # Distance du buffer en mètres
   #   geometry_type: "MultiPolygon"  # Type de géométrie
@@ -84,7 +87,7 @@ filter_global:
   #   value:
   #   operator:
 
-activate_visualisation: false
+activate_visualisation: true
 
 # Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:
