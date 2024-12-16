@@ -96,32 +96,32 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
     return buffer_gdf
 
 
-def create_buffers(gdf, buffer_layers):
+def create_buffers(gdf, buffer_layer):
     unique_id_counter = itertools.count(1)
 
-    for layer_name in buffer_layers:
-        geometry_type = buffer_layers[layer_name].get('geometry_type', None)
+    for layer_name in buffer_layer:
+        geometry_type = buffer_layer[layer_name].get('geometry_type', None)
     if geometry_type == "Point":
         buffer_gdfs = {
-            f"{layer_name}_buffer": buffer.apply_points_buffer(gdf[layer_name], layer_name, buffer_layers)
+            f"{layer_name}_buffer": buffer.apply_points_buffer(gdf[layer_name], layer_name, buffer_layer)
             .assign(layer_name=f"{layer_name}_buffer",
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
-                    for layer_name in buffer_layers
+                    for layer_name in buffer_layer
     }
     elif geometry_type == "LineString":
         buffer_gdfs = {
-            f"{layer_name}_buffer": buffer.apply_linestring_buffer(gdf[layer_name], layer_name, buffer_layers)
+            f"{layer_name}_buffer": buffer.apply_linestring_buffer(gdf[layer_name], layer_name, buffer_layer)
             .assign(layer_name=f"{layer_name}_buffer",
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
-                    for layer_name in buffer_layers
+                    for layer_name in buffer_layer
     }
         
     elif geometry_type == "Polygon" or geometry_type == "MultiPolygon":
         buffer_gdfs = {
-            f"{layer_name}_buffer": buffer.apply_polygon_buffer(gdf[layer_name], layer_name, buffer_layers)
+            f"{layer_name}_buffer": buffer.apply_polygon_buffer(gdf[layer_name], layer_name, buffer_layer)
             .assign(layer_name=f"{layer_name}_buffer",
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
-                    for layer_name in buffer_layers
+                    for layer_name in buffer_layer
     }
 
     return buffer_gdfs
