@@ -1,27 +1,29 @@
+#TODO: ajouter distribution
+
 # Ajouter les fichers que vous souhaitez analyser sous la section data_files. Le code commenté est un exemple.
 # La structure est la suivante: nom desiré pour votre ficher: nom du ficher sous le repertoire /data/input/geojson/.
 # Vous pouvez ajouter un nombre illmité de ficher, par contre plus que les fichers sont gros plus que le programme prendra du temps à rouler
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
   menage_2018: "./data/input/geojson/od_2018test.geojson"
   reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
-  # zones: "./data/input/geojson/zonage.geojson"
+  # zones: "./data/input/geojson/mtlzonage.geojson"
 
 # Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
 # Le deuxième paramètre permet de configurer la distance du buffer en mètre
 # Le troisième paramètre permet de configurer le type d'objet du buffer (Point, Polygon, LineString ou MultiPolygon)
 buffer_layer:
   bixi_stations:
-    distance: 100 # Distance du buffer en mètres
-    geometry_type: "Point"  # Type de géométrie
-    buffer_type: "grid" # either grid or circular
-    wide: 100
-    length: 100
-  # zones:
-  #   distance: 0 # Distance du buffer en mètres
-  #   geometry_type: "MultiPolygon"  # Type de géométrie
+    geometry_type: "Point" # Type de géométrie
+    distance: 500 # Distance du buffer en mètres
+    buffer_type: "circular" # either grid or circular or isochrone or zones
+    # wide: 100
+    # length: 100
+    # walk_time: 10
+    # speed: 4.5
+    # network_type: "walk"
 
 # Paramètre permettant de filtrer au niveau des fichers data_files avec les operateurs suivants (==, >=, <=, >, <, !=)
 filter_data_files:

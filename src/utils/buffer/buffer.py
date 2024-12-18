@@ -3,6 +3,7 @@ import itertools
 import utils.buffer.buffer as buffer
 import utils.buffer.grid as grid
 import geopandas as gpd
+import utils.buffer.isochrone as isochrone
 
 def apply_points_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_layers: dict) -> gpd.GeoDataFrame:
     buffer_gdf = points_gdf.copy()
@@ -68,14 +69,17 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
 
     # Vérifie si la couche correspond à une entrée dans le dictionnaire de buffers
     if layer_name in buffer_layers:
-        if layer_name == "zones":
+
+        buffer_distance = buffer_layers[layer_name].get("distance", 0)
+        geometry_type = buffer_layers[layer_name].get("geometry_type", None)
+        buffer_type = buffer_layers[layer_name].get("buffer_type", None)
+
+        if buffer_type == "zones":
+            buffer_gdf = buffer_gdf.to_crs(epsg=4326)
             return buffer_gdf
-        else:
-            buffer_distance = buffer_layers[layer_name].get("distance", 0)
-            geometry_type = buffer_layers[layer_name].get("geometry_type", None)
 
         # Vérifie si le type de géométrie est un Polygon ou MultiPolygon
-        if geometry_type in ["Polygon", "MultiPolygon"]:
+        elif geometry_type in ["Polygon", "MultiPolygon"]:
             try:
                 # Reprojeter en CRS UTM pour appliquer le buffer en mètres
                 buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Adapter l'EPSG selon la région
@@ -103,6 +107,7 @@ def create_buffers(gdf, buffer_layer):
     for layer_name in buffer_layer:
         geometry_type = buffer_layer[layer_name].get('geometry_type', None)
         buffer_type = buffer_layer[layer_name].get('buffer_type', None)
+
     if geometry_type == "Point" and buffer_type == "circular":
         buffer_gdfs = {
             f"{layer_name}_buffer": buffer.apply_points_buffer(gdf[layer_name], layer_name, buffer_layer)
@@ -117,6 +122,13 @@ def create_buffers(gdf, buffer_layer):
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
                     for layer_name in buffer_layer
     }
+    elif geometry_type == "Point" and buffer_type == "isochrone":
+        buffer_gdfs = {
+            f"{layer_name}_buffer": isochrone.apply_points_isochrones(gdf[layer_name], layer_name, buffer_layer)
+            .assign(layer_name=f"{layer_name}_buffer",
+                    buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+                    for layer_name in buffer_layer
+    }
     elif geometry_type == "LineString":
         buffer_gdfs = {
             f"{layer_name}_buffer": buffer.apply_linestring_buffer(gdf[layer_name], layer_name, buffer_layer)
@@ -124,7 +136,13 @@ def create_buffers(gdf, buffer_layer):
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
                     for layer_name in buffer_layer
     }
-        
+    elif ((geometry_type == "Polygon" or geometry_type == "MultiPolygon") and buffer_type == "zones"):
+        buffer_gdfs = {
+            f"{layer_name}_buffer": buffer.apply_polygon_buffer(gdf[layer_name], layer_name, buffer_layer)
+            .assign(layer_name=f"{layer_name}_buffer",
+                    buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+                    for layer_name in buffer_layer
+    }
     elif geometry_type == "Polygon" or geometry_type == "MultiPolygon":
         buffer_gdfs = {
             f"{layer_name}_buffer": buffer.apply_polygon_buffer(gdf[layer_name], layer_name, buffer_layer)
