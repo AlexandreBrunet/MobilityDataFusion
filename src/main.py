@@ -57,8 +57,9 @@ agg_stats_gdf = metrics.calculate_metrics(
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 for layer_name in buffer_layer:
+    buffer_type = buffer_layer[layer_name].get('buffer_type')
     distance = buffer_layer[layer_name].get('distance')
-    print(f"Calculating {distance} meters buffer for {layer_name}")
+    print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
 
 visualisation.create_table_visualisation(agg_stats_gdf, distance)
 

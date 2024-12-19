@@ -5,20 +5,20 @@
 # Vous pouvez ajouter un nombre illmité de ficher, par contre plus que les fichers sont gros plus que le programme prendra du temps à rouler
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
-  bixi_stations: "./data/input/geojson/stations_bixitest.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
-  # zones: "./data/input/geojson/mtlzonage.geojson"
+  bixi_stations: "./data/input/geojson/stations_bixi.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  zones: "./data/input/geojson/mtlzonage.geojson"
 
 # Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
 # Le deuxième paramètre permet de configurer la distance du buffer en mètre
 # Le troisième paramètre permet de configurer le type d'objet du buffer (Point, Polygon, LineString ou MultiPolygon)
 buffer_layer:
-  bixi_stations:
-    geometry_type: "Point" # Type de géométrie
-    distance: 500 # Distance du buffer en mètres
-    buffer_type: "circular" # either grid or circular or isochrone or zones
+  zones:
+    geometry_type: "MultiPolygon" # Type de géométrie
+    buffer_type: "zones" # either grid or circular or isochrone or zones
+    # distance: 500 # Distance du buffer en mètres
     # wide: 100
     # length: 100
     # walk_time: 10
@@ -72,12 +72,13 @@ std_columns:
 count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati_test"
+  - "ID_UEV as count_num_bati"
+  - "station_id as count_bixi_station"
 
 # Paramètre permettant de grouper les metriques
 groupby_columns:
   - "buffer_id"
-  - "name"
+  - "NOM"
 
 # Paramètre permettant de filtrer sur les agrégations, et les colonnes choisis ci-dessus
 ##TODO fixer le name retirer les _
@@ -89,7 +90,7 @@ filter_global:
   #   value:
   #   operator:
 
-activate_visualisation: true
+activate_visualisation: false
 
 # Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:

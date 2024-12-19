@@ -75,7 +75,8 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
         buffer_type = buffer_layers[layer_name].get("buffer_type", None)
 
         if buffer_type == "zones":
-            buffer_gdf = buffer_gdf.to_crs(epsg=4326)
+            buffer_gdf = buffer_gdf.explode(index_parts=False)
+            buffer_gdf = buffer_gdf.reset_index(drop=True) 
             return buffer_gdf
 
         # Vérifie si le type de géométrie est un Polygon ou MultiPolygon

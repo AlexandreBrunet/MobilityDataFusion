@@ -49,7 +49,8 @@ def create_polygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         data=gdf,
         get_polygon='coordinates',
         get_fill_color='[0, 0, 200, 50]',
-        get_line_color='[0, 0, 200, 200]',
+        get_line_color='[139, 0, 0, 200]',
+        get_line_width=5,
         pickable=True
         )
     return polygon_layer
