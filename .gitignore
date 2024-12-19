@@ -14,4 +14,4 @@ cache/
 !src/data/input/stations_bixi.geojson
 src/map.html
 **/__pycache__/
-
+node_modules/
