@@ -144,6 +144,13 @@ def create_buffers(gdf, buffer_layer):
                     buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
                     for layer_name in buffer_layer
     }
+    elif ((geometry_type == "Polygon" or geometry_type == "MultiPolygon") and buffer_type == "zones_grid"):
+        buffer_gdfs = {
+            f"{layer_name}_buffer": grid.apply_zones_grid(gdf[layer_name], layer_name, buffer_layer)
+            .assign(layer_name=f"{layer_name}_buffer",
+                    buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+                    for layer_name in buffer_layer
+    }
     elif geometry_type == "Polygon" or geometry_type == "MultiPolygon":
         buffer_gdfs = {
             f"{layer_name}_buffer": buffer.apply_polygon_buffer(gdf[layer_name], layer_name, buffer_layer)

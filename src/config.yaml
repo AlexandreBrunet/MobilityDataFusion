@@ -6,9 +6,9 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
-  menage_2018: "./data/input/geojson/od_2018.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
+  menage_2018: "./data/input/geojson/od_2018test.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
   zones: "./data/input/geojson/mtlzonage.geojson"
 
 # Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
@@ -17,10 +17,10 @@ data_files:
 buffer_layer:
   zones:
     geometry_type: "MultiPolygon" # Type de géométrie
-    buffer_type: "zones" # either grid or circular or isochrone or zones
+    buffer_type: "zones_grid" # either grid or circular or isochrone or zones, zones_grid
     # distance: 500 # Distance du buffer en mètres
-    # wide: 100
-    # length: 100
+    wide: 1000
+    length: 1000
     # walk_time: 10
     # speed: 4.5
     # network_type: "walk"
@@ -78,7 +78,7 @@ count_columns:
 # Paramètre permettant de grouper les metriques
 groupby_columns:
   - "buffer_id"
-  - "NOM"
+  # - "NOM"
 
 # Paramètre permettant de filtrer sur les agrégations, et les colonnes choisis ci-dessus
 ##TODO fixer le name retirer les _
@@ -90,7 +90,7 @@ filter_global:
   #   value:
   #   operator:
 
-activate_visualisation: false
+activate_visualisation: true
 
 # Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:
