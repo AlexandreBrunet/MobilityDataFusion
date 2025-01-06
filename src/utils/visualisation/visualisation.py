@@ -3,6 +3,7 @@ import geopandas as gpd
 from typing import List, Dict
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
+import os
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -118,7 +119,11 @@ def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdf
     create_map_layers(layers, initial_view, filename="./data/output/visualisation/carte.html")
 
 
-def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str , distance: str):
+import geopandas as gpd
+import plotly.graph_objects as go
+import webbrowser
+
+def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, distance: str):
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=list(agg_stats_gdf.columns),
@@ -133,4 +138,9 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
     )])
 
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
-    fig.write_html(f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html")
+    
+    html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
+
+    fig.write_html(html_filename)
+
+    webbrowser.open('file://' + os.path.realpath(html_filename))
