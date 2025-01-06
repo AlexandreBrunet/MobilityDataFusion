@@ -55,6 +55,13 @@ def calculate_count(gdf, groupby_columns, count_columns):
     count_stats = count_stats.rename(columns={original: f"{renamed}_count" for original, renamed in parsed_columns})
     return count_stats
 
+def calculate_count_distinct(gdf, groupby_columns, distinct_columns):
+    parsed_columns = [(col, f"{col}_distinct") for col in distinct_columns]
+    agg_dict = {original: pd.Series.nunique for original, _ in parsed_columns}
+    count_distinct_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
+    count_distinct_stats = count_distinct_stats.rename(columns={original: renamed for original, renamed in parsed_columns})
+    return count_distinct_stats
+
 def calculate_ratio(gdf, groupby_columns, ratio_columns):
     ratio_stats_list = []
 
@@ -96,9 +103,16 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
         if func != "ratio" and cols:
             parsed_columns = [parse_column_name(col) for col in cols]
             for original, renamed in parsed_columns:
-                agg_dict[f"{renamed}_{func}"] = (original, func)
+                if func == "count_distinct":
+                    # Utiliser 'nunique' pour count distinct
+                    agg_dict[f"{renamed}_count_distinct"] = (original, "nunique")
+                else:
+                    agg_dict[f"{renamed}_{func}"] = (original, func)
 
-    agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index() if agg_dict else gdf
+    if agg_dict:
+        agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index()
+    else:
+        agg_stats = gdf.copy()  # Copie du DataFrame si aucune agrégation à effectuer
 
     if "ratio" in metrics_config and metrics_config["ratio"]:
         ratio_columns = metrics_config["ratio"]

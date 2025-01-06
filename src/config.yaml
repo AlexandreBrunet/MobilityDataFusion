@@ -6,21 +6,21 @@
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
   bixi_stations: "./data/input/geojson/stations_bixi.geojson"
-  evaluation_fonciere: "./data/input/geojson/uniteevaluationfoncieretest.geojson"
-  menage_2018: "./data/input/geojson/od_2018test.geojson"
-  reseau_cyclable: "./data/input/geojson/reseau_cyclabletest.geojson"
-  zones: "./data/input/geojson/mtlzonage.geojson"
+  evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
+  menage_2018: "./data/input/geojson/od_2018.geojson"
+  reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
+  # zones: "./data/input/geojson/mtlzonage.geojson"
 
 # Le premier paramètre permet de mentionner sur quel ficher vous souhaitez tracer le buffer, le nom doit correspondre a un nom donné ci-dessus
 # Le deuxième paramètre permet de configurer la distance du buffer en mètre
 # Le troisième paramètre permet de configurer le type d'objet du buffer (Point, Polygon, LineString ou MultiPolygon)
 buffer_layer:
-  zones:
-    geometry_type: "MultiPolygon" # Type de géométrie
-    buffer_type: "zones_grid" # either grid or circular or isochrone or zones, zones_grid
-    # distance: 500 # Distance du buffer en mètres
-    wide: 1000
-    length: 1000
+  bixi_stations:
+    geometry_type: "Point" # Type de géométrie
+    buffer_type: "circular" # either grid or circular or isochrone or zones or zones_grid
+    distance: 500 # Distance du buffer en mètres
+    # wide: 1000
+    # length: 1000
     # walk_time: 10
     # speed: 4.5
     # network_type: "walk"
@@ -73,12 +73,14 @@ count_columns:
   - "stop_id as count_arret_bus"
   - "feuillet as count_nb_menage"
   - "ID_UEV as count_num_bati"
+
+count_distinct_columns:
   - "station_id as count_bixi_station"
 
 # Paramètre permettant de grouper les metriques
 groupby_columns:
   - "buffer_id"
-  # - "NOM"
+  - "name"
 
 # Paramètre permettant de filtrer sur les agrégations, et les colonnes choisis ci-dessus
 ##TODO fixer le name retirer les _
@@ -90,7 +92,7 @@ filter_global:
   #   value:
   #   operator:
 
-activate_visualisation: true
+activate_visualisation: false
 
 # Paramètre permettant de gerer comment la fusion se fait entre la zone tampon et les objets.
 join_layers:
@@ -109,4 +111,4 @@ colors:
   evaluation_fonciere: "[0, 30, 200, 160]"
   menage_2018: "[255, 255, 0, 160]"
   reseau_cyclable: "[255, 165, 0, 160]"
-  zones: "[255, 165, 0, 160]"
+  # zones: "[255, 165, 0, 160]"
