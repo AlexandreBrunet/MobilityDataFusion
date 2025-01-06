@@ -61,7 +61,7 @@ for layer_name in buffer_layer:
     distance = buffer_layer[layer_name].get('distance')
     print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
 
-visualisation.create_table_visualisation(agg_stats_gdf, distance)
+visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, distance)
 
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
