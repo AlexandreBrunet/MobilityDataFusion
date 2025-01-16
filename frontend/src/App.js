@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Form from 'react-jsonschema-form';
 import * as yaml from 'js-yaml';
 
-// Exemple simplifié du contenu de votre config.yaml converti en JSON
 const sampleConfig = `
 data_files:
   bus_stops: "./data/input/geojson/stm_bus_stops.geojson"
@@ -10,66 +9,27 @@ data_files:
   evaluation_fonciere: "./data/input/geojson/uniteevaluationfonciere.geojson"
   menage_2018: "./data/input/geojson/od_2018.geojson"
   reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
-
 buffer_layer:
   bixi_stations:
-    geometry_type: "Point"
-    buffer_type: "circular"
     distance: 500
-
+    geometry_type: "Point"
 filter_data_files:
-  bus_stops:
-    column:
-    value:
   bixi_stations:
     column: "capacity"
     value: 0
     operator: ">="
-
 ratio_columns:
   permis_perslogi_ratio:
     numerator: "permis"
     denominator: "perslogi"
-  ratio_test:
-    numerator:
-    denominator:
-
 sum_columns:
   - "permis as total_permis"
   - "autologi as total_autologi"
-
-max_columns:
-  - "capacity as max_capacity"
-
-min_columns:
-  - "capacity as min_capacity"
-
-mean_columns:
-  - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
-  - "LONGUEUR as moy_long_piste_cy"
-
-std_columns:
-  - "SUPERFICIE_TERRAIN as std_superficie_terrain"
-
-count_columns:
-  - "stop_id as count_arret_bus"
-  - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati"
-
 count_distinct_columns:
   - "station_id as count_bixi_station"
-
 groupby_columns:
   - "buffer_id"
   - "name"
-
-filter_global:
-  - column: "count_arret_bus_count"
-    value: 0
-    operator: ">"
-
-activate_visualisation: false
-
 join_layers:
   points:
     type: "contains"
@@ -79,7 +39,6 @@ join_layers:
     type: "intersects"
   linestrings:
     type: "intersects"
-
 colors:
   bus_stops: "[0, 200, 0, 160]"
   bixi_stations: "[200, 30, 0, 160]"
@@ -92,16 +51,20 @@ const config = yaml.load(sampleConfig);
 const App = () => {
   const [formData, setFormData] = useState(config);
   const [schema, setSchema] = useState({});
+  const [submitMessage, setSubmitMessage] = useState('');
 
   useEffect(() => {
-    // Génération du schéma JSON basé sur la structure du config
     const generatedSchema = {
       type: "object",
       properties: {
         data_files: {
           type: "object",
           properties: {
-            bus_stops: { type: "string" }
+            bus_stops: { type: "string" },
+            bixi_stations: { type: "string" },
+            evaluation_fonciere: { type: "string" },
+            menage_2018: { type: "string" },
+            reseau_cyclable: { type: "string" }
           }
         },
         buffer_layer: {
@@ -131,33 +94,124 @@ const App = () => {
               }
             }
           }
+        },
+        ratio_columns: {
+          type: "object",
+          properties: {
+            permis_perslogi_ratio: {
+              type: "object",
+              properties: {
+                numerator: { type: "string" },
+                denominator: { type: "string" }
+              }
+            }
+          }
+        },
+        sum_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        count_distinct_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        groupby_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        join_layers: {
+          type: "object",
+          properties: {
+            points: {
+              type: "object",
+              properties: {
+                type: { type: "string" }
+              }
+            },
+            polygons: {
+              type: "object",
+              properties: {
+                type: { type: "string" }
+              }
+            },
+            multipolygons: {
+              type: "object",
+              properties: {
+                type: { type: "string" }
+              }
+            },
+            linestrings: {
+              type: "object",
+              properties: {
+                type: { type: "string" }
+              }
+            }
+          }
+        },
+        colors: {
+          type: "object",
+          properties: {
+            bus_stops: { type: "string" },
+            bixi_stations: { type: "string" },
+            evaluation_fonciere: { type: "string" },
+            menage_2018: { type: "string" },
+            reseau_cyclable: { type: "string" }
+          }
         }
       }
     };
     setSchema(generatedSchema);
   }, []);
 
-  const onSubmit = ({ formData }) => {
-    console.log("Submitted data:", formData);
-    // Ici, vous pourriez envoyer formData à un backend pour sauver en YAML
-  };
+    
+    // Modification de l'URL pour correspondre à l'adresse et au port de votre backend Flask
+    const onSubmit = ({ formData }) => {
+      console.log("Submitted data:", formData);
+      
+      fetch('http://127.0.0.1:5000/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setSubmitMessage('Configuration soumise avec succès !');
+        console.log('Success:', data);
+      })
+      .catch((error) => {
+        setSubmitMessage('Erreur lors de la soumission : ' + error.message);
+        console.error('Error:', error);
+      });
+    };
 
   const uiSchema = {
-    "ui:order": ["data_files", "buffer_layer", "filter_data_files"]
+    "ui:order": ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "count_distinct_columns", "groupby_columns", "join_layers", "colors"]
   };
 
   return (
     <div>
       <h1>Configuration UI</h1>
-      <Form 
-        schema={schema}
-        uiSchema={uiSchema}
-        formData={formData}
-        onChange={({ formData }) => setFormData(formData)}
-        onSubmit={onSubmit}
-      >
-        <button type="submit">Submit</button>
-      </Form>
+      {Object.keys(schema).length > 0 ? (
+        <Form 
+          schema={schema}
+          uiSchema={uiSchema}
+          formData={formData}
+          onChange={({ formData }) => setFormData(formData)}
+          onSubmit={onSubmit}
+        >
+          <button type="submit">Submit</button>
+        </Form>
+      ) : (
+        <div>Loading configuration...</div>
+      )}
+      {submitMessage && <p>{submitMessage}</p>}
     </div>
   );
 };
