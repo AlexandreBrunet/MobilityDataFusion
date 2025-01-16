@@ -26,12 +26,12 @@ join_layers = config.get("join_layers")
 colors = config.get("colors")
 metrics_config = {
     "sum": config["sum_columns"],
-    # "max": config["max_columns"],
-    # "min": config["min_columns"],
-    # "mean": config["mean_columns"],
-    # "std": config["std_columns"],
+    "max": config["max_columns"],
+    "min": config["min_columns"],
+    "mean": config["mean_columns"],
+    "std": config["std_columns"],
     "ratio": config["ratio_columns"],
-    # "count": config["count_columns"],
+    "count": config["count_columns"],
     "count_distinct": config["count_distinct_columns"]
 }
 

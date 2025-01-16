@@ -1,20 +1,39 @@
+activate_visualisation: false
+buffer_layer:
+  bixi_stations:
+    buffer_type: circular
+    distance: 500
+    geometry_type: Point
+colors:
+  bixi_stations: '[200, 30, 0, 160]'
+  bus_stops: '[0, 200, 0, 160]'
+  evaluation_fonciere: '[0, 30, 200, 160]'
+  menage_2018: '[255, 255, 0, 160]'
+  reseau_cyclable: '[255, 165, 0, 160]'
+count_columns:
+- stop_id as count_arret_bus
+- feuillet as count_nb_menage
+- ID_UEV as count_num_bati
+count_distinct_columns:
+- station_id as count_bixi_station
 data_files:
   bixi_stations: ./data/input/geojson/stations_bixi.geojson
   bus_stops: ./data/input/geojson/stm_bus_stops.geojson
   evaluation_fonciere: ./data/input/geojson/uniteevaluationfonciere.geojson
   menage_2018: ./data/input/geojson/od_2018.geojson
   reseau_cyclable: ./data/input/geojson/reseau_cyclable.geojson
-buffer_layer:
-  bixi_stations:
-    distance: 500
-    geometry_type: Point
-count_distinct_columns:
-- station_id as count_bixi_station
 filter_data_files:
   bixi_stations:
     column: capacity
     operator: '>='
     value: 0
+  bus_stops:
+    column: '""'
+    value: '""'
+filter_global:
+- column: count_arret_bus_count
+  operator: '>'
+  value: 0
 groupby_columns:
 - buffer_id
 - name
@@ -27,16 +46,22 @@ join_layers:
     type: contains
   polygons:
     type: intersects
+max_columns:
+- capacity as max_capacity
+mean_columns:
+- SUPERFICIE_TERRAIN as moy_superficie_terrain
+- LONGUEUR as moy_long_piste_cy
+min_columns:
+- capacity as min_capacity
 ratio_columns:
   permis_perslogi_ratio:
     denominator: perslogi
     numerator: permis
+  ratio_test:
+    denominator: perslogi
+    numerator: permis
+std_columns:
+- SUPERFICIE_TERRAIN as std_superficie_terrain
 sum_columns:
 - permis as total_permis
 - autologi as total_autologi
-colors:
-  bixi_stations: '[200, 30, 0, 160]'
-  bus_stops: '[0, 200, 0, 160]'
-  evaluation_fonciere: '[0, 30, 200, 160]'
-  menage_2018: '[255, 255, 0, 160]'
-  reseau_cyclable: '[255, 165, 0, 160]'

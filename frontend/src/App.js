@@ -11,9 +11,13 @@ data_files:
   reseau_cyclable: "./data/input/geojson/reseau_cyclable.geojson"
 buffer_layer:
   bixi_stations:
-    distance: 500
     geometry_type: "Point"
+    buffer_type: "circular"
+    distance: 500
 filter_data_files:
+  bus_stops:
+    column:
+    value:
   bixi_stations:
     column: "capacity"
     value: 0
@@ -22,14 +26,35 @@ ratio_columns:
   permis_perslogi_ratio:
     numerator: "permis"
     denominator: "perslogi"
+  ratio_test:
+    numerator:
+    denominator:
 sum_columns:
   - "permis as total_permis"
   - "autologi as total_autologi"
+max_columns:
+  - "capacity as max_capacity"
+min_columns:
+  - "capacity as min_capacity"
+mean_columns:
+  - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
+  - "LONGUEUR as moy_long_piste_cy"
+std_columns:
+  - "SUPERFICIE_TERRAIN as std_superficie_terrain"
+count_columns:
+  - "stop_id as count_arret_bus"
+  - "feuillet as count_nb_menage"
+  - "ID_UEV as count_num_bati"
 count_distinct_columns:
   - "station_id as count_bixi_station"
 groupby_columns:
   - "buffer_id"
   - "name"
+filter_global:
+  - column: "count_arret_bus_count"
+    value: 0
+    operator: ">"
+activate_visualisation: false
 join_layers:
   points:
     type: "contains"
@@ -46,6 +71,7 @@ colors:
   menage_2018: "[255, 255, 0, 160]"
   reseau_cyclable: "[255, 165, 0, 160]"
 `;
+
 const config = yaml.load(sampleConfig);
 
 const App = () => {
@@ -73,11 +99,15 @@ const App = () => {
             bixi_stations: {
               type: "object",
               properties: {
-                distance: { type: "number" },
                 geometry_type: { 
                   type: "string",
                   enum: ["Point", "Polygon", "LineString", "MultiPolygon"]
-                }
+                },
+                buffer_type: { 
+                  type: "string",
+                  enum: ["circular", "grid", "isochrone", "zones", "zones_grid"]
+                },
+                distance: { type: "number" }
               }
             }
           }
@@ -85,6 +115,13 @@ const App = () => {
         filter_data_files: {
           type: "object",
           properties: {
+            bus_stops: {
+              type: "object",
+              properties: {
+                column: { type: "string" },
+                value: { type: "string" }
+              }
+            },
             bixi_stations: {
               type: "object",
               properties: {
@@ -104,10 +141,37 @@ const App = () => {
                 numerator: { type: "string" },
                 denominator: { type: "string" }
               }
+            },
+            ratio_test: {
+              type: "object",
+              properties: {
+                numerator: { type: "string"},
+                                denominator: { type: "string" }
+              }
             }
           }
         },
         sum_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        max_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        min_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        mean_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        std_columns: {
+          type: "array",
+          items: { type: "string" }
+        },
+        count_columns: {
           type: "array",
           items: { type: "string" }
         },
@@ -118,6 +182,21 @@ const App = () => {
         groupby_columns: {
           type: "array",
           items: { type: "string" }
+        },
+        filter_global: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              column: { type: "string" },
+              value: { type: ["number", "string"] },
+              operator: { type: "string", enum: ["==", ">=", "<=", ">", "<", "!="] }
+            },
+            required: ["column", "value", "operator"]
+          }
+        },
+        activate_visualisation: {
+          type: "boolean"
         },
         join_layers: {
           type: "object",
@@ -158,41 +237,58 @@ const App = () => {
             reseau_cyclable: { type: "string" }
           }
         }
-      }
+      },
+      required: ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns", "count_columns", "count_distinct_columns", "groupby_columns", "filter_global", "activate_visualisation", "join_layers", "colors"]
     };
+    
     setSchema(generatedSchema);
   }, []);
 
+  const onSubmit = ({ formData }) => {
+    console.log("Submitted data:", formData);
     
-    // Modification de l'URL pour correspondre à l'adresse et au port de votre backend Flask
-    const onSubmit = ({ formData }) => {
-      console.log("Submitted data:", formData);
-      
-      fetch('http://127.0.0.1:5000/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setSubmitMessage('Configuration soumise avec succès !');
-        console.log('Success:', data);
-      })
-      .catch((error) => {
-        setSubmitMessage('Erreur lors de la soumission : ' + error.message);
-        console.error('Error:', error);
-      });
-    };
+    fetch('http://127.0.0.1:5000/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      setSubmitMessage('Configuration soumise avec succès !');
+      console.log('Success:', data);
+    })
+    .catch((error) => {
+      setSubmitMessage('Erreur lors de la soumission : ' + error.message);
+      console.error('Error:', error);
+    });
+  };
 
   const uiSchema = {
-    "ui:order": ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "count_distinct_columns", "groupby_columns", "join_layers", "colors"]
+    "ui:order": [
+      "data_files", 
+      "buffer_layer", 
+      "filter_data_files", 
+      "ratio_columns", 
+      "sum_columns", 
+      "max_columns", 
+      "min_columns", 
+      "mean_columns", 
+      "std_columns", 
+      "count_columns", 
+      "count_distinct_columns", 
+      "groupby_columns", 
+      "filter_global",
+      "activate_visualisation", 
+      "join_layers", 
+      "colors"
+    ]
   };
 
   return (
