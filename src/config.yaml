@@ -2,7 +2,7 @@ activate_visualisation: false
 buffer_layer:
   bixi_stations:
     buffer_type: circular
-    distance: 500
+    distance: 1000
     geometry_type: Point
 colors:
   bixi_stations: '[200, 30, 0, 160]'
@@ -17,11 +17,16 @@ count_columns:
 count_distinct_columns:
 - station_id as count_bixi_station
 data_files:
-  bixi_stations: ./data/input/geojson/stations_bixi.geojson
-  bus_stops: ./data/input/geojson/stm_bus_stops.geojson
-  evaluation_fonciere: ./data/input/geojson/uniteevaluationfonciere.geojson
-  menage_2018: ./data/input/geojson/od_2018.geojson
-  reseau_cyclable: ./data/input/geojson/reseau_cyclable.geojson
+- name: menage_2018
+  path: ./data/input/geojson/od_2018.geojson
+- name: reseau_cyclable
+  path: ./data/input/geojson/reseau_cyclable.geojson
+- name: bixi_stations
+  path: ./data/input/geojson/stations_bixi.geojson
+- name: bus_stops
+  path: ./data/input/geojson/stm_bus_stops.geojson
+- name: evaluation_fonciere
+  path: ./data/input/geojson/uniteevaluationfonciere.geojson
 filter_data_files:
   bixi_stations:
     column: capacity
@@ -54,12 +59,9 @@ mean_columns:
 min_columns:
 - capacity as min_capacity
 ratio_columns:
-  permis_perslogi_ratio:
-    denominator: perslogi
-    numerator: permis
-  ratio_test:
-    denominator: perslogi
-    numerator: permis
+- denominator: perslogi
+  name: permis_perslogi_ratio
+  numerator: permis
 std_columns:
 - SUPERFICIE_TERRAIN as std_superficie_terrain
 sum_columns:
