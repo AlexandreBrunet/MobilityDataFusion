@@ -65,13 +65,14 @@ def calculate_count_distinct(gdf, groupby_columns, distinct_columns):
 def calculate_ratio(gdf, groupby_columns, ratio_columns):
     ratio_stats_list = []
 
-    for ratio_name, cols in ratio_columns.items():
-        numerator = cols.get("numerator")
-        denominator = cols.get("denominator")
+    for ratio in ratio_columns:
+        ratio_name = ratio.get("name")
+        numerator = ratio.get("numerator")
+        denominator = ratio.get("denominator")
 
-        if not numerator or not denominator:
+        if not numerator or not denominator or not ratio_name:
             warnings.warn(
-                f"Le ratio '{ratio_name}' est incomplet (numérateur ou dénominateur manquant). Il sera ignoré.",
+                f"Le ratio '{ratio_name}' est incomplet (numérateur, dénominateur ou nom manquant). Il sera ignoré.",
                 UserWarning
             )
             continue
@@ -85,7 +86,15 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
             continue
 
         # Calculer le ratio et ajouter une colonne temporaire
-        gdf[ratio_name] = gdf[numerator] / gdf[denominator]
+        try:
+            gdf[ratio_name] = gdf[numerator] / gdf[denominator]
+        except ZeroDivisionError:
+            warnings.warn(
+                f"Division par zéro détectée lors du calcul du ratio '{ratio_name}'. Les valeurs seront remplacées par NaN.",
+                UserWarning
+            )
+            gdf[ratio_name] = gdf[numerator] / gdf[denominator].replace(0, np.nan)
+        
         ratio_stat = gdf.groupby(groupby_columns).agg({ratio_name: 'mean'}).reset_index()
         ratio_stats_list.append(ratio_stat)
 

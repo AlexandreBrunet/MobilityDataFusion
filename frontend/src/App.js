@@ -26,9 +26,6 @@ ratio_columns:
   permis_perslogi_ratio:
     numerator: "permis"
     denominator: "perslogi"
-  ratio_test:
-    numerator:
-    denominator:
 sum_columns:
   - "permis as total_permis"
   - "autologi as total_autologi"
@@ -133,22 +130,25 @@ const App = () => {
           }
         },
         ratio_columns: {
-          type: "object",
-          properties: {
-            permis_perslogi_ratio: {
-              type: "object",
-              properties: {
-                numerator: { type: "string" },
-                denominator: { type: "string" }
+          type: "array",
+          title: "Ratio Columns",
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                title: "Ratio Name"
+              },
+              numerator: { 
+                type: "string",
+                title: "Numerator"
+              },
+              denominator: { 
+                type: "string",
+                title: "Denominator"
               }
             },
-            ratio_test: {
-              type: "object",
-              properties: {
-                numerator: { type: "string"},
-                                denominator: { type: "string" }
-              }
-            }
+            required: ["name", "numerator", "denominator"]
           }
         },
         sum_columns: {
@@ -189,7 +189,12 @@ const App = () => {
             type: "object",
             properties: {
               column: { type: "string" },
-              value: { type: ["number", "string"] },
+              value: {
+                anyOf: [
+                  { type: "number" },
+                  { type: "string" }
+                ]
+              },
               operator: { type: "string", enum: ["==", ">=", "<=", ">", "<", "!="] }
             },
             required: ["column", "value", "operator"]
@@ -288,12 +293,24 @@ const App = () => {
       "activate_visualisation", 
       "join_layers", 
       "colors"
-    ]
+    ],
+    ratio_columns: {
+      "items": {
+        name: {
+          "ui:placeholder": "Enter ratio name"
+        },
+        numerator: {
+          "ui:placeholder": "Enter numerator column"
+       },
+        denominator: {
+          "ui:placeholder": "Enter denominator column"
+        }
+      }
+    }
   };
-
   return (
     <div>
-      <h1>Configuration UI</h1>
+      <h1>Data Fusion UI</h1>
       {Object.keys(schema).length > 0 ? (
         <Form 
           schema={schema}
