@@ -1,15 +1,15 @@
 activate_visualisation: false
 buffer_layer:
-  bixi_stations:
+  stations_bixi:
     buffer_type: circular
-    distance: 1000
+    distance: 350
     geometry_type: Point
 colors:
-  bixi_stations: '[200, 30, 0, 160]'
-  bus_stops: '[0, 200, 0, 160]'
-  evaluation_fonciere: '[0, 30, 200, 160]'
-  menage_2018: '[255, 255, 0, 160]'
-  reseau_cyclable: '[255, 165, 0, 160]'
+  od_2018: '[0, 0, 0, 0]'
+  reseau_cyclable: '[0, 0, 0, 0]'
+  stations_bixi: '[0, 0, 0, 0]'
+  stm_bus_stops: '[0, 0, 0, 0]'
+  uniteevaluationfonciere: '[0, 0, 0, 0]'
 count_columns:
 - stop_id as count_arret_bus
 - feuillet as count_nb_menage
@@ -17,24 +17,22 @@ count_columns:
 count_distinct_columns:
 - station_id as count_bixi_station
 data_files:
-- name: menage_2018
+- name: od_2018
   path: ./data/input/geojson/od_2018.geojson
 - name: reseau_cyclable
   path: ./data/input/geojson/reseau_cyclable.geojson
-- name: bixi_stations
+- name: stations_bixi
   path: ./data/input/geojson/stations_bixi.geojson
-- name: bus_stops
+- name: stm_bus_stops
   path: ./data/input/geojson/stm_bus_stops.geojson
-- name: evaluation_fonciere
+- name: uniteevaluationfonciere
   path: ./data/input/geojson/uniteevaluationfonciere.geojson
 filter_data_files:
-  bixi_stations:
-    column: capacity
-    operator: '>='
-    value: 0
-  bus_stops:
-    column: '""'
-    value: '""'
+  od_2018: {}
+  reseau_cyclable: {}
+  stations_bixi: {}
+  stm_bus_stops: {}
+  uniteevaluationfonciere: {}
 filter_global:
 - column: count_arret_bus_count
   operator: '>'

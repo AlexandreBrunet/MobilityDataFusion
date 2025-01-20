@@ -103,42 +103,52 @@ const App = () => {
             },
             buffer_layer: {
               type: "object",
+              title: "Buffer Layer Configuration",
               properties: {
-                bixi_stations: {
-                  type: "object",
-                  properties: {
-                    geometry_type: { 
-                      type: "string",
-                      enum: ["Point", "Polygon", "LineString", "MultiPolygon"]
-                    },
-                    buffer_type: { 
-                      type: "string",
-                      enum: ["circular", "grid", "isochrone", "zones", "zones_grid"]
-                    },
-                    distance: { type: "number" }
-                  }
+                layer_name: { 
+                  type: "string", 
+                  title: "Layer Name", 
+                  default: "bixi_stations"
+                },
+                geometry_type: { 
+                  type: "string",
+                  title: "Geometry Type",
+                  enum: ["Point", "Polygon", "LineString", "MultiPolygon"],
+                  default: "Point"
+                },
+                buffer_type: { 
+                  type: "string",
+                  title: "Buffer Type",
+                  enum: ["circular", "grid", "isochrone", "zones", "zones_grid"],
+                  default: "circular"
+                },
+                distance: { 
+                  type: "number",
+                  title: "Distance (meters)", 
+                  default: 1000
                 }
-              }
+              },
+              required: ["layer_name", "geometry_type", "buffer_type", "distance"]
             },
             filter_data_files: {
               type: "object",
-              properties: {
-                bus_stops: {
+              properties: Object.keys(data).reduce((acc, layerName) => {
+                acc[layerName] = {
                   type: "object",
                   properties: {
-                    column: { type: "string" },
-                    value: { type: "string" }
-                  }
-                },
-                bixi_stations: {
-                  type: "object",
-                  properties: {
-                    column: { type: "string" },
-                    value: { type: "number" },
-                    operator: { type: "string", enum: ["==", ">=", "<=", ">", "<", "!="] }
-                  }
-                }
-              }
+                    column: { type: "string", title: "Column to Filter" },
+                    value: {
+                      anyOf: [
+                        { type: "string", title: "Value (String)" },
+                        { type: "number", title: "Value (Number)" }
+                      ]
+                    },
+                    operator: { type: "string", title: "Operator", enum: ["==", ">=", "<=", ">", "<", "!="] }
+                  },
+                  required: []
+                };
+                return acc;
+              }, {})
             },
             ratio_columns: {
               type: "array",
@@ -164,94 +174,94 @@ const App = () => {
             },
             sum_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Sum Column" }
             },
             max_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Max Column" }
             },
             min_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Min Column" }
             },
             mean_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Mean Column" }
             },
             std_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Standard Deviation Column" }
             },
             count_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Count Column" }
             },
             count_distinct_columns: {
-              type: "array",
-              items: { type: "string" }
+              type: "array",              items: { type: "string", title: "Count Distinct Column" }
             },
             groupby_columns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string", title: "Group By Column" }
             },
             filter_global: {
               type: "array",
+              title: "Global Filters",
               items: {
                 type: "object",
                 properties: {
-                  column: { type: "string" },
+                  column: { type: "string", title: "Column" },
                   value: {
                     anyOf: [
-                      { type: "number" },
-                      { type: "string" }
+                      { type: "number", title: "Value (Number)" },
+                      { type: "string", title: "Value (String)" }
                     ]
                   },
-                  operator: { type: "string", enum: ["==", ">=", "<=", ">", "<", "!="] }
+                  operator: { type: "string", title: "Operator", enum: ["==", ">=", "<=", ">", "<", "!="] }
                 },
                 required: ["column", "value", "operator"]
               }
             },
             activate_visualisation: {
-              type: "boolean"
+              type: "boolean",
+              title: "Activate Visualisation"
             },
             join_layers: {
               type: "object",
+              title: "Join Layers",
               properties: {
                 points: {
                   type: "object",
                   properties: {
-                    type: { type: "string" }
+                    type: { type: "string", title: "Join Type for Points", enum: ["contains", "intersects"] }
                   }
                 },
                 polygons: {
                   type: "object",
                   properties: {
-                    type: { type: "string" }
+                    type: { type: "string", title: "Join Type for Polygons", enum: ["contains", "intersects"] }
                   }
                 },
                 multipolygons: {
                   type: "object",
                   properties: {
-                    type: { type: "string" }
+                    type: { type: "string", title: "Join Type for MultiPolygons", enum: ["contains", "intersects"] }
                   }
                 },
                 linestrings: {
                   type: "object",
                   properties: {
-                    type: { type: "string" }
+                    type: { type: "string", title: "Join Type for LineStrings", enum: ["contains", "intersects"] }
                   }
                 }
               }
             },
             colors: {
               type: "object",
-              properties: {
-                bus_stops: { type: "string" },
-                bixi_stations: { type: "string" },
-                evaluation_fonciere: { type: "string" },
-                menage_2018: { type: "string" },
-                reseau_cyclable: { type: "string" }
-              }
+              title: "Colors",
+              properties: Object.keys(data).reduce((acc, layerName) => {
+                acc[layerName] = { type: "string", title: `Color for ${layerName}` };
+                return acc;
+              }, {})
             }
           },
           required: ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns", "count_columns", "count_distinct_columns", "groupby_columns", "filter_global", "activate_visualisation", "join_layers", "colors"]
@@ -259,10 +269,25 @@ const App = () => {
 
         setSchema(baseSchema);
         
-        // Initialiser formData avec les chemins de fichiers récupérés
+        // Initialiser formData avec les chemins de fichiers récupérés et un buffer_layer dynamique
         setFormData(prevFormData => ({
           ...prevFormData,
-          data_files: dataFilesList
+          data_files: dataFilesList,
+          buffer_layer: {
+            [prevFormData.buffer_layer ? Object.keys(prevFormData.buffer_layer)[0] : "bixi_stations"]: {
+              buffer_type: "circular",
+              distance: 1000,
+              geometry_type: "Point"
+            }
+          },
+          filter_data_files: Object.keys(data).reduce((acc, layerName) => {
+            acc[layerName] = {};
+            return acc;
+          }, {}),
+          colors: Object.keys(data).reduce((acc, layerName) => {
+            acc[layerName] = "[0, 0, 0, 0]"; // Valeur par défaut pour les couleurs
+            return acc;
+          }, {})
         }));
         console.log('Updated formData:', formData);
       })
@@ -270,14 +295,41 @@ const App = () => {
   }, []);
 
   const onSubmit = ({ formData }) => {
-    console.log("Submitted data:", formData);
+    // Construire la structure YAML désirée à partir de formData
+    const yamlData = {
+      buffer_layer: {
+        [formData.buffer_layer.layer_name]: {
+          buffer_type: formData.buffer_layer.buffer_type,
+          distance: formData.buffer_layer.distance,
+          geometry_type: formData.buffer_layer.geometry_type
+        }
+      },
+      data_files: formData.data_files.map(file => ({ name: file.name, path: file.path })),
+      filter_data_files: formData.filter_data_files,
+      ratio_columns: formData.ratio_columns,
+      sum_columns: formData.sum_columns,
+      max_columns: formData.max_columns,
+      min_columns: formData.min_columns,
+      mean_columns: formData.mean_columns,
+      std_columns: formData.std_columns,
+      count_columns: formData.count_columns,
+      count_distinct_columns: formData.count_distinct_columns,
+      groupby_columns: formData.groupby_columns,
+      filter_global: formData.filter_global,
+      activate_visualisation: formData.activate_visualisation,
+      join_layers: formData.join_layers,
+      colors: formData.colors
+    };
+
+    console.log("Submitted data in YAML format:", yaml.dump(yamlData));
     
+    // Ici, vous pouvez envoyer yamlData à votre backend
     fetch('http://127.0.0.1:5000/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(yamlData),
     })
     .then(response => {
       if (!response.ok) {
@@ -320,9 +372,23 @@ const App = () => {
           "ui:placeholder": "Enter custom file name"
         },
         path: {
-          "ui:disabled": true, // Désactiver l'édition du chemin du fichier
+          "ui:disabled": true,
           "ui:widget": "text"
         }
+      }
+    },
+    buffer_layer: {
+      layer_name: {
+        "ui:placeholder": "Enter layer name"
+      },
+      geometry_type: {
+        "ui:placeholder": "Select geometry type"
+      },
+      buffer_type: {
+        "ui:placeholder": "Select buffer type"
+      },
+      distance: {
+        "ui:placeholder": "Enter buffer distance in meters"
       }
     },
     ratio_columns: {
@@ -331,9 +397,6 @@ const App = () => {
           "ui:placeholder": "Enter ratio name"
         },
         numerator: {
-          "ui:placeholder": "Enter numerator column"
-        },
-        denominator: {
           "ui:placeholder": "Enter denominator column"
         }
       }
