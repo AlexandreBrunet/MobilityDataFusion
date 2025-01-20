@@ -2,7 +2,7 @@ activate_visualisation: false
 buffer_layer:
   stations_bixi:
     buffer_type: circular
-    distance: 350
+    distance: 120
     geometry_type: Point
 colors:
   od_2018: '[0, 0, 0, 0]'
@@ -28,11 +28,10 @@ data_files:
 - name: uniteevaluationfonciere
   path: ./data/input/geojson/uniteevaluationfonciere.geojson
 filter_data_files:
-  od_2018: {}
-  reseau_cyclable: {}
-  stations_bixi: {}
-  stm_bus_stops: {}
-  uniteevaluationfonciere: {}
+  stations_bixi:
+    column: capacity
+    operator: '>='
+    value: 40
 filter_global:
 - column: count_arret_bus_count
   operator: '>'

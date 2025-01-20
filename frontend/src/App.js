@@ -72,14 +72,12 @@ const App = () => {
   const [fileList, setFileList] = useState({});
 
   useEffect(() => {
-    // Récupération de la liste des fichiers depuis le backend
     fetch('http://127.0.0.1:5000/list_files')
       .then(response => response.json())
       .then(data => {
         console.log('Fetched file list:', data);
         setFileList(data);
         
-        // Transformer data en une liste d'objets pour permettre le renommage
         const dataFilesList = Object.entries(data).map(([key, value]) => ({
           name: key,
           path: value
@@ -132,23 +130,22 @@ const App = () => {
             },
             filter_data_files: {
               type: "object",
-              properties: Object.keys(data).reduce((acc, layerName) => {
-                acc[layerName] = {
-                  type: "object",
-                  properties: {
-                    column: { type: "string", title: "Column to Filter" },
-                    value: {
-                      anyOf: [
-                        { type: "string", title: "Value (String)" },
-                        { type: "number", title: "Value (Number)" }
-                      ]
-                    },
-                    operator: { type: "string", title: "Operator", enum: ["==", ">=", "<=", ">", "<", "!="] }
+              title: "Filter Data Files",
+              properties: {},
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  column: { type: "string", title: "Column to Filter" },
+                  value: {
+                    anyOf: [
+                      { type: "string", title: "Value (String)" },
+                      { type: "number", title: "Value (Number)" }
+                    ]
                   },
-                  required: []
-                };
-                return acc;
-              }, {})
+                  operator: { type: "string", title: "Operator", enum: ["==", ">=", "<=", ">", "<", "!="] }
+                },
+                required: []
+              }
             },
             ratio_columns: {
               type: "array",
@@ -280,10 +277,7 @@ const App = () => {
               geometry_type: "Point"
             }
           },
-          filter_data_files: Object.keys(data).reduce((acc, layerName) => {
-            acc[layerName] = {};
-            return acc;
-          }, {}),
+          filter_data_files: {},
           colors: Object.keys(data).reduce((acc, layerName) => {
             acc[layerName] = "[0, 0, 0, 0]"; // Valeur par défaut pour les couleurs
             return acc;
@@ -294,6 +288,10 @@ const App = () => {
       .catch(error => console.error('Error fetching file list:', error));
   }, []);
 
+  const onChange = ({ formData }) => {
+    setFormData(formData);
+  };
+  
   const onSubmit = ({ formData }) => {
     // Construire la structure YAML désirée à partir de formData
     const yamlData = {
@@ -345,6 +343,44 @@ const App = () => {
       setSubmitMessage('Erreur lors de la soumission : ' + error.message);
       console.error('Error:', error);
     });
+  };
+
+  const addFilter = () => {
+    const fileName = prompt('Enter the name of the file to add a filter for:');
+    if (fileName && !formData.filter_data_files[fileName]) {
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        filter_data_files: {
+          ...prevFormData.filter_data_files,
+          [fileName]: {}
+        }
+      }));
+    }
+  };
+
+  const removeFilter = (fileName) => {
+    setFormData(prevFormData => {
+      const { [fileName]: _, ...remainingFilters } = prevFormData.filter_data_files;
+      return {
+        ...prevFormData,
+        filter_data_files: remainingFilters
+      };
+    });
+  };
+
+  const CustomObjectFieldTemplate = (props) => {
+    return (
+      <div>
+        <button type="button" onClick={addFilter}>Add Filter</button>
+        {Object.keys(props.properties).map((name, index) => (
+          <div key={index}>
+            <h4>{name}</h4>
+            <button type="button" onClick={() => removeFilter(name)}>Remove Filter</button>
+            {props.properties[name].content}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const uiSchema = {
@@ -400,6 +436,9 @@ const App = () => {
           "ui:placeholder": "Enter denominator column"
         }
       }
+    },
+    filter_data_files: {
+      "ui:ObjectFieldTemplate": CustomObjectFieldTemplate
     }
   };
 
@@ -411,7 +450,7 @@ const App = () => {
           schema={schema}
           uiSchema={uiSchema}
           formData={formData}
-          onChange={({ formData }) => setFormData(formData)}
+          onChange={onChange}
           onSubmit={onSubmit}
         >
           <button type="submit">Submit</button>
