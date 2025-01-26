@@ -36,3 +36,39 @@
     transform: rotate(360deg);
   }
 }
+
+/* Ajoute ces styles pour ajuster le layout de ton application */
+.App {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.form-container, .table-container {
+  flex-grow: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.full-page-table {
+  flex-grow: 1;
+  width: 100%;
+  border: none;
+  margin: 0;
+}
+
+.table-container h2 {
+  margin: 0;
+  padding: 10px 0;
+}

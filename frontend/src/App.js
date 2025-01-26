@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Form from 'react-jsonschema-form';
 import * as yaml from 'js-yaml';
+import './App.css';
 
 const sampleConfig = `
 buffer_layer:
@@ -70,6 +71,8 @@ const App = () => {
   const [schema, setSchema] = useState({});
   const [submitMessage, setSubmitMessage] = useState('');
   const [fileList, setFileList] = useState({});
+  const [tableHTML, setTableHTML] = useState('');
+  const [activeTab, setActiveTab] = useState('form');
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
@@ -106,7 +109,7 @@ const App = () => {
                 layer_name: { 
                   type: "string", 
                   title: "Layer Name", 
-                  default: "bixi_stations"
+                  default: "stations_bixi"
                 },
                 geometry_type: { 
                   type: "string",
@@ -155,15 +158,18 @@ const App = () => {
                 properties: {
                   name: {
                     type: "string",
-                    title: "Ratio Name"
+                    title: "Ratio Name",
+                    default: "permis_perslogi_ratio"
                   },
                   numerator: { 
                     type: "string",
-                    title: "Numerator"
+                    title: "Numerator",
+                    default: "permis"
                   },
                   denominator: { 
                     type: "string",
-                    title: "Denominator"
+                    title: "Denominator",
+                    default: "perslogi"
                   }
                 },
                 required: ["name", "numerator", "denominator"]
@@ -279,7 +285,7 @@ const App = () => {
           },
           filter_data_files: {},
           colors: Object.keys(data).reduce((acc, layerName) => {
-            acc[layerName] = "[0, 0, 0, 0]"; // Valeur par défaut pour les couleurs
+            acc[layerName] = "[200, 30, 0, 160]"; // Valeur par défaut pour les couleurs
             return acc;
           }, {})
         }));
@@ -343,7 +349,21 @@ const App = () => {
       setSubmitMessage('Erreur lors de la soumission : ' + error.message);
       console.error('Error:', error);
     });
-  };
+    const bufferType = formData.buffer_layer.buffer_type;
+        const distance = formData.buffer_layer.distance;
+        
+        fetch(`http://127.0.0.1:5000/get_table_html/${bufferType}/${distance}`)
+            .then(response => response.text())
+            .then(html => {
+                setTableHTML(html);
+                setActiveTab('tables'); // Change l'onglet actif après avoir récupéré le HTML
+            })
+            .catch(error => console.error('Error fetching HTML:', error));
+    };
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+    };
 
   const addFilter = () => {
     const fileName = prompt('Enter the name of the file to add a filter for:');
@@ -443,24 +463,43 @@ const App = () => {
   };
 
   return (
-    <div>
-      <h1>Data Fusion UI</h1>
-      {Object.keys(schema).length > 0 ? (
-        <Form 
-          schema={schema}
-          uiSchema={uiSchema}
-          formData={formData}
-          onChange={onChange}
-          onSubmit={onSubmit}
-        >
-          <button type="submit">Submit</button>
-        </Form>
-      ) : (
-        <div>Loading configuration...</div>
-      )}
-      {submitMessage && <p>{submitMessage}</p>}
+    <div className="App">
+        <h1>Data Fusion UI</h1>
+        <div className="tab-buttons">
+            <button onClick={() => handleTabChange('form')}>Form</button>
+            <button onClick={() => handleTabChange('tables')}>Tables</button>
+        </div>
+        {activeTab === 'form' ? (
+            <div className="form-container">
+                {Object.keys(schema).length > 0 ? (
+                    <Form 
+                        schema={schema}
+                        uiSchema={uiSchema}
+                        formData={formData}
+                        onChange={onChange}
+                        onSubmit={onSubmit}
+                    >
+                        <button type="submit">Submit</button>
+                    </Form>
+                ) : (
+                    <div>Loading configuration...</div>
+                )}
+            </div>
+        ) : (
+            <div className="table-container">
+                <h2>Tableau de Visualisation</h2>
+                {tableHTML && (
+                    <iframe 
+                        title="Table Visualization" 
+                        srcDoc={tableHTML} 
+                        className="full-page-table"
+                    />
+                )}
+            </div>
+        )}
+        {submitMessage && <p>{submitMessage}</p>}
     </div>
-  );
+);
 };
 
 export default App;
