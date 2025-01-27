@@ -72,6 +72,7 @@ const App = () => {
   const [submitMessage, setSubmitMessage] = useState('');
   const [fileList, setFileList] = useState({});
   const [tableHTML, setTableHTML] = useState('');
+  const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
 
   useEffect(() => {
@@ -80,7 +81,7 @@ const App = () => {
       .then(data => {
         console.log('Fetched file list:', data);
         setFileList(data);
-        
+
         const dataFilesList = Object.entries(data).map(([key, value]) => ({
           name: key,
           path: value
@@ -106,26 +107,26 @@ const App = () => {
               type: "object",
               title: "Buffer Layer Configuration",
               properties: {
-                layer_name: { 
-                  type: "string", 
-                  title: "Layer Name", 
+                layer_name: {
+                  type: "string",
+                  title: "Layer Name",
                   default: "stations_bixi"
                 },
-                geometry_type: { 
+                geometry_type: {
                   type: "string",
                   title: "Geometry Type",
                   enum: ["Point", "Polygon", "LineString", "MultiPolygon"],
                   default: "Point"
                 },
-                buffer_type: { 
+                buffer_type: {
                   type: "string",
                   title: "Buffer Type",
                   enum: ["circular", "grid", "isochrone", "zones", "zones_grid"],
                   default: "circular"
                 },
-                distance: { 
+                distance: {
                   type: "number",
-                  title: "Distance (meters)", 
+                  title: "Distance (meters)",
                   default: 1000
                 }
               },
@@ -161,12 +162,12 @@ const App = () => {
                     title: "Ratio Name",
                     default: "permis_perslogi_ratio"
                   },
-                  numerator: { 
+                  numerator: {
                     type: "string",
                     title: "Numerator",
                     default: "permis"
                   },
-                  denominator: { 
+                  denominator: {
                     type: "string",
                     title: "Denominator",
                     default: "perslogi"
@@ -200,7 +201,8 @@ const App = () => {
               items: { type: "string", title: "Count Column" }
             },
             count_distinct_columns: {
-              type: "array",              items: { type: "string", title: "Count Distinct Column" }
+              type: "array",
+              items: { type: "string", title: "Count Distinct Column" }
             },
             groupby_columns: {
               type: "array",
@@ -271,7 +273,7 @@ const App = () => {
         };
 
         setSchema(baseSchema);
-        
+
         // Initialiser formData avec les chemins de fichiers récupérés et un buffer_layer dynamique
         setFormData(prevFormData => ({
           ...prevFormData,
@@ -297,7 +299,7 @@ const App = () => {
   const onChange = ({ formData }) => {
     setFormData(formData);
   };
-  
+
   const onSubmit = ({ formData }) => {
     // Construire la structure YAML désirée à partir de formData
     const yamlData = {
@@ -326,7 +328,7 @@ const App = () => {
     };
 
     console.log("Submitted data in YAML format:", yaml.dump(yamlData));
-    
+
     // Ici, vous pouvez envoyer yamlData à votre backend
     fetch('http://127.0.0.1:5000/submit', {
       method: 'POST',
@@ -335,35 +337,44 @@ const App = () => {
       },
       body: JSON.stringify(yamlData),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      setSubmitMessage('Configuration soumise avec succès !');
-      console.log('Success:', data);
-    })
-    .catch((error) => {
-      setSubmitMessage('Erreur lors de la soumission : ' + error.message);
-      console.error('Error:', error);
-    });
-    const bufferType = formData.buffer_layer.buffer_type;
-        const distance = formData.buffer_layer.distance;
-        
-        fetch(`http://127.0.0.1:5000/get_table_html/${bufferType}/${distance}`)
-            .then(response => response.text())
-            .then(html => {
-                setTableHTML(html);
-                setActiveTab('tables'); // Change l'onglet actif après avoir récupéré le HTML
-            })
-            .catch(error => console.error('Error fetching HTML:', error));
-    };
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setSubmitMessage('Configuration soumise avec succès !');
+        console.log('Success:', data);
 
-    const handleTabChange = (tab) => {
-        setActiveTab(tab);
-    };
+        // Fetch the table HTML
+        const bufferType = formData.buffer_layer.buffer_type;
+        const distance = formData.buffer_layer.distance;
+        fetch(`http://127.0.0.1:5000/get_table_html/${bufferType}/${distance}`)
+          .then(response => response.text())
+          .then(html => {
+            setTableHTML(html);
+            setActiveTab('tables'); // Change l'onglet actif après avoir récupéré le HTML
+          })
+          .catch(error => console.error('Error fetching HTML:', error));
+
+        // Fetch the map HTML
+        fetch('http://127.0.0.1:5000/get_map_html')
+          .then(response => response.text())
+          .then(html => {
+            setMapHTML(html);
+          })
+          .catch(error => console.error('Error fetching map HTML:', error));
+      })
+      .catch((error) => {
+        setSubmitMessage('Erreur lors de la soumission : ' + error.message);
+        console.error('Error:', error);
+      });
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
 
   const addFilter = () => {
     const fileName = prompt('Enter the name of the file to add a filter for:');
@@ -405,21 +416,21 @@ const App = () => {
 
   const uiSchema = {
     "ui:order": [
-      "data_files", 
-      "buffer_layer", 
-      "filter_data_files", 
-      "ratio_columns", 
-      "sum_columns", 
-      "max_columns", 
-      "min_columns", 
-      "mean_columns", 
-      "std_columns", 
-      "count_columns", 
-      "count_distinct_columns", 
-      "groupby_columns", 
+      "data_files",
+      "buffer_layer",
+      "filter_data_files",
+      "ratio_columns",
+      "sum_columns",
+      "max_columns",
+      "min_columns",
+      "mean_columns",
+      "std_columns",
+      "count_columns",
+      "count_distinct_columns",
+      "groupby_columns",
       "filter_global",
-      "activate_visualisation", 
-      "join_layers", 
+      "activate_visualisation",
+      "join_layers",
       "colors"
     ],
     data_files: {
@@ -464,42 +475,54 @@ const App = () => {
 
   return (
     <div className="App">
-        <h1>Data Fusion UI</h1>
-        <div className="tab-buttons">
-            <button onClick={() => handleTabChange('form')}>Form</button>
-            <button onClick={() => handleTabChange('tables')}>Tables</button>
+      <h1>Data Fusion UI</h1>
+      <div className="tab-buttons">
+        <button onClick={() => handleTabChange('form')}>Form</button>
+        <button onClick={() => handleTabChange('tables')}>Tables</button>
+        <button onClick={() => handleTabChange('map')}>Map</button>
+      </div>
+      {activeTab === 'form' ? (
+        <div className="form-container">
+          {Object.keys(schema).length > 0 ? (
+            <Form
+              schema={schema}
+              uiSchema={uiSchema}
+              formData={formData}
+              onChange={onChange}
+              onSubmit={onSubmit}
+            >
+              <button type="submit">Submit</button>
+            </Form>
+          ) : (
+            <div>Loading configuration...</div>
+          )}
         </div>
-        {activeTab === 'form' ? (
-            <div className="form-container">
-                {Object.keys(schema).length > 0 ? (
-                    <Form 
-                        schema={schema}
-                        uiSchema={uiSchema}
-                        formData={formData}
-                        onChange={onChange}
-                        onSubmit={onSubmit}
-                    >
-                        <button type="submit">Submit</button>
-                    </Form>
-                ) : (
-                    <div>Loading configuration...</div>
-                )}
-            </div>
-        ) : (
-            <div className="table-container">
-                <h2>Tableau de Visualisation</h2>
-                {tableHTML && (
-                    <iframe 
-                        title="Table Visualization" 
-                        srcDoc={tableHTML} 
-                        className="full-page-table"
-                    />
-                )}
-            </div>
-        )}
-        {submitMessage && <p>{submitMessage}</p>}
+      ) : activeTab === 'tables' ? (
+        <div className="table-container">
+          <h2>Tableau de Visualisation</h2>
+          {tableHTML && (
+            <iframe
+              title="Table Visualization"
+              srcDoc={tableHTML}
+              className="full-page-table"
+            />
+          )}
+        </div>
+      ) : (
+        <div className="map-container">
+          <h2>Carte de Visualisation</h2>
+          {mapHTML && (
+            <iframe
+              title="Map Visualization"
+              srcDoc={mapHTML}
+              className="full-page-map"
+            />
+          )}
+        </div>
+      )}
+      {submitMessage && <p>{submitMessage}</p>}
     </div>
-);
+  );
 };
 
 export default App;

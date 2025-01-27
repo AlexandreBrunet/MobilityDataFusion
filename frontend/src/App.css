@@ -37,7 +37,7 @@
   }
 }
 
-/* Ajoute ces styles pour ajuster le layout de ton application */
+/* Main layout styles */
 .App {
   height: 100vh;
   margin: 0;
@@ -50,9 +50,11 @@
   display: flex;
   justify-content: space-around;
   margin-bottom: 10px;
+  padding: 10px 0;
+  background-color: #f0f0f0; /* Optional: Add background color for better visibility */
 }
 
-.form-container, .table-container {
+.form-container, .table-container, .map-container {
   flex-grow: 1;
   overflow: auto;
   display: flex;
@@ -61,14 +63,14 @@
   padding: 0;
 }
 
-.full-page-table {
-  flex-grow: 1;
+.full-page-table, .full-page-map {
   width: 100%;
+  height: calc(100vh - 150px); /* Dynamic height calculation */
   border: none;
-  margin: 0;
+  margin-top: 20px;
 }
 
-.table-container h2 {
+.table-container h2, .map-container h2 {
   margin: 0;
   padding: 10px 0;
 }

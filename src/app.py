@@ -48,5 +48,15 @@ def get_table_html(buffer_type, distance):
         logging.error(f"An error occurred while serving HTML file: {str(e)}")
         return jsonify({"error": "Failed to serve HTML file"}), 500
 
+@app.route('/get_map_html')
+def get_map_html():
+    try:
+        directory = './data/output/visualisation/'
+        filename = 'carte.html'
+        return send_from_directory(directory, filename, mimetype='text/html')
+    except Exception as e:
+        logging.error(f"An error occurred while serving map HTML file: {str(e)}")
+        return jsonify({"error": "Failed to serve map HTML file"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
