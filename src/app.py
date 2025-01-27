@@ -48,11 +48,11 @@ def get_table_html(buffer_type, distance):
         logging.error(f"An error occurred while serving HTML file: {str(e)}")
         return jsonify({"error": "Failed to serve HTML file"}), 500
 
-@app.route('/get_map_html')
-def get_map_html():
+@app.route('/get_map_html/<buffer_type>/<distance>')
+def get_map_html(buffer_type, distance):
     try:
         directory = './data/output/visualisation/'
-        filename = 'carte.html'
+        filename = f'carte_{buffer_type}_buffer_{distance}.html'  # Updated file naming convention
         return send_from_directory(directory, filename, mimetype='text/html')
     except Exception as e:
         logging.error(f"An error occurred while serving map HTML file: {str(e)}")

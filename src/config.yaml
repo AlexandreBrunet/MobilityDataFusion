@@ -1,15 +1,15 @@
-activate_visualisation: false
+activate_visualisation: true
 buffer_layer:
-  stations_bixi:
+  stations_bixitest:
     buffer_type: circular
-    distance: 120
+    distance: 500
     geometry_type: Point
 colors:
-  od_2018: '[0, 0, 0, 0]'
-  reseau_cyclable: '[0, 0, 0, 0]'
-  stations_bixi: '[0, 0, 0, 0]'
-  stm_bus_stops: '[0, 0, 0, 0]'
-  uniteevaluationfonciere: '[0, 0, 0, 0]'
+  od_2018test: '[200, 30, 0, 160]'
+  reseau_cyclabletest: '[200, 30, 0, 160]'
+  stations_bixitest: '[200, 30, 0, 160]'
+  stm_bus_stops: '[200, 30, 0, 160]'
+  uniteevaluationfoncieretest: '[200, 30, 0, 160]'
 count_columns:
 - stop_id as count_arret_bus
 - feuillet as count_nb_menage
@@ -17,21 +17,17 @@ count_columns:
 count_distinct_columns:
 - station_id as count_bixi_station
 data_files:
-- name: od_2018
-  path: ./data/input/geojson/od_2018.geojson
-- name: reseau_cyclable
-  path: ./data/input/geojson/reseau_cyclable.geojson
-- name: stations_bixi
-  path: ./data/input/geojson/stations_bixi.geojson
+- name: od_2018test
+  path: ./data/input/geojson/od_2018test.geojson
+- name: reseau_cyclabletest
+  path: ./data/input/geojson/reseau_cyclabletest.geojson
+- name: stations_bixitest
+  path: ./data/input/geojson/stations_bixitest.geojson
 - name: stm_bus_stops
   path: ./data/input/geojson/stm_bus_stops.geojson
-- name: uniteevaluationfonciere
-  path: ./data/input/geojson/uniteevaluationfonciere.geojson
-filter_data_files:
-  stations_bixi:
-    column: capacity
-    operator: '>='
-    value: 40
+- name: uniteevaluationfoncieretest
+  path: ./data/input/geojson/uniteevaluationfoncieretest.geojson
+filter_data_files: {}
 filter_global:
 - column: count_arret_bus_count
   operator: '>'

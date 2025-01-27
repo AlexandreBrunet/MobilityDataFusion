@@ -67,7 +67,7 @@ visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, distance)
 if activate_visualisation:
     print("Visualisation activée : création de la carte.")
     visualisation.create_layers_and_map(
-        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors
+        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type, distance
     )
 else:
     print("Visualisation désactivée.")

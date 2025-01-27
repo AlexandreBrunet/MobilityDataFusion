@@ -87,7 +87,7 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filena
         )
     r.to_html(filename, open_browser=False)
 
-def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdfs: Dict[str, gpd.GeoDataFrame], polygons_gdfs: Dict[str, gpd.GeoDataFrame], multipolygons_gdfs: Dict[str, gpd.GeoDataFrame], linestrings_gdfs: Dict[str, gpd.GeoDataFrame], buffer_gdfs: Dict[str, gpd.GeoDataFrame], colors: Dict[str, str]):
+def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdfs: Dict[str, gpd.GeoDataFrame], polygons_gdfs: Dict[str, gpd.GeoDataFrame], multipolygons_gdfs: Dict[str, gpd.GeoDataFrame], linestrings_gdfs: Dict[str, gpd.GeoDataFrame], buffer_gdfs: Dict[str, gpd.GeoDataFrame], colors: Dict[str, str], buffer_type: str, distance: str):
     layers = []
 
     # Créer les couches pour chaque GeoDataFrame
@@ -116,7 +116,7 @@ def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdf
     initial_view = create_initial_view()
 
     # Créer la carte avec les couches et l'enregistrer sans ouvrir
-    create_map_layers(layers, initial_view, filename="./data/output/visualisation/carte.html")
+    create_map_layers(layers, initial_view, filename=f"./data/output/visualisation/carte_{buffer_type}_buffer_{distance}.html")
 
 def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, distance: str):
     fig = go.Figure(data=[go.Table(

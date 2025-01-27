@@ -359,13 +359,13 @@ const App = () => {
           .catch(error => console.error('Error fetching HTML:', error));
 
         // Fetch the map HTML
-        fetch('http://127.0.0.1:5000/get_map_html')
+        fetch(`http://127.0.0.1:5000/get_map_html/${bufferType}/${distance}`)
           .then(response => response.text())
           .then(html => {
             setMapHTML(html);
-          })
-          .catch(error => console.error('Error fetching map HTML:', error));
-      })
+        })
+        .catch(error => console.error('Error fetching map HTML:', error));
+    })
       .catch((error) => {
         setSubmitMessage('Erreur lors de la soumission : ' + error.message);
         console.error('Error:', error);
