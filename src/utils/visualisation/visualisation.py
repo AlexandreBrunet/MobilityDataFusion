@@ -60,8 +60,13 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     # Fonction pour extraire les coordonnées des MultiPolygon
     def get_multipolygon_coordinates(geom):
         if geom.geom_type == 'MultiPolygon':
-            # Extraire les coordonnées de chaque Polygon dans un MultiPolygon
-            return [poly.__geo_interface__['coordinates'] for poly in geom.geoms]
+            # Convert to list and ensure proper nesting level
+            coords = []
+            for poly in geom.geoms:
+                # Get the exterior coordinates of each polygon
+                exterior_coords = list(poly.exterior.coords)
+                coords.append(exterior_coords)
+            return coords
         return None
 
     # Appliquer la fonction pour extraire les coordonnées des MultiPolygon
@@ -73,7 +78,8 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         data=gdf,
         get_polygon='coordinates',  # Utiliser la colonne 'coordinates' pour les MultiPolygons
         get_fill_color=color,
-        get_line_color='[0, 0, 200, 200]',
+        get_line_color='[255, 140, 0, 255]',
+        get_line_width=10,
         pickable=True
     )
     
