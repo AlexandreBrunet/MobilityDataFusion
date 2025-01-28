@@ -38,21 +38,21 @@ def list_files():
         logging.error(f"An error occurred while listing files: {str(e)}")
         return jsonify({"error": "Failed to list files"}), 500
 
-@app.route('/get_table_html/<buffer_type>/<distance>')
-def get_table_html(buffer_type, distance):
+@app.route('/get_table_html/<path:params>')
+def get_table_html(params):
     try:
         directory = './data/output/visualisation/'
-        filename = f'tableau_{buffer_type}_buffer_{distance}m.html'
+        filename = f'tableau_{params}.html'
         return send_from_directory(directory, filename, mimetype='text/html')
     except Exception as e:
-        logging.error(f"An error occurred while serving HTML file: {str(e)}")
-        return jsonify({"error": "Failed to serve HTML file"}), 500
+        logging.error(f"An error occurred while serving table HTML file: {str(e)}")
+        return jsonify({"error": "Failed to serve table HTML file"}), 500
 
-@app.route('/get_map_html/<buffer_type>/<distance>')
-def get_map_html(buffer_type, distance):
+@app.route('/get_map_html/<path:params>')
+def get_map_html(params):
     try:
         directory = './data/output/visualisation/'
-        filename = f'carte_{buffer_type}_buffer_{distance}.html'  # Updated file naming convention
+        filename = f'carte_{params}.html'
         return send_from_directory(directory, filename, mimetype='text/html')
     except Exception as e:
         logging.error(f"An error occurred while serving map HTML file: {str(e)}")

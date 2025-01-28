@@ -45,7 +45,7 @@ groupby_columns:
 filter_global:
   - column: "count_arret_bus_count"
     value: 0
-    operator: ">"
+    operator: ">="
 activate_visualisation: false
 join_layers:
   points:
@@ -296,20 +296,64 @@ const App = () => {
       .catch(error => console.error('Error fetching file list:', error));
   }, []);
 
+    // Create a function to update the schema based on buffer type
+  const updateBufferLayerSchema = (currentSchema, bufferType) => {
+    const newSchema = { ...currentSchema };
+    const bufferProperties = newSchema.properties.buffer_layer.properties;
+
+    // Remove existing distance/wide/length properties
+    delete bufferProperties.distance;
+    delete bufferProperties.wide;
+    delete bufferProperties.length;
+
+    // Add appropriate properties based on buffer type
+    if (bufferType === "circular") {
+      bufferProperties.distance = {
+        type: "number",
+        title: "Distance (meters)",
+        default: 1000
+      };
+    } else if (bufferType === "grid") {
+      bufferProperties.wide = {
+        type: "number",
+        title: "Wide (meters)",
+        default: 1000
+      };
+      bufferProperties.length = {
+        type: "number",
+        title: "Length (meters)",
+        default: 1000
+      };
+    }
+
+    return newSchema;
+  };
+
   const onChange = ({ formData }) => {
+    const newBufferType = formData.buffer_layer.buffer_type;
+    const updatedSchema = updateBufferLayerSchema(schema, newBufferType);
+    setSchema(updatedSchema);
     setFormData(formData);
   };
 
   const onSubmit = ({ formData }) => {
-    // Construire la structure YAML désirée à partir de formData
+    const bufferLayerData = {
+      [formData.buffer_layer.layer_name]: {
+        buffer_type: formData.buffer_layer.buffer_type,
+        geometry_type: formData.buffer_layer.geometry_type
+      }
+    };
+  
+    // Add appropriate properties based on buffer type
+    if (formData.buffer_layer.buffer_type === "circular") {
+      bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
+    } else if (formData.buffer_layer.buffer_type === "grid") {
+      bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
+      bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
+    }
+    
     const yamlData = {
-      buffer_layer: {
-        [formData.buffer_layer.layer_name]: {
-          buffer_type: formData.buffer_layer.buffer_type,
-          distance: formData.buffer_layer.distance,
-          geometry_type: formData.buffer_layer.geometry_type
-        }
-      },
+      buffer_layer: bufferLayerData,
       data_files: formData.data_files.map(file => ({ name: file.name, path: file.path })),
       filter_data_files: formData.filter_data_files,
       ratio_columns: formData.ratio_columns,
@@ -326,10 +370,9 @@ const App = () => {
       join_layers: formData.join_layers,
       colors: formData.colors
     };
-
+  
     console.log("Submitted data in YAML format:", yaml.dump(yamlData));
-
-    // Ici, vous pouvez envoyer yamlData à votre backend
+  
     fetch('http://127.0.0.1:5000/submit', {
       method: 'POST',
       headers: {
@@ -346,26 +389,36 @@ const App = () => {
       .then(data => {
         setSubmitMessage('Configuration soumise avec succès !');
         console.log('Success:', data);
-
-        // Fetch the table HTML
+  
+        // Fetch the table and map HTML based on buffer type
         const bufferType = formData.buffer_layer.buffer_type;
-        const distance = formData.buffer_layer.distance;
-        fetch(`http://127.0.0.1:5000/get_table_html/${bufferType}/${distance}`)
+        let fetchParams;
+  
+        if (bufferType === 'circular') {
+          fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
+        } else if (bufferType === 'grid') {
+          fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
+        } else {
+          throw new Error('Unsupported buffer type: ' + bufferType);
+        }
+  
+        // Fetch the table HTML
+        fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}`)
           .then(response => response.text())
           .then(html => {
             setTableHTML(html);
             setActiveTab('tables'); // Change l'onglet actif après avoir récupéré le HTML
           })
           .catch(error => console.error('Error fetching HTML:', error));
-
+  
         // Fetch the map HTML
-        fetch(`http://127.0.0.1:5000/get_map_html/${bufferType}/${distance}`)
+        fetch(`http://127.0.0.1:5000/get_map_html/${fetchParams}`)
           .then(response => response.text())
           .then(html => {
             setMapHTML(html);
-        })
-        .catch(error => console.error('Error fetching map HTML:', error));
-    })
+          })
+          .catch(error => console.error('Error fetching map HTML:', error));
+      })
       .catch((error) => {
         setSubmitMessage('Erreur lors de la soumission : ' + error.message);
         console.error('Error:', error);

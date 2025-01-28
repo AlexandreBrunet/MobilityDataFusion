@@ -59,17 +59,39 @@ agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')
-    distance = buffer_layer[layer_name].get('distance')
-    print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
+    if buffer_type == 'circular':
+        distance = buffer_layer[layer_name].get('distance')
+        print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type, 
+            distance=distance
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                distance=distance
+            )
+    elif buffer_type == 'grid':
+        wide = buffer_layer[layer_name].get('wide')
+        length = buffer_layer[layer_name].get('length')
+        print(f"Calculating {buffer_type} buffer of width {wide} meters and length {length} meters for {layer_name}")
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type, 
+            wide=wide, 
+            length=length
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                wide=wide,
+                length=length
+            )
+    else:
+        raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")
 
-visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, distance)
-
-if activate_visualisation:
-    print("Visualisation activée : création de la carte.")
-    visualisation.create_layers_and_map(
-        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type, distance
-    )
-else:
+if not activate_visualisation:
     print("Visualisation désactivée.")
 
 end_time = time.time()

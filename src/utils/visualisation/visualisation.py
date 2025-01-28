@@ -93,13 +93,23 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filena
         )
     r.to_html(filename, open_browser=False)
 
-def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdfs: Dict[str, gpd.GeoDataFrame], polygons_gdfs: Dict[str, gpd.GeoDataFrame], multipolygons_gdfs: Dict[str, gpd.GeoDataFrame], linestrings_gdfs: Dict[str, gpd.GeoDataFrame], buffer_gdfs: Dict[str, gpd.GeoDataFrame], colors: Dict[str, str], buffer_type: str, distance: str):
+def create_layers_and_map(
+    geodataframes: Dict[str, gpd.GeoDataFrame], 
+    points_gdfs: Dict[str, gpd.GeoDataFrame], 
+    polygons_gdfs: Dict[str, gpd.GeoDataFrame], 
+    multipolygons_gdfs: Dict[str, gpd.GeoDataFrame], 
+    linestrings_gdfs: Dict[str, gpd.GeoDataFrame], 
+    buffer_gdfs: Dict[str, gpd.GeoDataFrame], 
+    colors: Dict[str, str], 
+    buffer_type: str,
+    **kwargs):
+    
     layers = []
 
     # Créer les couches pour chaque GeoDataFrame
     for layer_name in geodataframes.keys():
-        # Vérifier si buffer_gdfs contient un objet valide pour la couche (ajout du suffixe "_buffer")
-        buffer_gdf = buffer_gdfs.get(f"{layer_name}_buffer")  # Utiliser le nom modifié ici
+        # Vérifier si buffer_gdfs contient un objet valide pour la couche
+        buffer_gdf = buffer_gdfs.get(f"{layer_name}_buffer")
         buffer_gdf_coord = gdfExtraction.extract_poly_coordinates(buffer_gdf) if buffer_gdf is not None else None
 
         # Créer les couches de points, de polygones, de multipolygones et de lignes
@@ -121,10 +131,21 @@ def create_layers_and_map(geodataframes: Dict[str, gpd.GeoDataFrame], points_gdf
     # Initialiser la vue de la carte
     initial_view = create_initial_view()
 
-    # Créer la carte avec les couches et l'enregistrer sans ouvrir
-    create_map_layers(layers, initial_view, filename=f"./data/output/visualisation/carte_{buffer_type}_buffer_{distance}.html")
+    # Déterminer le nom du fichier en fonction du type de buffer
+    if buffer_type == "circular":
+        distance = kwargs.get('distance')
+        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{distance}.html"
+    elif buffer_type == "grid":
+        wide = kwargs.get('wide')
+        length = kwargs.get('length')
+        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{wide}m_{length}m.html"
+    else:
+        raise ValueError(f"Type de buffer non supporté: {buffer_type}")
 
-def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, distance: str):
+    # Créer la carte avec les couches et l'enregistrer sans ouvrir
+    create_map_layers(layers, initial_view, filename=filename)
+
+def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, **kwargs):
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=list(agg_stats_gdf.columns),
@@ -137,11 +158,18 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
             height=50   # Ajuste la hauteur de chaque cellule pour plus de lisibilité
         )
     )])
-
+    
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
     
-    html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
-
+    # Determine the filename based on buffer type
+    if buffer_type == "circular":
+        distance = kwargs.get('distance')
+        html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
+    elif buffer_type == "grid":
+        wide = kwargs.get('wide')
+        length = kwargs.get('length')
+        html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
+    else:
+        raise ValueError(f"Unsupported buffer type: {buffer_type}")
+    
     fig.write_html(html_filename)
-
-    # webbrowser.open('file://' + os.path.realpath(html_filename))
