@@ -139,6 +139,8 @@ def create_layers_and_map(
         wide = kwargs.get('wide')
         length = kwargs.get('length')
         filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{wide}m_{length}m.html"
+    elif buffer_type == "zones":  # Add zones case
+        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer.html"
     else:
         raise ValueError(f"Type de buffer non supporté: {buffer_type}")
 
@@ -169,7 +171,11 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
         wide = kwargs.get('wide')
         length = kwargs.get('length')
         html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
+    elif buffer_type == "zones":
+        html_filename = "./data/output/visualisation/tableau_zones_buffer.html"
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type}")
+    
+    fig.write_html(html_filename)
     
     fig.write_html(html_filename)

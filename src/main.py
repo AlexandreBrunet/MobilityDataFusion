@@ -88,6 +88,21 @@ for layer_name in buffer_layer:
                 wide=wide,
                 length=length
             )
+    elif buffer_type == 'zones':  # Add zones support
+        print(f"Processing pre-defined zones for {layer_name}")
+        
+        # Add zone-specific parameters if needed (e.g., zone_id=...)
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type
+        )
+        
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf,
+                linestrings_gdf, buffers_gdf, colors, buffer_type
+                # Add zone parameters here if required
+            )
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")
 

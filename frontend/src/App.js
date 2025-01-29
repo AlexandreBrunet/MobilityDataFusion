@@ -300,12 +300,11 @@ const App = () => {
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = { ...currentSchema };
     const bufferProperties = newSchema.properties.buffer_layer.properties;
-
     // Remove existing distance/wide/length properties
     delete bufferProperties.distance;
     delete bufferProperties.wide;
     delete bufferProperties.length;
-
+  
     // Add appropriate properties based on buffer type
     if (bufferType === "circular") {
       bufferProperties.distance = {
@@ -324,8 +323,9 @@ const App = () => {
         title: "Length (meters)",
         default: 1000
       };
+    } else if (bufferType === "zones") {
+      // No additional properties needed for zones
     }
-
     return newSchema;
   };
 
@@ -350,6 +350,8 @@ const App = () => {
     } else if (formData.buffer_layer.buffer_type === "grid") {
       bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
       bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
+    } else if (formData.buffer_layer.buffer_type === "zones") {
+      // No additional properties needed for zones
     }
     
     const yamlData = {
@@ -393,11 +395,13 @@ const App = () => {
         // Fetch the table and map HTML based on buffer type
         const bufferType = formData.buffer_layer.buffer_type;
         let fetchParams;
-  
+
         if (bufferType === 'circular') {
           fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
         } else if (bufferType === 'grid') {
           fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
+        } else if (bufferType === 'zones') {  // Add zones case
+          fetchParams = `${bufferType}_buffer`;  // Or your zones-specific pattern
         } else {
           throw new Error('Unsupported buffer type: ' + bufferType);
         }
