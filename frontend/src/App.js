@@ -382,51 +382,54 @@ const App = () => {
       },
       body: JSON.stringify(yamlData),
     })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setSubmitMessage('Configuration soumise avec succès !');
-        console.log('Success:', data);
-  
-        // Fetch the table and map HTML based on buffer type
-        const bufferType = formData.buffer_layer.buffer_type;
-        let fetchParams;
-
-        if (bufferType === 'circular') {
-          fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
-        } else if (bufferType === 'grid') {
-          fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
-        } else if (bufferType === 'zones') {  // Add zones case
-          fetchParams = `${bufferType}_buffer`;  // Or your zones-specific pattern
-        } else {
-          throw new Error('Unsupported buffer type: ' + bufferType);
-        }
-  
-        // Fetch the table HTML
-        fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}`)
-          .then(response => response.text())
-          .then(html => {
-            setTableHTML(html);
-            setActiveTab('tables'); // Change l'onglet actif après avoir récupéré le HTML
-          })
-          .catch(error => console.error('Error fetching HTML:', error));
-  
-        // Fetch the map HTML
-        fetch(`http://127.0.0.1:5000/get_map_html/${fetchParams}`)
-          .then(response => response.text())
-          .then(html => {
-            setMapHTML(html);
-          })
-          .catch(error => console.error('Error fetching map HTML:', error));
-      })
-      .catch((error) => {
-        setSubmitMessage('Erreur lors de la soumission : ' + error.message);
-        console.error('Error:', error);
-      });
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      setSubmitMessage('Configuration soumise avec succès !');
+      console.log('Success:', data);
+    
+      // Fetch the table and map HTML based on buffer type
+      const bufferType = formData.buffer_layer.buffer_type;
+      let fetchParams;
+    
+      if (bufferType === 'circular') {
+        fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
+      } else if (bufferType === 'grid') {
+        fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
+      } else if (bufferType === 'zones') {
+        fetchParams = `${bufferType}_buffer`;
+      } else {
+        throw new Error('Unsupported buffer type: ' + bufferType);
+      }
+    
+      // Add cache-busting timestamp parameter
+      const cacheBuster = `?t=${Date.now()}`;
+    
+      // Fetch the table HTML with cache busting
+      fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}${cacheBuster}`)
+        .then(response => response.text())
+        .then(html => {
+          setTableHTML(html);
+          setActiveTab('tables');
+        })
+        .catch(error => console.error('Error fetching HTML:', error));
+    
+      // Fetch the map HTML with cache busting
+      fetch(`http://127.0.0.1:5000/get_map_html/${fetchParams}${cacheBuster}`)
+        .then(response => response.text())
+        .then(html => {
+          setMapHTML(html);
+        })
+        .catch(error => console.error('Error fetching map HTML:', error));
+    })
+    .catch((error) => {
+      setSubmitMessage('Erreur lors de la soumission : ' + error.message);
+      console.error('Error:', error);
+    });
   };
 
   const handleTabChange = (tab) => {

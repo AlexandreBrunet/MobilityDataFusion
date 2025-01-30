@@ -101,7 +101,6 @@ for layer_name in buffer_layer:
             visualisation.create_layers_and_map(
                 geodataframes, points_gdf, polygons_gdf, multipolygons_gdf,
                 linestrings_gdf, buffers_gdf, colors, buffer_type
-                # Add zone parameters here if required
             )
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")

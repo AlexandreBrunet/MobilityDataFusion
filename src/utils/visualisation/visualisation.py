@@ -3,7 +3,7 @@ import geopandas as gpd
 from typing import List, Dict
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
-import webbrowser
+import os
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -86,6 +86,10 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     return multipolygon_layer
 
 def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filename="map.html"):
+    
+    if os.path.exists(filename):
+        os.remove(filename)
+
     r = pdk.Deck(
         layers= layers,
         initial_view_state=view_state,
@@ -166,16 +170,14 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
     # Determine the filename based on buffer type
     if buffer_type == "circular":
         distance = kwargs.get('distance')
-        html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
+        filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
     elif buffer_type == "grid":
         wide = kwargs.get('wide')
         length = kwargs.get('length')
-        html_filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
+        filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
     elif buffer_type == "zones":
-        html_filename = "./data/output/visualisation/tableau_zones_buffer.html"
+        filename = "./data/output/visualisation/tableau_zones_buffer.html"
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type}")
-    
-    fig.write_html(html_filename)
-    
-    fig.write_html(html_filename)
+            
+    fig.write_html(filename)
