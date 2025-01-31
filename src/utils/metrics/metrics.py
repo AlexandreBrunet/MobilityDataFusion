@@ -135,7 +135,6 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
     return agg_stats.round(2)
 
 def calculate_histogram_data(gdf: gpd.GeoDataFrame, histogram_config: dict):
-
     if not isinstance(histogram_config, dict):
         raise TypeError("histogram_config must be a dictionary")
 
@@ -161,9 +160,23 @@ def calculate_histogram_data(gdf: gpd.GeoDataFrame, histogram_config: dict):
         min_val = df[col].min()
         max_val = df[col].max()
         
+        # Ensure binsize is positive
+        if binsize <= 0:
+            print(f"Bin size for column {col} must be positive, skipping histogram calculation")
+            continue
+        
+        # Handle case where min_val equals max_val
+        if min_val == max_val:
+            print(f"Minimum and maximum values for column {col} are the same, skipping histogram calculation")
+            continue
+        
         # Create bin edges
-        bin_edges = np.arange(min_val, max_val + binsize + 1, binsize)
-        bin_labels = [f"[{bin_edges[i]}-{bin_edges[i+1]-1}]" for i in range(len(bin_edges)-1)]
+        try:
+            bin_edges = np.arange(min_val, max_val + binsize, binsize)
+            bin_labels = [f"[{bin_edges[i]}-{bin_edges[i+1]-1}]" for i in range(len(bin_edges)-1)]
+        except ValueError as e:
+            print(f"Error creating bin edges for column {col}: {str(e)}")
+            continue
         
         # Bin the column
         df[f'{col}_bin'] = pd.cut(df[col], bins=bin_edges, labels=bin_labels, right=False)

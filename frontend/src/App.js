@@ -74,6 +74,7 @@ const App = () => {
   const [tableHTML, setTableHTML] = useState('');
   const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
+  const [histogramHTML, setHistogramHTML] = useState('');
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
@@ -88,6 +89,50 @@ const App = () => {
         }));
 
         // Définir le schéma JSON de base
+        const histogramConfigSchema = {
+          histogram_config: {
+            type: "object",
+            title: "Histogram Configuration",
+            properties: {
+              columns: {
+                type: "array",
+                title: "Columns",
+                items: {
+                  type: "string",
+                  title: "Column Name"
+                }
+              },
+              binsize: {
+                type: "number",
+                title: "Bin Size",
+                default: 10
+              },
+              groupby: {
+                type: "string",
+                title: "Group By",
+                default: ""
+              },
+              aggregation: {
+                type: "object",
+                title: "Aggregation",
+                properties: {
+                  type: {
+                    type: "string",
+                    title: "Aggregation Type",
+                    enum: ["count", "sum"],
+                    default: "count"
+                  },
+                  column: {
+                    type: "string",
+                    title: "Aggregation Column",
+                    default: ""
+                  }
+                }
+              }
+            },
+            required: ["columns", "binsize"]
+          }
+        };
         const baseSchema = {
           type: "object",
           properties: {
@@ -272,7 +317,15 @@ const App = () => {
           required: ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns", "count_columns", "count_distinct_columns", "groupby_columns", "filter_global", "activate_visualisation", "join_layers", "colors"]
         };
 
-        setSchema(baseSchema);
+        const fullSchema = {
+          ...baseSchema,
+          properties: {
+            ...baseSchema.properties,
+            ...histogramConfigSchema
+          }
+        };
+
+        setSchema(fullSchema);
 
         // Initialiser formData avec les chemins de fichiers récupérés et un buffer_layer dynamique
         setFormData(prevFormData => ({
@@ -353,7 +406,14 @@ const App = () => {
     } else if (formData.buffer_layer.buffer_type === "zones") {
       // No additional properties needed for zones
     }
-    
+
+    const histogramConfig = {
+      columns: formData.histogram_config.columns,
+      binsize: formData.histogram_config.binsize,
+      groupby: formData.histogram_config.groupby || undefined,
+      aggregation: formData.histogram_config.aggregation
+    };
+      
     const yamlData = {
       buffer_layer: bufferLayerData,
       data_files: formData.data_files.map(file => ({ name: file.name, path: file.path })),
@@ -370,7 +430,8 @@ const App = () => {
       filter_global: formData.filter_global,
       activate_visualisation: formData.activate_visualisation,
       join_layers: formData.join_layers,
-      colors: formData.colors
+      colors: formData.colors,
+      histogram_config: histogramConfig
     };
   
     console.log("Submitted data in YAML format:", yaml.dump(yamlData));
@@ -408,6 +469,14 @@ const App = () => {
     
       // Add cache-busting timestamp parameter
       const cacheBuster = `?t=${Date.now()}`;
+
+      fetch(`http://127.0.0.1:5000/get_histogram_html/${fetchParams}${cacheBuster}`)
+        .then(response => response.text())
+        .then(html => {
+          setHistogramHTML(html);
+          setActiveTab('histogram');
+      })
+      .catch(error => console.error('Error fetching histogram HTML:', error));
     
       // Fetch the table HTML with cache busting
       fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}${cacheBuster}`)
@@ -491,7 +560,8 @@ const App = () => {
       "filter_global",
       "activate_visualisation",
       "join_layers",
-      "colors"
+      "colors",
+      "histogram_config"
     ],
     data_files: {
       "items": {
@@ -530,6 +600,34 @@ const App = () => {
     },
     filter_data_files: {
       "ui:ObjectFieldTemplate": CustomObjectFieldTemplate
+    },
+    histogram_config: {
+      columns: {
+        "ui:widget": "array",
+        "items": {
+          "ui:placeholder": "Enter column name"
+        }
+      },
+      binsize: {
+        "ui:placeholder": "Enter bin size"
+      },
+      groupby: {
+        "ui:placeholder": "Enter group by column"
+      },
+      aggregation: {
+        type: {
+          "ui:widget": "select",
+          "ui:options": {
+            "enumOptions": [
+              { "value": "count", "label": "Count" },
+              { "value": "sum", "label": "Sum" }
+            ]
+          }
+        },
+        column: {
+          "ui:placeholder": "Enter aggregation column"
+        }
+      }
     }
   };
 
@@ -540,6 +638,7 @@ const App = () => {
         <button onClick={() => handleTabChange('form')}>Form</button>
         <button onClick={() => handleTabChange('tables')}>Tables</button>
         <button onClick={() => handleTabChange('map')}>Map</button>
+        <button onClick={() => handleTabChange('histogram')}>Histogram</button>
       </div>
       {activeTab === 'form' ? (
         <div className="form-container">
@@ -568,7 +667,7 @@ const App = () => {
             />
           )}
         </div>
-      ) : (
+      ) : activeTab === 'map' ? (
         <div className="map-container">
           <h2>Carte de Visualisation</h2>
           {mapHTML && (
@@ -579,7 +678,31 @@ const App = () => {
             />
           )}
         </div>
-      )}
+      ) : activeTab === 'histogram' ? (
+        <div className="histogram-container">
+          <h2>Histogram Configuration</h2>
+          {Object.keys(schema).length > 0 ? (
+            <Form
+              schema={{ type: "object", properties: { histogram_config: schema.properties.histogram_config } }}
+              uiSchema={{ histogram_config: uiSchema.histogram_config }}
+              formData={{ histogram_config: formData.histogram_config }}
+              onChange={(e) => onChange({ formData: { ...formData, histogram_config: e.formData.histogram_config } })}
+              onSubmit={(e) => onSubmit({ formData: { ...formData, histogram_config: e.formData.histogram_config } })}
+            >
+              <button type="submit">Generate Histogram</button>
+            </Form>
+          ) : (
+            <div>Loading configuration...</div>
+          )}
+          {histogramHTML && (
+            <iframe
+              title="Histogram Visualization"
+              srcDoc={histogramHTML}
+              className="full-page-histogram"
+            />
+          )}
+        </div>
+      ) : null}
       {submitMessage && <p>{submitMessage}</p>}
     </div>
   );

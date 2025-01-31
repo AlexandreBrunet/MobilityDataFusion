@@ -58,5 +58,16 @@ def get_map_html(params):
         logging.error(f"An error occurred while serving map HTML file: {str(e)}")
         return jsonify({"error": "Failed to serve map HTML file"}), 500
 
+@app.route('/get_histogram_html/<path:params>')
+def get_histogram_html(params):
+    try:
+        directory = './data/output/visualisation/'
+        # Assuming main.py generates histogram files with a naming convention similar to tables and maps
+        filename = f'hist_{params}.html'
+        return send_from_directory(directory, filename, mimetype='text/html')
+    except Exception as e:
+        logging.error(f"An error occurred while serving histogram HTML file: {str(e)}")
+        return jsonify({"error": "Failed to serve histogram HTML file"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
