@@ -181,3 +181,66 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
         raise ValueError(f"Unsupported buffer type: {buffer_type}")
             
     fig.write_html(filename)
+
+import plotly.express as px
+import os
+
+def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histogram_config: dict, **buffer_params):
+    
+    if col not in histogram_data:
+        print(f"No data found for column {col}, skipping histogram visualization")
+        return None
+    
+    agg_data = histogram_data[col]
+    groupby_column = histogram_config.get('groupby', None)
+    aggregation = histogram_config.get('aggregation', {})
+    aggregation_type = aggregation.get('type', 'count')
+    aggregation_column = aggregation.get('column', None)
+    binsize = histogram_config.get('binsize', 10)
+    
+    # Create the histogram using plotly.express
+    if groupby_column and groupby_column in agg_data.columns:
+        fig = px.bar(
+            agg_data,
+            x=f'{col}_bin',
+            y='value',
+            color=groupby_column,
+            barmode='group',
+            title=f'Distribution of {col} by {groupby_column} ({aggregation_type} of {aggregation_column if aggregation_type == "sum" else "lines"})',
+            labels={f'{col}_bin': col, 'value': aggregation_type.capitalize(), groupby_column: groupby_column},
+            text='value',
+            height=600,
+            width=1000  # Increased width to accommodate grouped bars
+        )
+    else:
+        fig = px.bar(
+            agg_data,
+            x=f'{col}_bin',
+            y='value',
+            title=f'Distribution of {col} ({aggregation_type} of {aggregation_column if aggregation_type == "sum" else "lines"})',
+            labels={f'{col}_bin': col, 'value': aggregation_type.capitalize()},
+            text='value',
+            height=600,
+            width=800
+        )
+    fig.update_traces(textposition='outside')
+    
+    # Generate filename based on buffer type and parameters
+    if buffer_type == "circular":
+        filename = f"hist_{buffer_type}_buffer_{buffer_params.get('distance', 0)}m_{col}_{aggregation_type}.html"
+    elif buffer_type == "grid":
+        filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_{buffer_params.get('wide', 0)}m_{buffer_params.get('length', 0)}m_{col}_{aggregation_type}.html"
+    elif buffer_type == "zones":
+        if groupby_column:
+            filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_grouped_by_{groupby_column}_{col}_{aggregation_type}.html"
+        else:
+            filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_{col}_{aggregation_type}.html"
+    
+    filepath = f"./data/output/visualisation/{filename}"
+    
+    # Remove existing file and save new
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    fig.write_html(filepath)
+    
+    return filepath

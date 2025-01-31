@@ -24,6 +24,7 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
+histogram_config = config.get('histogram_config', {})
 metrics_config = {
     "sum": config["sum_columns"],
     "max": config["max_columns"],
@@ -59,6 +60,29 @@ agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')
+    buffer_params = buffer_layer[layer_name].copy()
+
+    if 'buffer_type' in buffer_params:
+        del buffer_params['buffer_type']
+
+    histogram_data = metrics.calculate_histogram_data(
+        fusion_gdf,
+        histogram_config=config.get('histogram_config', {})
+    )
+
+    generated_histograms = []
+    for col in config.get('histogram_config', {}).get('columns', []):
+        histogram_filename = visualisation.visualize_histogram(
+            histogram_data,
+            col,
+            buffer_type,
+            histogram_config=config.get('histogram_config', {}),
+            **buffer_params
+        )
+        if histogram_filename:
+            generated_histograms.append(histogram_filename)
+
+    
     if buffer_type == 'circular':
         distance = buffer_layer[layer_name].get('distance')
         print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")

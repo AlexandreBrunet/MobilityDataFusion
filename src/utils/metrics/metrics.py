@@ -1,5 +1,9 @@
 import pandas as pd
 import warnings
+import os
+import geopandas as gpd
+import numpy as np
+import plotly.express as px
 
 def calculate_sum(gdf, groupby_columns, sum_columns):
     parsed_columns = [parse_column_name(col) for col in sum_columns]
@@ -129,6 +133,57 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
         agg_stats = pd.merge(agg_stats, ratio_stats, on=groupby_columns, how='left')
 
     return agg_stats.round(2)
+
+def calculate_histogram_data(gdf: gpd.GeoDataFrame, histogram_config: dict):
+
+    if not isinstance(histogram_config, dict):
+        raise TypeError("histogram_config must be a dictionary")
+
+    histogram_data = {}
+    
+    # Get histogram parameters from config
+    columns = histogram_config.get('columns', [])
+    binsize = histogram_config.get('binsize', 10)  # Default bin size of 10
+    groupby_column = histogram_config.get('groupby', None)
+    aggregation = histogram_config.get('aggregation', {})
+    aggregation_type = aggregation.get('type', 'count')
+    aggregation_column = aggregation.get('column', None)
+    
+    for col in columns:
+        if col not in gdf.columns:
+            print(f"Column {col} not found, skipping histogram calculation")
+            continue
+        
+        # Convert GeoDataFrame to DataFrame
+        df = pd.DataFrame(gdf)
+        
+        # Determine the min and max values of the column to set bin edges
+        min_val = df[col].min()
+        max_val = df[col].max()
+        
+        # Create bin edges
+        bin_edges = np.arange(min_val, max_val + binsize + 1, binsize)
+        bin_labels = [f"[{bin_edges[i]}-{bin_edges[i+1]-1}]" for i in range(len(bin_edges)-1)]
+        
+        # Bin the column
+        df[f'{col}_bin'] = pd.cut(df[col], bins=bin_edges, labels=bin_labels, right=False)
+        
+        if groupby_column and groupby_column in df.columns:
+            group_columns = [groupby_column, f'{col}_bin']
+        else:
+            group_columns = [f'{col}_bin']
+        
+        if aggregation_type == 'sum':
+            if aggregation_column not in df.columns:
+                print(f"Column {aggregation_column} for summing not found, skipping histogram calculation")
+                continue
+            agg_data = df.groupby(group_columns)[aggregation_column].sum().reset_index(name='value')
+        else:  # Default to 'count'
+            agg_data = df.groupby(group_columns).size().reset_index(name='value')
+        
+        histogram_data[col] = agg_data
+    
+    return histogram_data
 
 def parse_column_name(column):
     if " as " in column:

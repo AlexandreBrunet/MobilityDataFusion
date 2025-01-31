@@ -1,15 +1,15 @@
 activate_visualisation: true
 buffer_layer:
-  stations_bixitest:
-    buffer_type: circular
-    distance: 500
-    geometry_type: Point
+  mtlzonage:
+    buffer_type: zones
+    geometry_type: MultiPolygon
 colors:
-  od_2018test: '[200, 30, 0, 160]'
-  reseau_cyclabletest: '[200, 30, 0, 160]'
-  stations_bixitest: '[200, 30, 0, 160]'
+  mtlzonage: '[200, 30, 0, 160]'
+  od_2018test: '[255, 255, 0, 160]'
+  reseau_cyclabletest: '[255, 165, 0, 160]'
+  stations_bixi: '[200, 30, 0, 160]'
   stm_bus_stops: '[200, 30, 0, 160]'
-  uniteevaluationfoncieretest: '[200, 30, 0, 160]'
+  uniteevaluationfoncieretest: '[0, 30, 200, 160]'
 count_columns:
 - stop_id as count_arret_bus
 - feuillet as count_nb_menage
@@ -17,12 +17,14 @@ count_columns:
 count_distinct_columns:
 - station_id as count_bixi_station
 data_files:
+- name: mtlzonage
+  path: ./data/input/geojson/mtlzonage.geojson
 - name: od_2018test
   path: ./data/input/geojson/od_2018test.geojson
 - name: reseau_cyclabletest
   path: ./data/input/geojson/reseau_cyclabletest.geojson
-- name: stations_bixitest
-  path: ./data/input/geojson/stations_bixitest.geojson
+- name: stations_bixi
+  path: ./data/input/geojson/stations_bixi.geojson
 - name: stm_bus_stops
   path: ./data/input/geojson/stm_bus_stops.geojson
 - name: uniteevaluationfoncieretest
@@ -30,11 +32,10 @@ data_files:
 filter_data_files: {}
 filter_global:
 - column: count_arret_bus_count
-  operator: '>'
+  operator: '>='
   value: 0
 groupby_columns:
-- buffer_id
-- name
+- NOM
 join_layers:
   linestrings:
     type: intersects
@@ -60,3 +61,12 @@ std_columns:
 sum_columns:
 - permis as total_permis
 - autologi as total_autologi
+
+histogram_config:
+  columns:  
+    - "age"
+  binsize: 10
+  groupby: "NOM"  # This can be set to None or removed if you don't want grouping
+  aggregation: 
+    type: "sum"  # count or "sum"
+    column: "facper_s27"  # This is ignored if type is "count". If type is "sum", specify the column name here.
