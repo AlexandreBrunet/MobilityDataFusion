@@ -4,6 +4,7 @@ from typing import List, Dict
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
 import os
+import plotly.express as px
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal
@@ -182,8 +183,6 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
             
     fig.write_html(filename)
 
-import plotly.express as px
-import os
 
 def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histogram_config: dict, **buffer_params):
     
@@ -198,7 +197,6 @@ def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histog
     aggregation_column = aggregation.get('column', None)
     binsize = histogram_config.get('binsize', 10)
     
-    # Create the histogram using plotly.express
     if groupby_column and groupby_column in agg_data.columns:
         fig = px.bar(
             agg_data,
