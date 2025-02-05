@@ -5,11 +5,11 @@ buffer_layer:
     geometry_type: MultiPolygon
 colors:
   mtlzonage: '[200, 30, 0, 160]'
-  od_2018test: '[255, 255, 0, 160]'
-  reseau_cyclabletest: '[255, 165, 0, 160]'
+  od_2018test: '[200, 30, 0, 160]'
+  reseau_cyclabletest: '[200, 30, 0, 160]'
   stations_bixi: '[200, 30, 0, 160]'
   stm_bus_stops: '[200, 30, 0, 160]'
-  uniteevaluationfoncieretest: '[0, 30, 200, 160]'
+  uniteevaluationfoncieretest: '[200, 30, 0, 160]'
 count_columns:
 - stop_id as count_arret_bus
 - feuillet as count_nb_menage
@@ -30,12 +30,16 @@ data_files:
 - name: uniteevaluationfoncieretest
   path: ./data/input/geojson/uniteevaluationfoncieretest.geojson
 filter_data_files: {}
-filter_global:
-- column: count_arret_bus_count
-  operator: '>='
-  value: 0
+filter_global: []
 groupby_columns:
 - NOM
+histogram_config:
+  aggregation:
+    type: count
+  binsize: 10
+  columns:
+  - age
+  groupby: NOM
 join_layers:
   linestrings:
     type: intersects
@@ -61,12 +65,3 @@ std_columns:
 sum_columns:
 - permis as total_permis
 - autologi as total_autologi
-
-histogram_config:
-  columns:  
-    - "age"
-  binsize: 10
-  groupby: "NOM"  # This can be set to None or removed if you don't want grouping
-  aggregation: 
-    type: "sum"  # count or "sum"
-    column: "facper_s27"  # This is ignored if type is "count". If type is "sum", specify the column name here.

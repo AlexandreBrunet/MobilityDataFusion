@@ -87,6 +87,8 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
     return multipolygon_layer
 
 def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filename="map.html"):
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     
     if os.path.exists(filename):
         os.remove(filename)
@@ -139,15 +141,13 @@ def create_layers_and_map(
     # Déterminer le nom du fichier en fonction du type de buffer
     if buffer_type == "circular":
         distance = kwargs.get('distance')
-        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{distance}.html"
+        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{distance}m.html"  # Add 'm'
     elif buffer_type == "grid":
         wide = kwargs.get('wide')
         length = kwargs.get('length')
         filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{wide}m_{length}m.html"
-    elif buffer_type == "zones":  # Add zones case
+    elif buffer_type == "zones":
         filename = f"./data/output/visualisation/carte_{buffer_type}_buffer.html"
-    else:
-        raise ValueError(f"Type de buffer non supporté: {buffer_type}")
 
     # Créer la carte avec les couches et l'enregistrer sans ouvrir
     create_map_layers(layers, initial_view, filename=filename)
@@ -194,8 +194,8 @@ def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histog
     groupby_column = histogram_config.get('groupby', None)
     aggregation = histogram_config.get('aggregation', {})
     aggregation_type = aggregation.get('type', 'count')
-    aggregation_column = aggregation.get('column', None)
-    binsize = histogram_config.get('binsize', 10)
+    aggregation_column = aggregation.get('column', col)
+    # binsize = histogram_config.get('binsize', 10)
     
     if groupby_column and groupby_column in agg_data.columns:
         fig = px.bar(
@@ -222,23 +222,25 @@ def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histog
             width=800
         )
     fig.update_traces(textposition='outside')
-    
-    # Generate filename based on buffer type and parameters
-    if buffer_type == "circular":
-        filename = f"hist_{buffer_type}_buffer_{buffer_params.get('distance', 0)}m_{col}_{aggregation_type}.html"
-    elif buffer_type == "grid":
-        filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_{buffer_params.get('wide', 0)}m_{buffer_params.get('length', 0)}m_{col}_{aggregation_type}.html"
-    elif buffer_type == "zones":
-        if groupby_column:
-            filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_grouped_by_{groupby_column}_{col}_{aggregation_type}.html"
-        else:
-            filename = f"hist_{binsize}y_hist_{buffer_type}_buffer_{col}_{aggregation_type}.html"
-    
-    filepath = f"./data/output/visualisation/{filename}"
+
+    filename_base = f"hist_{aggregation_type}_{aggregation_column}"
+    filename_base = filename_base.replace(" ", "_").lower()  # NORMALIZE HERE
+
+    if groupby_column and groupby_column in agg_data.columns:
+        groupby_normalized = groupby_column.replace(" ", "_").lower()  # NORMALIZE GROUPBY
+        filename = f"{filename_base}_grouped_by_{groupby_normalized}.html"
+    else:
+        filename = f"{filename_base}.html"
+        
+    filepath = os.path.join("./data/output/visualisation/", filename)
     
     # Remove existing file and save new
     if os.path.exists(filepath):
         os.remove(filepath)
+        
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
     fig.write_html(filepath)
     
     return filepath

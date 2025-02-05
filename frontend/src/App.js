@@ -74,7 +74,7 @@ const App = () => {
   const [tableHTML, setTableHTML] = useState('');
   const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
-  const [histogramHTML, setHistogramHTML] = useState('');
+  const [histograms, setHistograms] = useState({});
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
@@ -88,51 +88,6 @@ const App = () => {
           path: value
         }));
 
-        // Définir le schéma JSON de base
-        const histogramConfigSchema = {
-          histogram_config: {
-            type: "object",
-            title: "Histogram Configuration",
-            properties: {
-              columns: {
-                type: "array",
-                title: "Columns",
-                items: {
-                  type: "string",
-                  title: "Column Name"
-                }
-              },
-              binsize: {
-                type: "number",
-                title: "Bin Size",
-                default: 10
-              },
-              groupby: {
-                type: "string",
-                title: "Group By",
-                default: ""
-              },
-              aggregation: {
-                type: "object",
-                title: "Aggregation",
-                properties: {
-                  type: {
-                    type: "string",
-                    title: "Aggregation Type",
-                    enum: ["count", "sum"],
-                    default: "count"
-                  },
-                  column: {
-                    type: "string",
-                    title: "Aggregation Column",
-                    default: ""
-                  }
-                }
-              }
-            },
-            required: ["columns", "binsize"]
-          }
-        };
         const baseSchema = {
           type: "object",
           properties: {
@@ -176,6 +131,41 @@ const App = () => {
                 }
               },
               required: ["layer_name", "geometry_type", "buffer_type", "distance"]
+            },
+            histogram_config: {
+              type: "object",
+              title: "Histogram Configuration",
+              properties: {
+                columns: {
+                  type: "array",
+                  title: "Columns",
+                  items: { type: "string" }
+                },
+                binsize: {
+                  type: "number",
+                  title: "Bin Size",
+                  default: 10
+                },
+                groupby: {
+                  type: "string",
+                  title: "Group By Column"
+                },
+                aggregation: {
+                  type: "object",
+                  title: "Aggregation",
+                  properties: {
+                    type: {
+                      type: "string",
+                      title: "Type",
+                      enum: ["count", "sum"]
+                    },
+                    column: {
+                      type: "string",
+                      title: "Column"
+                    }
+                  }
+                }
+              }
             },
             filter_data_files: {
               type: "object",
@@ -317,17 +307,8 @@ const App = () => {
           required: ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns", "count_columns", "count_distinct_columns", "groupby_columns", "filter_global", "activate_visualisation", "join_layers", "colors"]
         };
 
-        const fullSchema = {
-          ...baseSchema,
-          properties: {
-            ...baseSchema.properties,
-            ...histogramConfigSchema
-          }
-        };
+        setSchema(baseSchema);
 
-        setSchema(fullSchema);
-
-        // Initialiser formData avec les chemins de fichiers récupérés et un buffer_layer dynamique
         setFormData(prevFormData => ({
           ...prevFormData,
           data_files: dataFilesList,
@@ -340,24 +321,25 @@ const App = () => {
           },
           filter_data_files: {},
           colors: Object.keys(data).reduce((acc, layerName) => {
-            acc[layerName] = "[200, 30, 0, 160]"; // Valeur par défaut pour les couleurs
+            acc[layerName] = "[200, 30, 0, 160]";
             return acc;
           }, {})
         }));
-        console.log('Updated formData:', formData);
       })
       .catch(error => console.error('Error fetching file list:', error));
   }, []);
 
-    // Create a function to update the schema based on buffer type
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = { ...currentSchema };
     const bufferProperties = newSchema.properties.buffer_layer.properties;
-    // Remove existing distance/wide/length properties
+    
     delete bufferProperties.distance;
     delete bufferProperties.wide;
     delete bufferProperties.length;
   
+  
+    // Add appropriate properties based on buffer type
+
     // Add appropriate properties based on buffer type
     if (bufferType === "circular") {
       bufferProperties.distance = {
@@ -368,7 +350,7 @@ const App = () => {
     } else if (bufferType === "grid") {
       bufferProperties.wide = {
         type: "number",
-        title: "Wide (meters)",
+        title: "Width (meters)",
         default: 1000
       };
       bufferProperties.length = {
@@ -376,16 +358,14 @@ const App = () => {
         title: "Length (meters)",
         default: 1000
       };
-    } else if (bufferType === "zones") {
-      // No additional properties needed for zones
     }
+
     return newSchema;
   };
 
   const onChange = ({ formData }) => {
     const newBufferType = formData.buffer_layer.buffer_type;
-    const updatedSchema = updateBufferLayerSchema(schema, newBufferType);
-    setSchema(updatedSchema);
+    setSchema(prev => updateBufferLayerSchema(prev, newBufferType));
     setFormData(formData);
   };
 
@@ -397,23 +377,17 @@ const App = () => {
       }
     };
   
+  
+    // Add appropriate properties based on buffer type
+
     // Add appropriate properties based on buffer type
     if (formData.buffer_layer.buffer_type === "circular") {
       bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
     } else if (formData.buffer_layer.buffer_type === "grid") {
       bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
       bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
-    } else if (formData.buffer_layer.buffer_type === "zones") {
-      // No additional properties needed for zones
     }
 
-    const histogramConfig = {
-      columns: formData.histogram_config.columns,
-      binsize: formData.histogram_config.binsize,
-      groupby: formData.histogram_config.groupby || undefined,
-      aggregation: formData.histogram_config.aggregation
-    };
-      
     const yamlData = {
       buffer_layer: bufferLayerData,
       data_files: formData.data_files.map(file => ({ name: file.name, path: file.path })),
@@ -431,9 +405,13 @@ const App = () => {
       activate_visualisation: formData.activate_visualisation,
       join_layers: formData.join_layers,
       colors: formData.colors,
-      histogram_config: histogramConfig
+      histogram_config: formData.histogram_config
     };
   
+  
+    console.log("Submitted data in YAML format:", yaml.dump(yamlData));
+  
+
     console.log("Submitted data in YAML format:", yaml.dump(yamlData));
   
     fetch('http://127.0.0.1:5000/submit', {
@@ -450,53 +428,65 @@ const App = () => {
       return response.json();
     })
     .then(data => {
-      setSubmitMessage('Configuration soumise avec succès !');
+      setSubmitMessage('Configuration submitted successfully!');
       console.log('Success:', data);
     
+    
+      // Fetch the table and map HTML based on buffer type
+
       // Fetch the table and map HTML based on buffer type
       const bufferType = formData.buffer_layer.buffer_type;
       let fetchParams;
-    
+
       if (bufferType === 'circular') {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
       } else if (bufferType === 'grid') {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
       } else if (bufferType === 'zones') {
         fetchParams = `${bufferType}_buffer`;
-      } else {
-        throw new Error('Unsupported buffer type: ' + bufferType);
       }
-    
-      // Add cache-busting timestamp parameter
-      const cacheBuster = `?t=${Date.now()}`;
 
-      fetch(`http://127.0.0.1:5000/get_histogram_html/${fetchParams}${cacheBuster}`)
-        .then(response => response.text())
-        .then(html => {
-          setHistogramHTML(html);
+      const histPromises = formData.histogram_config.columns.map(columnConfig => {
+        const aggregationType = formData.histogram_config.aggregation.type || 'count';
+        const aggregationColumn = formData.histogram_config.aggregation.column || columnConfig;
+        const groupBy = formData.histogram_config.groupby || "None";
+        
+        return fetch(
+            `http://127.0.0.1:5000/get_histogram_html/${encodeURIComponent(aggregationType)}/${encodeURIComponent(aggregationColumn)}/${encodeURIComponent(groupBy)}?t=${Date.now()}`
+        )
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.text();
+        })
+        .then(html => ({ column: aggregationColumn, html }))
+        .catch(error => {
+            console.error('Error loading histogram:', error);
+            return { column: aggregationColumn, html: `<div class="error">Error loading histogram: ${error.message}</div>` };
+        });
+    });
+
+      Promise.all(histPromises)
+        .then(results => {
+          const newHistograms = {};
+          results.forEach(({ column, html }) => {
+            newHistograms[column] = html;
+          });
+          setHistograms(newHistograms);
           setActiveTab('histogram');
-      })
-      .catch(error => console.error('Error fetching histogram HTML:', error));
-    
-      // Fetch the table HTML with cache busting
+        });
+
+      // Fetch table and map
+      const cacheBuster = `?t=${Date.now()}`;
       fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}${cacheBuster}`)
         .then(response => response.text())
-        .then(html => {
-          setTableHTML(html);
-          setActiveTab('tables');
-        })
-        .catch(error => console.error('Error fetching HTML:', error));
-    
-      // Fetch the map HTML with cache busting
+        .then(setTableHTML);
+
       fetch(`http://127.0.0.1:5000/get_map_html/${fetchParams}${cacheBuster}`)
         .then(response => response.text())
-        .then(html => {
-          setMapHTML(html);
-        })
-        .catch(error => console.error('Error fetching map HTML:', error));
+        .then(setMapHTML);
     })
-    .catch((error) => {
-      setSubmitMessage('Erreur lors de la soumission : ' + error.message);
+    .catch(error => {
+      setSubmitMessage(`Error: ${error.message}`);
       console.error('Error:', error);
     });
   };
@@ -638,9 +628,10 @@ const App = () => {
         <button onClick={() => handleTabChange('form')}>Form</button>
         <button onClick={() => handleTabChange('tables')}>Tables</button>
         <button onClick={() => handleTabChange('map')}>Map</button>
-        <button onClick={() => handleTabChange('histogram')}>Histogram</button>
+        <button onClick={() => handleTabChange('histogram')}>Histograms</button>
       </div>
-      {activeTab === 'form' ? (
+
+      {activeTab === 'form' && (
         <div className="form-container">
           {Object.keys(schema).length > 0 ? (
             <Form
@@ -656,54 +647,55 @@ const App = () => {
             <div>Loading configuration...</div>
           )}
         </div>
-      ) : activeTab === 'tables' ? (
+      )}
+
+      {activeTab === 'tables' && (
         <div className="table-container">
-          <h2>Tableau de Visualisation</h2>
+          <h2>Data Table</h2>
           {tableHTML && (
             <iframe
-              title="Table Visualization"
+              title="data-table"
               srcDoc={tableHTML}
-              className="full-page-table"
+              className="full-iframe"
             />
           )}
         </div>
-      ) : activeTab === 'map' ? (
+      )}
+
+      {activeTab === 'map' && (
         <div className="map-container">
-          <h2>Carte de Visualisation</h2>
+          <h2>Map Visualization</h2>
           {mapHTML && (
             <iframe
-              title="Map Visualization"
+              title="map-visualization"
               srcDoc={mapHTML}
-              className="full-page-map"
+              className="full-iframe"
             />
           )}
         </div>
-      ) : activeTab === 'histogram' ? (
+      )}
+
+      {activeTab === 'histogram' && (
         <div className="histogram-container">
-          <h2>Histogram Configuration</h2>
-          {Object.keys(schema).length > 0 ? (
-            <Form
-              schema={{ type: "object", properties: { histogram_config: schema.properties.histogram_config } }}
-              uiSchema={{ histogram_config: uiSchema.histogram_config }}
-              formData={{ histogram_config: formData.histogram_config }}
-              onChange={(e) => onChange({ formData: { ...formData, histogram_config: e.formData.histogram_config } })}
-              onSubmit={(e) => onSubmit({ formData: { ...formData, histogram_config: e.formData.histogram_config } })}
-            >
-              <button type="submit">Generate Histogram</button>
-            </Form>
+          <h2>Histograms</h2>
+          {Object.keys(histograms).length === 0 ? (
+            <p>No histograms generated yet. Submit the form to generate histograms.</p>
           ) : (
-            <div>Loading configuration...</div>
-          )}
-          {histogramHTML && (
-            <iframe
-              title="Histogram Visualization"
-              srcDoc={histogramHTML}
-              className="full-page-histogram"
-            />
+            Object.entries(histograms).map(([columnName, html]) => (
+              <div key={columnName} className="histogram-item">
+                <h3>{columnName}</h3>
+                <iframe
+                  title={`histogram-${columnName}`}
+                  srcDoc={html}
+                  className="histogram-iframe"
+                />
+              </div>
+            ))
           )}
         </div>
-      ) : null}
-      {submitMessage && <p>{submitMessage}</p>}
+      )}
+
+      {submitMessage && <div className="status-message">{submitMessage}</div>}
     </div>
   );
 };

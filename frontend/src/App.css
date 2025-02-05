@@ -187,3 +187,29 @@ input:disabled, select:disabled, textarea:disabled {
   color: #808080;
   cursor: not-allowed;
 }
+
+.histogram-container {
+  padding: 20px;
+  background-color: #2d2d2d; /* Add contrasting background */
+  border-radius: 8px; /* Match other containers */
+  margin: 15px 0; /* Add spacing */
+}
+
+.histogram-iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+  background-color: #ffffff; /* Force white background for iframe content */
+}
+
+/* If the histogram is drawn with SVG/canvas */
+.histogram-iframe svg,
+.histogram-iframe canvas {
+  background-color: #ffffff !important;
+}
+
+.full-iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+}

@@ -58,16 +58,31 @@ def get_map_html(params):
         logging.error(f"An error occurred while serving map HTML file: {str(e)}")
         return jsonify({"error": "Failed to serve map HTML file"}), 500
 
-@app.route('/get_histogram_html/<path:params>')
-def get_histogram_html(params):
+@app.route('/get_histogram_html/<aggregation_type>/<aggregation_column>/<groupby_column>')
+def get_histogram_html(aggregation_type, aggregation_column, groupby_column):
     try:
         directory = './data/output/visualisation/'
-        # Assuming main.py generates histogram files with a naming convention similar to tables and maps
-        filename = f'hist_{params}.html'
+
+        aggregation_type = aggregation_type.replace(" ", "_").lower()
+        aggregation_column = aggregation_column.replace(" ", "_").lower()
+        groupby_column = groupby_column.replace(" ", "_").lower()  # Ensure lowercase
+
+        filename_base = f"hist_{aggregation_type}_{aggregation_column}"
+        if groupby_column != "none":
+            filename = f"{filename_base}_grouped_by_{groupby_column}.html"
+        else:
+            filename = f"{filename_base}.html"
+        
+        full_path = os.path.abspath(os.path.join(directory, filename))
+        logging.info(f"Searching for histogram at: {full_path}")
+
         return send_from_directory(directory, filename, mimetype='text/html')
+    except FileNotFoundError:
+        logging.error(f"Missing file: {filename} in {directory}")
+        return jsonify({"error": "Histogram not found"}), 404
     except Exception as e:
-        logging.error(f"An error occurred while serving histogram HTML file: {str(e)}")
-        return jsonify({"error": "Failed to serve histogram HTML file"}), 500
+        logging.error(f"Error serving histogram: {str(e)}")
+        return jsonify({"error": "Server error"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
