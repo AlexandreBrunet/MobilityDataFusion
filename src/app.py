@@ -4,6 +4,8 @@ import yaml
 from flask_cors import CORS
 import subprocess
 import os
+import json
+from geopandas import GeoDataFrame
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
@@ -84,5 +86,32 @@ def get_histogram_html(aggregation_type, aggregation_column, groupby_column):
         logging.error(f"Error serving histogram: {str(e)}")
         return jsonify({"error": "Server error"}), 500
 
+@app.route('/get_file_preview/<filename>')
+def get_file_preview(filename):
+    try:
+        filepath = os.path.join('./data/input/geojson/', filename + '.geojson')
+        gdf = GeoDataFrame.from_file(filepath)
+        
+        # Convert to GeoJSON and parse
+        geojson = json.loads(gdf.head(100).to_json())
+        
+        # Extract columns from properties
+        columns = list(gdf.columns)
+        
+        # Extract data with proper geometry serialization
+        data = []
+        for feature in geojson['features']:
+            row = feature['properties'].copy()
+            row['geometry'] = feature['geometry']
+            data.append(row)
+        
+        return jsonify({
+            'columns': columns,
+            'data': data
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting file preview: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

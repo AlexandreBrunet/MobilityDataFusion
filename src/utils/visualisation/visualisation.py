@@ -185,6 +185,10 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
 
 
 def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histogram_config: dict, **buffer_params):
+
+    BAR_COLOR = "#4CAF50"  # Green (adjust to your preference)
+    BACKGROUND_COLOR = "#1E1E1E"  # Dark gray
+    TEXT_COLOR = "#FFFFFF"
     
     if col not in histogram_data:
         print(f"No data found for column {col}, skipping histogram visualization")
@@ -204,25 +208,39 @@ def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histog
             y='value',
             color=groupby_column,
             barmode='group',
-            title=f'Distribution of {col} by {groupby_column} ({aggregation_type} of {aggregation_column if aggregation_type == "sum" else "lines"})',
+            title=f'Distribution of {col} by {groupby_column} ({aggregation_type} of {aggregation_column})',
             labels={f'{col}_bin': col, 'value': aggregation_type.capitalize(), groupby_column: groupby_column},
             text='value',
             height=600,
-            width=1000  # Increased width to accommodate grouped bars
+            width=1000,
+            color_discrete_sequence=px.colors.qualitative.Plotly  # Explicit color palette for groups
         )
     else:
         fig = px.bar(
             agg_data,
             x=f'{col}_bin',
             y='value',
-            title=f'Distribution of {col} ({aggregation_type} of {aggregation_column if aggregation_type == "sum" else "lines"})',
+            title=f'Distribution of {col} ({aggregation_type} of {aggregation_column})',
             labels={f'{col}_bin': col, 'value': aggregation_type.capitalize()},
             text='value',
             height=600,
-            width=800
+            width=800,
+            color_discrete_sequence=[BAR_COLOR]  # Single color for non-grouped bars
         )
-    fig.update_traces(textposition='outside')
 
+    # Update layout for visibility
+    fig.update_layout(
+        plot_bgcolor=BACKGROUND_COLOR,
+        paper_bgcolor=BACKGROUND_COLOR,
+        font_color=TEXT_COLOR,
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False, gridcolor='rgba(255,255,255,0.1)')
+    )
+    fig.update_traces(
+        textposition='outside',
+        textfont=dict(color=TEXT_COLOR),
+        marker=dict(line=dict(color=BACKGROUND_COLOR, width=1))  # Add bar borders
+    )
     filename_base = f"hist_{aggregation_type}_{aggregation_column}"
     filename_base = filename_base.replace(" ", "_").lower()  # NORMALIZE HERE
 

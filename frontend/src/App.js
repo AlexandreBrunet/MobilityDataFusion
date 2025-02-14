@@ -75,6 +75,9 @@ const App = () => {
   const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
   const [histograms, setHistograms] = useState({});
+  const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
+  const [filePreviews, setFilePreviews] = useState({});
+  const [dataFiles, setDataFiles] = useState([]); // Add this line
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
@@ -82,6 +85,7 @@ const App = () => {
       .then(data => {
         console.log('Fetched file list:', data);
         setFileList(data);
+        setDataFiles(Object.keys(data));
 
         const dataFilesList = Object.entries(data).map(([key, value]) => ({
           name: key,
@@ -328,6 +332,23 @@ const App = () => {
       })
       .catch(error => console.error('Error fetching file list:', error));
   }, []);
+
+
+  useEffect(() => {
+    if (activeTab === 'data-explorer' && activeDataExplorerFile) {
+      if (!filePreviews[activeDataExplorerFile]) {
+        fetch(`http://127.0.0.1:5000/get_file_preview/${activeDataExplorerFile}`)
+          .then(response => response.json())
+          .then(data => {
+            setFilePreviews(prev => ({
+              ...prev,
+              [activeDataExplorerFile]: data
+            }));
+          })
+          .catch(error => console.error('Error fetching file preview:', error));
+      }
+    }
+  }, [activeDataExplorerFile, activeTab, filePreviews]);
 
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = { ...currentSchema };
@@ -629,7 +650,63 @@ const App = () => {
         <button onClick={() => handleTabChange('tables')}>Tables</button>
         <button onClick={() => handleTabChange('map')}>Map</button>
         <button onClick={() => handleTabChange('histogram')}>Histograms</button>
+        <button onClick={() => handleTabChange('data-explorer')}>Data Explorer</button>
       </div>
+
+      {activeTab === 'data-explorer' && (
+  <div className="data-explorer-container">
+    <h2>Data Explorer</h2>
+    <div className="file-tabs">
+      {dataFiles.map(fileName => (
+        <button
+          key={fileName}
+          onClick={() => setActiveDataExplorerFile(fileName)}
+          className={activeDataExplorerFile === fileName ? 'active' : ''}
+        >
+          {fileName}
+        </button>
+      ))}
+    </div>
+    
+    {activeDataExplorerFile && (
+      <div className="file-preview">
+        <h3>{activeDataExplorerFile}</h3>
+        {filePreviews[activeDataExplorerFile] ? (
+          <div>
+            <table>
+              <thead>
+                <tr>
+                  {filePreviews[activeDataExplorerFile].columns?.map(col => (
+                    <th key={col}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filePreviews[activeDataExplorerFile].data?.map((row, index) => (
+                  <tr key={index}>
+                    {filePreviews[activeDataExplorerFile].columns?.map(col => (
+                      <td key={col}>
+                        {typeof row[col] === 'object' 
+                          ? JSON.stringify(row[col])
+                          : row[col]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>Loading preview for {activeDataExplorerFile}...</p>
+        )}
+      </div>
+    )}
+    
+    {!activeDataExplorerFile && (
+      <p>Select a file from the tabs above to view its preview</p>
+    )}
+  </div>
+)}
 
       {activeTab === 'form' && (
         <div className="form-container">

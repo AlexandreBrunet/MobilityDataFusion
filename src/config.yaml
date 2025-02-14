@@ -1,45 +1,34 @@
 activate_visualisation: true
 buffer_layer:
-  mtlzonage:
-    buffer_type: zones
-    geometry_type: MultiPolygon
+  stations_bixi:
+    buffer_type: circular
+    distance: 1000
+    geometry_type: Point
 colors:
-  mtlzonage: '[200, 30, 0, 160]'
-  od_2018test: '[200, 30, 0, 160]'
-  reseau_cyclabletest: '[200, 30, 0, 160]'
+  mtlzonage: '[0, 0, 0, 0]'
+  od_2018agg: '[0, 200, 0, 160]'
   stations_bixi: '[200, 30, 0, 160]'
-  stm_bus_stops: '[200, 30, 0, 160]'
-  uniteevaluationfoncieretest: '[200, 30, 0, 160]'
 count_columns:
-- stop_id as count_arret_bus
 - feuillet as count_nb_menage
-- ID_UEV as count_num_bati
 count_distinct_columns:
 - station_id as count_bixi_station
 data_files:
-- name: mtlzonage
-  path: ./data/input/geojson/mtlzonage.geojson
-- name: od_2018test
-  path: ./data/input/geojson/od_2018test.geojson
-- name: reseau_cyclabletest
-  path: ./data/input/geojson/reseau_cyclabletest.geojson
+- name: od_2018agg
+  path: ./data/input/geojson/od_2018agg.geojson
 - name: stations_bixi
   path: ./data/input/geojson/stations_bixi.geojson
-- name: stm_bus_stops
-  path: ./data/input/geojson/stm_bus_stops.geojson
-- name: uniteevaluationfoncieretest
-  path: ./data/input/geojson/uniteevaluationfoncieretest.geojson
 filter_data_files: {}
 filter_global: []
 groupby_columns:
-- NOM
+- buffer_id
+- name
 histogram_config:
   aggregation:
     type: count
   binsize: 10
   columns:
   - age
-  groupby: NOM
+  groupby: name
 join_layers:
   linestrings:
     type: intersects
@@ -51,17 +40,14 @@ join_layers:
     type: intersects
 max_columns:
 - capacity as max_capacity
-mean_columns:
-- SUPERFICIE_TERRAIN as moy_superficie_terrain
-- LONGUEUR as moy_long_piste_cy
+mean_columns: []
 min_columns:
 - capacity as min_capacity
 ratio_columns:
 - denominator: perslogi
-  name: permis_perslogi_ratio
-  numerator: permis
-std_columns:
-- SUPERFICIE_TERRAIN as std_superficie_terrain
+  name: autologi_perslogi_ratio
+  numerator: autologi
+std_columns: []
 sum_columns:
 - permis as total_permis
 - autologi as total_autologi
