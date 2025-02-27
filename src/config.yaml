@@ -2,16 +2,14 @@ activate_visualisation: true
 buffer_layer:
   stations_bixi:
     buffer_type: circular
-    distance: 1000
+    distance: 500
     geometry_type: Point
 colors:
   mtlzonage: '[0, 0, 0, 0]'
-  od_2018agg: '[0, 200, 0, 160]'
+  od_2018agg: '[200, 30, 0, 160]'
   stations_bixi: '[200, 30, 0, 160]'
-count_columns:
-- feuillet as count_nb_menage
-count_distinct_columns:
-- station_id as count_bixi_station
+count_columns: []
+count_distinct_columns: []
 data_files:
 - name: od_2018agg
   path: ./data/input/geojson/od_2018agg.geojson
@@ -24,10 +22,11 @@ groupby_columns:
 - name
 histogram_config:
   aggregation:
-    type: count
-  binsize: 10
+    column: autologi
+    type: sum
+  binsize: 2
   columns:
-  - age
+  - AUTOLOGI
   groupby: name
 join_layers:
   linestrings:
@@ -38,16 +37,16 @@ join_layers:
     type: contains
   polygons:
     type: intersects
-max_columns:
-- capacity as max_capacity
+max_columns: []
 mean_columns: []
-min_columns:
-- capacity as min_capacity
-ratio_columns:
-- denominator: perslogi
-  name: autologi_perslogi_ratio
-  numerator: autologi
+min_columns: []
+multiply_columns:
+- columns:
+  - faclog_s27
+  - autologi
+  name: faclog_autologi
+ratio_columns: []
 std_columns: []
 sum_columns:
-- permis as total_permis
+- facper_s27 as total_pers
 - autologi as total_autologi

@@ -110,14 +110,65 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
 
     return ratio_stats.round(2)
 
+def calculate_multiply(gdf, groupby_columns, multiply_columns):
+    multiply_stats_list = []
+
+    for multiply in multiply_columns:
+        multiply_name = multiply.get("name")
+        columns = multiply.get("columns", [])
+
+        if not multiply_name or not columns:
+            warnings.warn(
+                f"The multiplication config '{multiply_name}' is incomplete (name or columns missing). It will be ignored.",
+                UserWarning
+            )
+            continue
+
+        # Parse column names and check validity
+        parsed_columns = [parse_column_name(col) for col in columns]
+        valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+        invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+        if invalid_columns:
+            warnings.warn(
+                f"The following columns are missing from the GeoDataFrame and will be ignored for multiplication '{multiply_name}': {', '.join(invalid_columns)}.",
+                UserWarning
+            )
+
+        if not valid_columns:
+            warnings.warn(
+                f"No valid columns to multiply for '{multiply_name}'. Skipping this multiplication.",
+                UserWarning
+            )
+            continue
+
+        # Calculate the product
+        temp_product = gdf[valid_columns[0][0]].copy()
+        for original, _ in valid_columns[1:]:
+            temp_product *= gdf[original]
+
+        # Group and aggregate
+        temp_df = gdf[groupby_columns].copy()
+        temp_df['temp_product'] = temp_product
+        multiply_stat = temp_df.groupby(groupby_columns).agg({'temp_product': 'prod'}).reset_index()
+        multiply_stat = multiply_stat.rename(columns={'temp_product': multiply_name})
+        multiply_stats_list.append(multiply_stat)
+
+    # Merge all multiplication results
+    if multiply_stats_list:
+        multiply_stats = pd.concat(multiply_stats_list, axis=1).loc[:, ~pd.concat(multiply_stats_list, axis=1).columns.duplicated()]
+    else:
+        multiply_stats = pd.DataFrame()
+
+    return multiply_stats.round(2)
+
 def calculate_metrics(gdf, groupby_columns, metrics_config):
     agg_dict = {}
     for func, cols in metrics_config.items():
-        if func != "ratio" and cols:
+        if func != "ratio" and func != "multiply" and cols:
             parsed_columns = [parse_column_name(col) for col in cols]
             for original, renamed in parsed_columns:
                 if func == "count_distinct":
-                    # Utiliser 'nunique' pour count distinct
                     agg_dict[f"{renamed}_count_distinct"] = (original, "nunique")
                 else:
                     agg_dict[f"{renamed}_{func}"] = (original, func)
@@ -125,12 +176,17 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
     if agg_dict:
         agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index()
     else:
-        agg_stats = gdf.copy()  # Copie du DataFrame si aucune agrégation à effectuer
+        agg_stats = gdf[groupby_columns].drop_duplicates().reset_index(drop=True)
 
     if "ratio" in metrics_config and metrics_config["ratio"]:
         ratio_columns = metrics_config["ratio"]
         ratio_stats = calculate_ratio(gdf, groupby_columns, ratio_columns)
         agg_stats = pd.merge(agg_stats, ratio_stats, on=groupby_columns, how='left')
+
+    if "multiply" in metrics_config and metrics_config["multiply"]:
+        multiply_columns = metrics_config["multiply"]
+        multiply_stats = calculate_multiply(gdf, groupby_columns, multiply_columns)
+        agg_stats = pd.merge(agg_stats, multiply_stats, on=groupby_columns, how='left')
 
     return agg_stats.round(2)
 

@@ -18,9 +18,14 @@ filter_data_files:
     value: 0
     operator: ">="
 ratio_columns:
-  permis_perslogi_ratio:
+  - name: "permis_perslogi_ratio"
     numerator: "permis"
     denominator: "perslogi"
+multiply_columns:
+  - name: "product_capacity_area"
+    columns:
+      - "capacity"
+      - "SUPERFICIE_TERRAIN"
 sum_columns:
   - "permis as total_permis"
   - "autologi as total_autologi"
@@ -77,7 +82,7 @@ const App = () => {
   const [histograms, setHistograms] = useState({});
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
-  const [dataFiles, setDataFiles] = useState([]); // Add this line
+  const [dataFiles, setDataFiles] = useState([]);
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
@@ -215,6 +220,27 @@ const App = () => {
                 required: ["name", "numerator", "denominator"]
               }
             },
+            multiply_columns: {
+              type: "array",
+              title: "Multiply Columns",
+              items: {
+                type: "object",
+                properties: {
+                  name: {
+                    type: "string",
+                    title: "Multiply Name",
+                    default: "product_capacity_area"
+                  },
+                  columns: {
+                    type: "array",
+                    title: "Columns to Multiply",
+                    items: { type: "string", title: "Column" },
+                    default: ["capacity", "SUPERFICIE_TERRAIN"]
+                  }
+                },
+                required: ["name", "columns"]
+              }
+            },
             sum_columns: {
               type: "array",
               items: { type: "string", title: "Sum Column" }
@@ -308,7 +334,12 @@ const App = () => {
               }, {})
             }
           },
-          required: ["data_files", "buffer_layer", "filter_data_files", "ratio_columns", "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns", "count_columns", "count_distinct_columns", "groupby_columns", "filter_global", "activate_visualisation", "join_layers", "colors"]
+          required: [
+            "data_files", "buffer_layer", "filter_data_files", "ratio_columns", "multiply_columns",
+            "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns",
+            "count_columns", "count_distinct_columns", "groupby_columns", "filter_global",
+            "activate_visualisation", "join_layers", "colors"
+          ]
         };
 
         setSchema(baseSchema);
@@ -332,7 +363,6 @@ const App = () => {
       })
       .catch(error => console.error('Error fetching file list:', error));
   }, []);
-
 
   useEffect(() => {
     if (activeTab === 'data-explorer' && activeDataExplorerFile) {
@@ -358,10 +388,6 @@ const App = () => {
     delete bufferProperties.wide;
     delete bufferProperties.length;
   
-  
-    // Add appropriate properties based on buffer type
-
-    // Add appropriate properties based on buffer type
     if (bufferType === "circular") {
       bufferProperties.distance = {
         type: "number",
@@ -398,10 +424,6 @@ const App = () => {
       }
     };
   
-  
-    // Add appropriate properties based on buffer type
-
-    // Add appropriate properties based on buffer type
     if (formData.buffer_layer.buffer_type === "circular") {
       bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
     } else if (formData.buffer_layer.buffer_type === "grid") {
@@ -414,6 +436,7 @@ const App = () => {
       data_files: formData.data_files.map(file => ({ name: file.name, path: file.path })),
       filter_data_files: formData.filter_data_files,
       ratio_columns: formData.ratio_columns,
+      multiply_columns: formData.multiply_columns,
       sum_columns: formData.sum_columns,
       max_columns: formData.max_columns,
       min_columns: formData.min_columns,
@@ -429,10 +452,6 @@ const App = () => {
       histogram_config: formData.histogram_config
     };
   
-  
-    console.log("Submitted data in YAML format:", yaml.dump(yamlData));
-  
-
     console.log("Submitted data in YAML format:", yaml.dump(yamlData));
   
     fetch('http://127.0.0.1:5000/submit', {
@@ -452,10 +471,6 @@ const App = () => {
       setSubmitMessage('Configuration submitted successfully!');
       console.log('Success:', data);
     
-    
-      // Fetch the table and map HTML based on buffer type
-
-      // Fetch the table and map HTML based on buffer type
       const bufferType = formData.buffer_layer.buffer_type;
       let fetchParams;
 
@@ -496,7 +511,6 @@ const App = () => {
           setActiveTab('histogram');
         });
 
-      // Fetch table and map
       const cacheBuster = `?t=${Date.now()}`;
       fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}${cacheBuster}`)
         .then(response => response.text())
@@ -560,6 +574,7 @@ const App = () => {
       "buffer_layer",
       "filter_data_files",
       "ratio_columns",
+      "multiply_columns",
       "sum_columns",
       "max_columns",
       "min_columns",
@@ -605,7 +620,22 @@ const App = () => {
           "ui:placeholder": "Enter ratio name"
         },
         numerator: {
+          "ui:placeholder": "Enter numerator column"
+        },
+        denominator: {
           "ui:placeholder": "Enter denominator column"
+        }
+      }
+    },
+    multiply_columns: {
+      "items": {
+        name: {
+          "ui:placeholder": "Enter multiply name"
+        },
+        columns: {
+          "items": {
+            "ui:placeholder": "Enter column to multiply"
+          }
         }
       }
     },
@@ -654,59 +684,59 @@ const App = () => {
       </div>
 
       {activeTab === 'data-explorer' && (
-  <div className="data-explorer-container">
-    <h2>Data Explorer</h2>
-    <div className="file-tabs">
-      {dataFiles.map(fileName => (
-        <button
-          key={fileName}
-          onClick={() => setActiveDataExplorerFile(fileName)}
-          className={activeDataExplorerFile === fileName ? 'active' : ''}
-        >
-          {fileName}
-        </button>
-      ))}
-    </div>
-    
-    {activeDataExplorerFile && (
-      <div className="file-preview">
-        <h3>{activeDataExplorerFile}</h3>
-        {filePreviews[activeDataExplorerFile] ? (
-          <div>
-            <table>
-              <thead>
-                <tr>
-                  {filePreviews[activeDataExplorerFile].columns?.map(col => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filePreviews[activeDataExplorerFile].data?.map((row, index) => (
-                  <tr key={index}>
-                    {filePreviews[activeDataExplorerFile].columns?.map(col => (
-                      <td key={col}>
-                        {typeof row[col] === 'object' 
-                          ? JSON.stringify(row[col])
-                          : row[col]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="data-explorer-container">
+          <h2>Data Explorer</h2>
+          <div className="file-tabs">
+            {dataFiles.map(fileName => (
+              <button
+                key={fileName}
+                onClick={() => setActiveDataExplorerFile(fileName)}
+                className={activeDataExplorerFile === fileName ? 'active' : ''}
+              >
+                {fileName}
+              </button>
+            ))}
           </div>
-        ) : (
-          <p>Loading preview for {activeDataExplorerFile}...</p>
-        )}
-      </div>
-    )}
-    
-    {!activeDataExplorerFile && (
-      <p>Select a file from the tabs above to view its preview</p>
-    )}
-  </div>
-)}
+          
+          {activeDataExplorerFile && (
+            <div className="file-preview">
+              <h3>{activeDataExplorerFile}</h3>
+              {filePreviews[activeDataExplorerFile] ? (
+                <div>
+                  <table>
+                    <thead>
+                      <tr>
+                        {filePreviews[activeDataExplorerFile].columns?.map(col => (
+                          <th key={col}>{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filePreviews[activeDataExplorerFile].data?.map((row, index) => (
+                        <tr key={index}>
+                          {filePreviews[activeDataExplorerFile].columns?.map(col => (
+                            <td key={col}>
+                              {typeof row[col] === 'object' 
+                                ? JSON.stringify(row[col])
+                                : row[col]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p>Loading preview for {activeDataExplorerFile}...</p>
+              )}
+            </div>
+          )}
+          
+          {!activeDataExplorerFile && (
+            <p>Select a file from the tabs above to view its preview</p>
+          )}
+        </div>
+      )}
 
       {activeTab === 'form' && (
         <div className="form-container">

@@ -32,6 +32,7 @@ metrics_config = {
     "mean": config["mean_columns"],
     "std": config["std_columns"],
     "ratio": config["ratio_columns"],
+    "multiply": config["multiply_columns"],
     "count": config["count_columns"],
     "count_distinct": config["count_distinct_columns"]
 }
