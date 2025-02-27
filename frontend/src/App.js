@@ -646,11 +646,11 @@ const App = () => {
     <div className="App">
       <h1>Data Fusion UI</h1>
       <div className="tab-buttons">
+        <button onClick={() => handleTabChange('data-explorer')}>Data Explorer</button>
         <button onClick={() => handleTabChange('form')}>Form</button>
         <button onClick={() => handleTabChange('tables')}>Tables</button>
         <button onClick={() => handleTabChange('map')}>Map</button>
         <button onClick={() => handleTabChange('histogram')}>Histograms</button>
-        <button onClick={() => handleTabChange('data-explorer')}>Data Explorer</button>
       </div>
 
       {activeTab === 'data-explorer' && (
