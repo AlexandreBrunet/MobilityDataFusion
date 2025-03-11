@@ -24,6 +24,7 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
+histogram_config = config.get('histogram_config', {})
 metrics_config = {
     "sum": config["sum_columns"],
     "max": config["max_columns"],
@@ -31,6 +32,7 @@ metrics_config = {
     "mean": config["mean_columns"],
     "std": config["std_columns"],
     "ratio": config["ratio_columns"],
+    "multiply": config["multiply_columns"],
     "count": config["count_columns"],
     "count_distinct": config["count_distinct_columns"]
 }
@@ -59,17 +61,76 @@ agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')
-    distance = buffer_layer[layer_name].get('distance')
-    print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
+    buffer_params = buffer_layer[layer_name].copy()
 
-visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, distance)
+    if 'buffer_type' in buffer_params:
+        del buffer_params['buffer_type']
 
-if activate_visualisation:
-    print("Visualisation activée : création de la carte.")
-    visualisation.create_layers_and_map(
-        geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors
+    histogram_data = metrics.calculate_histogram_data(
+        fusion_gdf,
+        histogram_config=config.get('histogram_config', {})
     )
-else:
+
+    generated_histograms = []
+    for col in config.get('histogram_config', {}).get('columns', []):
+        histogram_filename = visualisation.visualize_histogram(
+            histogram_data,
+            col,
+            buffer_type,
+            histogram_config=config.get('histogram_config', {}),
+            **buffer_params
+        )
+        if histogram_filename:
+            generated_histograms.append(histogram_filename)
+
+    
+    if buffer_type == 'circular':
+        distance = buffer_layer[layer_name].get('distance')
+        print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type, 
+            distance=distance
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                distance=distance
+            )
+    elif buffer_type == 'grid':
+        wide = buffer_layer[layer_name].get('wide')
+        length = buffer_layer[layer_name].get('length')
+        print(f"Calculating {buffer_type} buffer of width {wide} meters and length {length} meters for {layer_name}")
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type, 
+            wide=wide, 
+            length=length
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                wide=wide,
+                length=length
+            )
+    elif buffer_type == 'zones':  # Add zones support
+        print(f"Processing pre-defined zones for {layer_name}")
+        
+        # Add zone-specific parameters if needed (e.g., zone_id=...)
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type
+        )
+        
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf,
+                linestrings_gdf, buffers_gdf, colors, buffer_type
+            )
+    else:
+        raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")
+
+if not activate_visualisation:
     print("Visualisation désactivée.")
 
 end_time = time.time()

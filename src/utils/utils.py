@@ -1,6 +1,6 @@
 import pandas as pd
 import geopandas as gpd
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import fiona
 from shapely.geometry import shape
 import os
@@ -23,10 +23,17 @@ def log_execution_time(func):
         return result
     return wrapper
 
-def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]:
+def load_files_to_gdf(data_files: List[Dict[str, str]]) -> Dict[str, gpd.GeoDataFrame]:
     geodataframes = {}
 
-    for name, file_path in data_files.items():
+    for file_info in data_files:
+        name = file_info.get('name')
+        file_path = file_info.get('path')
+        
+        if not name or not file_path:
+            logger.warning(f"Nom ou chemin manquant pour un fichier, il sera ignoré.")
+            continue
+
         parquet_path = file_path.replace("/geojson/", "/parquet/").replace(".geojson", ".parquet")
         parquet_dir = os.path.dirname(parquet_path)
         if not os.path.exists(parquet_dir):
@@ -49,7 +56,7 @@ def load_files_to_gdf(data_files: Dict[str, str]) -> Dict[str, gpd.GeoDataFrame]
                             if geom is not None:
                                 geometries.append(geom)
                                 properties.append(feature.get('properties', {}))
-                        except (TypeError, WKTReadingError) as e:
+                        except (TypeError, fiona.errors.WKTReadingError) as e:
                             logger.warning(f"Géométrie invalide ignorée dans {file_path}: {e}")
 
                 gdf = gpd.GeoDataFrame(properties, geometry=geometries, crs=src.crs)

@@ -1,0 +1,267 @@
+/* Base styles */
+.App {
+  text-align: center;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header and navigation */
+.tab-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+  padding: 10px 0;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #404040;
+}
+
+.tab-buttons button {
+  background-color: #383838; /* darker for contrast */
+  color: #ffffff;
+  border: 1px solid #404040;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tab-buttons button:hover {
+  background-color: #4a4a4a;
+}
+
+/* Container styles */
+.form-container, .table-container, .map-container {
+  flex-grow: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 20px;
+  background-color: #1a1a1a;
+}
+
+/* Form elements */
+form {
+  color: #ffffff;
+  text-align: left;
+  padding: 20px;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  margin: 10px;
+}
+
+input, select, textarea {
+  background-color: #383838;
+  color: #ffffff;
+  border: 1px solid #404040;
+  padding: 8px;
+  border-radius: 4px;
+  margin: 5px 0;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #6b6b6b;
+}
+
+/* Button styles */
+button {
+  background-color: #4a4a4a;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 5px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #5a5a5a;
+}
+
+button[type="submit"] {
+  background-color: #2c5282;
+}
+
+button[type="submit"]:hover {
+  background-color: #3182ce;
+}
+
+/* Table and Map iframes */
+.full-page-table, .full-page-map {
+  width: 100%;
+  height: calc(100vh - 150px);
+  border: none;
+  margin-top: 20px;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+  margin: 10px 0;
+}
+
+/* Form field labels */
+label {
+  color: #e0e0e0;
+  display: block;
+  margin: 10px 0 5px;
+}
+
+/* Error messages */
+.error-message {
+  color: #fc8181;
+  margin: 5px 0;
+}
+
+/* Success messages */
+.success-message {
+  color: #68d391;
+  margin: 5px 0;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Field groups */
+fieldset {
+  border: 1px solid #404040;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 10px 0;
+  background-color: #2d2d2d;
+}
+
+legend {
+  color: #e0e0e0;
+  padding: 0 10px;
+}
+
+/* JSON Schema Form specific styles */
+.form-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #2d2d2d;
+  border-radius: 4px;
+}
+
+.array-item {
+  border: 1px solid #404040;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 4px;
+  background-color: #383838;
+}
+
+.array-item-toolbox {
+  margin-left: 10px;
+}
+
+/* Disabled elements */
+input:disabled, select:disabled, textarea:disabled {
+  background-color: #242424;
+  color: #808080;
+  cursor: not-allowed;
+}
+
+.histogram-container {
+  padding: 20px;
+  background-color: #2d2d2d; 
+  border-radius: 8px; 
+  margin: 15px 0; 
+}
+
+.histogram-iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+  background-color: #1a1a1a; /* Dark background for iframe */
+}
+
+/* If the histogram is drawn with SVG/canvas */
+.histogram-iframe svg,
+.histogram-iframe canvas {
+  background-color: #1a1a1a !important;
+}
+
+.full-iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+  background-color: #1a1a1a; /* Match dark background */
+}
+
+.data-explorer-container {
+  padding: 20px;
+  background-color: #1a1a1a;
+}
+
+.file-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.file-tabs button {
+  padding: 8px 16px;
+  border: 1px solid #404040;
+  background: #383838;
+  color: white;
+  cursor: pointer;
+}
+
+.file-tabs button.active {
+  background: #2c5282;
+  border-color: #2c5282;
+}
+
+.file-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: #383838; /* Dark background for table */
+}
+
+.file-preview th, 
+.file-preview td {
+  border: 1px solid #404040;
+  padding: 8px;
+  text-align: left;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff; /* White text for readability */
+}
+
+.file-preview th {
+  background-color: #2d2d2d;
+}
+
+.file-preview tr:nth-child(even) {
+  background-color: #2d2d2d;
+}
