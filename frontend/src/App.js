@@ -80,6 +80,12 @@ const App = () => {
   const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
   const [histograms, setHistograms] = useState({});
+  const [histogramFormData, setHistogramFormData] = useState({
+    columns: [],
+    binsize: 10,
+    groupby: "",
+    aggregation: { type: "count", column: "" }
+  });
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
   const [dataFiles, setDataFiles] = useState([]);
@@ -141,41 +147,6 @@ const App = () => {
               },
               required: ["layer_name", "geometry_type", "buffer_type", "distance"]
             },
-            histogram_config: {
-              type: "object",
-              title: "Histogram Configuration",
-              properties: {
-                columns: {
-                  type: "array",
-                  title: "Columns",
-                  items: { type: "string" }
-                },
-                binsize: {
-                  type: "number",
-                  title: "Bin Size",
-                  default: 10
-                },
-                groupby: {
-                  type: "string",
-                  title: "Group By Column"
-                },
-                aggregation: {
-                  type: "object",
-                  title: "Aggregation",
-                  properties: {
-                    type: {
-                      type: "string",
-                      title: "Type",
-                      enum: ["count", "sum"]
-                    },
-                    column: {
-                      type: "string",
-                      title: "Column"
-                    }
-                  }
-                }
-              }
-            },
             filter_data_files: {
               type: "object",
               title: "Filter Data Files",
@@ -201,21 +172,9 @@ const App = () => {
               items: {
                 type: "object",
                 properties: {
-                  name: {
-                    type: "string",
-                    title: "Ratio Name",
-                    default: "permis_perslogi_ratio"
-                  },
-                  numerator: {
-                    type: "string",
-                    title: "Numerator",
-                    default: "permis"
-                  },
-                  denominator: {
-                    type: "string",
-                    title: "Denominator",
-                    default: "perslogi"
-                  }
+                  name: { type: "string", title: "Ratio Name", default: "permis_perslogi_ratio" },
+                  numerator: { type: "string", title: "Numerator", default: "permis" },
+                  denominator: { type: "string", title: "Denominator", default: "perslogi" }
                 },
                 required: ["name", "numerator", "denominator"]
               }
@@ -226,11 +185,7 @@ const App = () => {
               items: {
                 type: "object",
                 properties: {
-                  name: {
-                    type: "string",
-                    title: "Multiply Name",
-                    default: "product_capacity_area"
-                  },
+                  name: { type: "string", title: "Multiply Name", default: "product_capacity_area" },
                   columns: {
                     type: "array",
                     title: "Columns to Multiply",
@@ -241,38 +196,14 @@ const App = () => {
                 required: ["name", "columns"]
               }
             },
-            sum_columns: {
-              type: "array",
-              items: { type: "string", title: "Sum Column" }
-            },
-            max_columns: {
-              type: "array",
-              items: { type: "string", title: "Max Column" }
-            },
-            min_columns: {
-              type: "array",
-              items: { type: "string", title: "Min Column" }
-            },
-            mean_columns: {
-              type: "array",
-              items: { type: "string", title: "Mean Column" }
-            },
-            std_columns: {
-              type: "array",
-              items: { type: "string", title: "Standard Deviation Column" }
-            },
-            count_columns: {
-              type: "array",
-              items: { type: "string", title: "Count Column" }
-            },
-            count_distinct_columns: {
-              type: "array",
-              items: { type: "string", title: "Count Distinct Column" }
-            },
-            groupby_columns: {
-              type: "array",
-              items: { type: "string", title: "Group By Column" }
-            },
+            sum_columns: { type: "array", items: { type: "string", title: "Sum Column" } },
+            max_columns: { type: "array", items: { type: "string", title: "Max Column" } },
+            min_columns: { type: "array", items: { type: "string", title: "Min Column" } },
+            mean_columns: { type: "array", items: { type: "string", title: "Mean Column" } },
+            std_columns: { type: "array", items: { type: "string", title: "Standard Deviation Column" } },
+            count_columns: { type: "array", items: { type: "string", title: "Count Column" } },
+            count_distinct_columns: { type: "array", items: { type: "string", title: "Count Distinct Column" } },
+            groupby_columns: { type: "array", items: { type: "string", title: "Group By Column" } },
             filter_global: {
               type: "array",
               title: "Global Filters",
@@ -280,49 +211,21 @@ const App = () => {
                 type: "object",
                 properties: {
                   column: { type: "string", title: "Column" },
-                  value: {
-                    anyOf: [
-                      { type: "number", title: "Value (Number)" },
-                      { type: "string", title: "Value (String)" }
-                    ]
-                  },
+                  value: { anyOf: [{ type: "number" }, { type: "string" }] },
                   operator: { type: "string", title: "Operator", enum: ["==", ">=", "<=", ">", "<", "!="] }
                 },
                 required: ["column", "value", "operator"]
               }
             },
-            activate_visualisation: {
-              type: "boolean",
-              title: "Activate Visualisation"
-            },
+            activate_visualisation: { type: "boolean", title: "Activate Visualisation" },
             join_layers: {
               type: "object",
               title: "Join Layers",
               properties: {
-                points: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", title: "Join Type for Points", enum: ["contains", "intersects"] }
-                  }
-                },
-                polygons: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", title: "Join Type for Polygons", enum: ["contains", "intersects"] }
-                  }
-                },
-                multipolygons: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", title: "Join Type for MultiPolygons", enum: ["contains", "intersects"] }
-                  }
-                },
-                linestrings: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", title: "Join Type for LineStrings", enum: ["contains", "intersects"] }
-                  }
-                }
+                points: { type: "object", properties: { type: { type: "string", enum: ["contains", "intersects"] } } },
+                polygons: { type: "object", properties: { type: { type: "string", enum: ["contains", "intersects"] } } },
+                multipolygons: { type: "object", properties: { type: { type: "string", enum: ["contains", "intersects"] } } },
+                linestrings: { type: "object", properties: { type: { type: "string", enum: ["contains", "intersects"] } } }
               }
             },
             colors: {
@@ -380,6 +283,65 @@ const App = () => {
     }
   }, [activeDataExplorerFile, activeTab, filePreviews]);
 
+  const histogramSchema = {
+    type: "object",
+    title: "Histogram Configuration",
+    properties: {
+      columns: {
+        type: "array",
+        title: "Columns",
+        items: { type: "string" }
+      },
+      binsize: {
+        type: "number",
+        title: "Bin Size",
+        default: 10
+      },
+      groupby: {
+        type: "string",
+        title: "Group By Column"
+      },
+      aggregation: {
+        type: "object",
+        title: "Aggregation",
+        properties: {
+          type: {
+            type: "string",
+            title: "Type",
+            enum: ["count", "sum"]
+          },
+          column: {
+            type: "string",
+            title: "Column"
+          }
+        }
+      }
+    }
+  };
+
+  const histogramUiSchema = {
+    columns: {
+      "ui:widget": "array",
+      "items": {
+        "ui:placeholder": "Enter column name"
+      }
+    },
+    binsize: {
+      "ui:placeholder": "Enter bin size"
+    },
+    groupby: {
+      "ui:placeholder": "Enter group by column"
+    },
+    aggregation: {
+      type: {
+        "ui:widget": "select"
+      },
+      column: {
+        "ui:placeholder": "Enter aggregation column"
+      }
+    }
+  };
+
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = { ...currentSchema };
     const bufferProperties = newSchema.properties.buffer_layer.properties;
@@ -389,22 +351,10 @@ const App = () => {
     delete bufferProperties.length;
   
     if (bufferType === "circular") {
-      bufferProperties.distance = {
-        type: "number",
-        title: "Distance (meters)",
-        default: 1000
-      };
+      bufferProperties.distance = { type: "number", title: "Distance (meters)", default: 1000 };
     } else if (bufferType === "grid") {
-      bufferProperties.wide = {
-        type: "number",
-        title: "Width (meters)",
-        default: 1000
-      };
-      bufferProperties.length = {
-        type: "number",
-        title: "Length (meters)",
-        default: 1000
-      };
+      bufferProperties.wide = { type: "number", title: "Width (meters)", default: 1000 };
+      bufferProperties.length = { type: "number", title: "Length (meters)", default: 1000 };
     }
 
     return newSchema;
@@ -448,23 +398,16 @@ const App = () => {
       filter_global: formData.filter_global,
       activate_visualisation: formData.activate_visualisation,
       join_layers: formData.join_layers,
-      colors: formData.colors,
-      histogram_config: formData.histogram_config
+      colors: formData.colors
     };
-  
-    console.log("Submitted data in YAML format:", yaml.dump(yamlData));
   
     fetch('http://127.0.0.1:5000/submit', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(yamlData),
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+      if (!response.ok) throw new Error('Network response was not ok');
       return response.json();
     })
     .then(data => {
@@ -482,35 +425,6 @@ const App = () => {
         fetchParams = `${bufferType}_buffer`;
       }
 
-      const histPromises = formData.histogram_config.columns.map(columnConfig => {
-        const aggregationType = formData.histogram_config.aggregation.type || 'count';
-        const aggregationColumn = formData.histogram_config.aggregation.column || columnConfig;
-        const groupBy = formData.histogram_config.groupby || "None";
-        
-        return fetch(
-            `http://127.0.0.1:5000/get_histogram_html/${encodeURIComponent(aggregationType)}/${encodeURIComponent(aggregationColumn)}/${encodeURIComponent(groupBy)}?t=${Date.now()}`
-        )
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.text();
-        })
-        .then(html => ({ column: aggregationColumn, html }))
-        .catch(error => {
-            console.error('Error loading histogram:', error);
-            return { column: aggregationColumn, html: `<div class="error">Error loading histogram: ${error.message}</div>` };
-        });
-    });
-
-      Promise.all(histPromises)
-        .then(results => {
-          const newHistograms = {};
-          results.forEach(({ column, html }) => {
-            newHistograms[column] = html;
-          });
-          setHistograms(newHistograms);
-          setActiveTab('histogram');
-        });
-
       const cacheBuster = `?t=${Date.now()}`;
       fetch(`http://127.0.0.1:5000/get_table_html/${fetchParams}${cacheBuster}`)
         .then(response => response.text())
@@ -524,6 +438,38 @@ const App = () => {
       setSubmitMessage(`Error: ${error.message}`);
       console.error('Error:', error);
     });
+  };
+
+  const onHistogramSubmit = ({ formData }) => {
+    setHistogramFormData(formData);
+
+    const histPromises = formData.columns.map(columnConfig => {
+      const aggregationType = formData.aggregation.type || 'count';
+      const aggregationColumn = formData.aggregation.column || columnConfig;
+      const groupBy = formData.groupby || "None";
+      
+      return fetch(
+        `http://127.0.0.1:5000/get_histogram_html/${encodeURIComponent(aggregationType)}/${encodeURIComponent(aggregationColumn)}/${encodeURIComponent(groupBy)}?t=${Date.now()}`
+      )
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.text();
+      })
+      .then(html => ({ column: aggregationColumn, html }))
+      .catch(error => {
+        console.error('Error loading histogram:', error);
+        return { column: aggregationColumn, html: `<div class="error">Error loading histogram: ${error.message}</div>` };
+      });
+    });
+
+    Promise.all(histPromises)
+      .then(results => {
+        const newHistograms = {};
+        results.forEach(({ column, html }) => {
+          newHistograms[column] = html;
+        });
+        setHistograms(newHistograms);
+      });
   };
 
   const handleTabChange = (tab) => {
@@ -570,105 +516,38 @@ const App = () => {
 
   const uiSchema = {
     "ui:order": [
-      "data_files",
-      "buffer_layer",
-      "filter_data_files",
-      "ratio_columns",
-      "multiply_columns",
-      "sum_columns",
-      "max_columns",
-      "min_columns",
-      "mean_columns",
-      "std_columns",
-      "count_columns",
-      "count_distinct_columns",
-      "groupby_columns",
-      "filter_global",
-      "activate_visualisation",
-      "join_layers",
-      "colors",
-      "histogram_config"
+      "data_files", "buffer_layer", "filter_data_files", "ratio_columns", "multiply_columns",
+      "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns",
+      "count_columns", "count_distinct_columns", "groupby_columns", "filter_global",
+      "activate_visualisation", "join_layers", "colors"
     ],
     data_files: {
       "items": {
-        name: {
-          "ui:placeholder": "Enter custom file name"
-        },
-        path: {
-          "ui:disabled": true,
-          "ui:widget": "text"
-        }
+        name: { "ui:placeholder": "Enter custom file name" },
+        path: { "ui:disabled": true, "ui:widget": "text" }
       }
     },
     buffer_layer: {
-      layer_name: {
-        "ui:placeholder": "Enter layer name"
-      },
-      geometry_type: {
-        "ui:placeholder": "Select geometry type"
-      },
-      buffer_type: {
-        "ui:placeholder": "Select buffer type"
-      },
-      distance: {
-        "ui:placeholder": "Enter buffer distance in meters"
-      }
+      layer_name: { "ui:placeholder": "Enter layer name" },
+      geometry_type: { "ui:placeholder": "Select geometry type" },
+      buffer_type: { "ui:placeholder": "Select buffer type" },
+      distance: { "ui:placeholder": "Enter buffer distance in meters" }
     },
     ratio_columns: {
       "items": {
-        name: {
-          "ui:placeholder": "Enter ratio name"
-        },
-        numerator: {
-          "ui:placeholder": "Enter numerator column"
-        },
-        denominator: {
-          "ui:placeholder": "Enter denominator column"
-        }
+        name: { "ui:placeholder": "Enter ratio name" },
+        numerator: { "ui:placeholder": "Enter numerator column" },
+        denominator: { "ui:placeholder": "Enter denominator column" }
       }
     },
     multiply_columns: {
       "items": {
-        name: {
-          "ui:placeholder": "Enter multiply name"
-        },
-        columns: {
-          "items": {
-            "ui:placeholder": "Enter column to multiply"
-          }
-        }
+        name: { "ui:placeholder": "Enter multiply name" },
+        columns: { "items": { "ui:placeholder": "Enter column to multiply" } }
       }
     },
     filter_data_files: {
       "ui:ObjectFieldTemplate": CustomObjectFieldTemplate
-    },
-    histogram_config: {
-      columns: {
-        "ui:widget": "array",
-        "items": {
-          "ui:placeholder": "Enter column name"
-        }
-      },
-      binsize: {
-        "ui:placeholder": "Enter bin size"
-      },
-      groupby: {
-        "ui:placeholder": "Enter group by column"
-      },
-      aggregation: {
-        type: {
-          "ui:widget": "select",
-          "ui:options": {
-            "enumOptions": [
-              { "value": "count", "label": "Count" },
-              { "value": "sum", "label": "Sum" }
-            ]
-          }
-        },
-        column: {
-          "ui:placeholder": "Enter aggregation column"
-        }
-      }
     }
   };
 
@@ -785,8 +664,19 @@ const App = () => {
       {activeTab === 'histogram' && (
         <div className="histogram-container">
           <h2>Histograms</h2>
+          <div className="histogram-form">
+            <Form
+              schema={histogramSchema}
+              uiSchema={histogramUiSchema}
+              formData={histogramFormData}
+              onChange={({ formData }) => setHistogramFormData(formData)}
+              onSubmit={onHistogramSubmit}
+            >
+              <button type="submit">Generate Histograms</button>
+            </Form>
+          </div>
           {Object.keys(histograms).length === 0 ? (
-            <p>No histograms generated yet. Submit the form to generate histograms.</p>
+            <p>No histograms generated yet. Configure and submit above to generate histograms.</p>
           ) : (
             Object.entries(histograms).map(([columnName, html]) => (
               <div key={columnName} className="histogram-item">
