@@ -443,33 +443,41 @@ const App = () => {
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
 
-    const histPromises = formData.columns.map(columnConfig => {
-      const aggregationType = formData.aggregation.type || 'count';
-      const aggregationColumn = formData.aggregation.column || columnConfig;
-      const groupBy = formData.groupby || "None";
-      
-      return fetch(
-        `http://127.0.0.1:5000/get_histogram_html/${encodeURIComponent(aggregationType)}/${encodeURIComponent(aggregationColumn)}/${encodeURIComponent(groupBy)}?t=${Date.now()}`
-      )
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.text();
-      })
-      .then(html => ({ column: aggregationColumn, html }))
-      .catch(error => {
-        console.error('Error loading histogram:', error);
-        return { column: aggregationColumn, html: `<div class="error">Error loading histogram: ${error.message}</div>` };
+    fetch('http://127.0.0.1:5000/generate_histogram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to generate histograms');
+      return response.json();
+    })
+    .then(data => {
+      const histogramPromises = Object.entries(data.histograms).map(([column, filepath]) =>
+        fetch(`http://127.0.0.1:5000/get_histogram_html/${filepath.split('/').pop()}?t=${Date.now()}`)
+          .then(response => response.text())
+          .then(html => ({ column, html }))
+          .catch(error => ({
+            column,
+            html: `<div class="error">Error loading histogram: ${error.message}</div>`
+          }))
+      );
+
+      Promise.all(histogramPromises)
+        .then(results => {
+          const newHistograms = {};
+          results.forEach(({ column, html }) => {
+            newHistograms[column] = html;
+          });
+          setHistograms(newHistograms);
+        });
+    })
+    .catch(error => {
+      console.error('Error generating histograms:', error);
+      setHistograms({
+        error: `<div class="error">Error: ${error.message}</div>`
       });
     });
-
-    Promise.all(histPromises)
-      .then(results => {
-        const newHistograms = {};
-        results.forEach(({ column, html }) => {
-          newHistograms[column] = html;
-        });
-        setHistograms(newHistograms);
-      });
   };
 
   const handleTabChange = (tab) => {

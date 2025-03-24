@@ -184,81 +184,41 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
     fig.write_html(filename)
 
 
-def visualize_histogram(histogram_data: dict, col: str, buffer_type: str, histogram_config: dict, **buffer_params):
+def visualize_histogram(histogram_data, column, buffer_type, histogram_config=None):
+    """
+    Visualize histogram data and save as HTML.
+    """
+    output_dir = "./data/output/visualisation/"
+    os.makedirs(output_dir, exist_ok=True)
 
-    BAR_COLOR = "#4CAF50"  # Green (adjust to your preference)
-    BACKGROUND_COLOR = "#1E1E1E"  # Dark gray
-    TEXT_COLOR = "#FFFFFF"
-    
-    if col not in histogram_data:
-        print(f"No data found for column {col}, skipping histogram visualization")
+    # Use a generic filename for histograms
+    filename = f"histogram_{column}.html"
+
+    # Extract histogram data for the column
+    data = histogram_data.get(column, {})
+    if not data:
         return None
-    
-    agg_data = histogram_data[col]
-    groupby_column = histogram_config.get('groupby', None)
-    aggregation = histogram_config.get('aggregation', {})
-    aggregation_type = aggregation.get('type', 'count')
-    aggregation_column = aggregation.get('column', col)
-    # binsize = histogram_config.get('binsize', 10)
-    
-    if groupby_column and groupby_column in agg_data.columns:
-        fig = px.bar(
-            agg_data,
-            x=f'{col}_bin',
-            y='value',
-            color=groupby_column,
-            barmode='group',
-            title=f'Distribution of {col} by {groupby_column} ({aggregation_type} of {aggregation_column})',
-            labels={f'{col}_bin': col, 'value': aggregation_type.capitalize(), groupby_column: groupby_column},
-            text='value',
-            height=600,
-            width=1000,
-            color_discrete_sequence=px.colors.qualitative.Plotly  # Explicit color palette for groups
-        )
-    else:
-        fig = px.bar(
-            agg_data,
-            x=f'{col}_bin',
-            y='value',
-            title=f'Distribution of {col} ({aggregation_type} of {aggregation_column})',
-            labels={f'{col}_bin': col, 'value': aggregation_type.capitalize()},
-            text='value',
-            height=600,
-            width=800,
-            color_discrete_sequence=[BAR_COLOR]  # Single color for non-grouped bars
-        )
 
-    # Update layout for visibility
+    # Create a bar plot using Plotly
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=data["bins"],
+                y=data["counts"],
+                text=data["counts"],
+                textposition="auto",
+            )
+        ]
+    )
+
+    # Update layout with titles and labels
     fig.update_layout(
-        plot_bgcolor=BACKGROUND_COLOR,
-        paper_bgcolor=BACKGROUND_COLOR,
-        font_color=TEXT_COLOR,
-        xaxis=dict(showgrid=False),
-        yaxis=dict(showgrid=False, gridcolor='rgba(255,255,255,0.1)')
+        title=data.get("title", f"Histogram of {column}"),
+        xaxis_title=data.get("xlabel", column),
+        yaxis_title=data.get("ylabel", "Frequency"),
+        bargap=0.2,
     )
-    fig.update_traces(
-        textposition='outside',
-        textfont=dict(color=TEXT_COLOR),
-        marker=dict(line=dict(color=BACKGROUND_COLOR, width=1))  # Add bar borders
-    )
-    filename_base = f"hist_{aggregation_type}_{aggregation_column}"
-    filename_base = filename_base.replace(" ", "_").lower()  # NORMALIZE HERE
 
-    if groupby_column and groupby_column in agg_data.columns:
-        groupby_normalized = groupby_column.replace(" ", "_").lower()  # NORMALIZE GROUPBY
-        filename = f"{filename_base}_grouped_by_{groupby_normalized}.html"
-    else:
-        filename = f"{filename_base}.html"
-        
-    filepath = os.path.join("./data/output/visualisation/", filename)
-    
-    # Remove existing file and save new
-    if os.path.exists(filepath):
-        os.remove(filepath)
-        
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    
-    fig.write_html(filepath)
-    
-    return filepath
+    # Save the plot as HTML
+    fig.write_html(os.path.join(output_dir, filename))
+    return filename

@@ -9,6 +9,8 @@ import utils.visualisation.visualisation as visualisation
 import yaml
 import time
 import pandas as pd
+import geopandas as gpd
+import os
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -24,7 +26,6 @@ data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
 join_layers = config.get("join_layers")
 colors = config.get("colors")
-histogram_config = config.get('histogram_config', {})
 metrics_config = {
     "sum": config["sum_columns"],
     "max": config["max_columns"],
@@ -37,7 +38,7 @@ metrics_config = {
     "count_distinct": config["count_distinct_columns"]
 }
 
-# Charger les fichers geojson
+# Charger les fichiers geojson
 geodataframes = utils.load_files_to_gdf(data_files)
 
 geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
@@ -50,6 +51,24 @@ buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygo
 
 join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
 fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
+
+# Save fusion_gdf for histogram use later, handling multiple geometry columns
+output_dir = "./data/output/"
+os.makedirs(output_dir, exist_ok=True)
+
+# Identify geometry columns (assuming 'geometry' is the primary one from buffers_gdf)
+geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype)]
+
+if len(geometry_columns) > 1:
+    # Keep 'geometry' as the primary column, convert others to WKT
+    primary_geometry = 'geometry'  # Assuming this is the column from buffers_gdf
+    for geo_col in geometry_columns:
+        if geo_col != primary_geometry:
+            fusion_gdf[geo_col + '_wkt'] = fusion_gdf[geo_col].to_wkt()
+            fusion_gdf = fusion_gdf.drop(columns=[geo_col])
+
+# Save the GeoDataFrame with a single geometry column
+fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=fusion_gdf,
@@ -66,24 +85,6 @@ for layer_name in buffer_layer:
     if 'buffer_type' in buffer_params:
         del buffer_params['buffer_type']
 
-    histogram_data = metrics.calculate_histogram_data(
-        fusion_gdf,
-        histogram_config=config.get('histogram_config', {})
-    )
-
-    generated_histograms = []
-    for col in config.get('histogram_config', {}).get('columns', []):
-        histogram_filename = visualisation.visualize_histogram(
-            histogram_data,
-            col,
-            buffer_type,
-            histogram_config=config.get('histogram_config', {}),
-            **buffer_params
-        )
-        if histogram_filename:
-            generated_histograms.append(histogram_filename)
-
-    
     if buffer_type == 'circular':
         distance = buffer_layer[layer_name].get('distance')
         print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
@@ -113,15 +114,12 @@ for layer_name in buffer_layer:
                 wide=wide,
                 length=length
             )
-    elif buffer_type == 'zones':  # Add zones support
+    elif buffer_type == 'zones':
         print(f"Processing pre-defined zones for {layer_name}")
-        
-        # Add zone-specific parameters if needed (e.g., zone_id=...)
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type
         )
-        
         if activate_visualisation:
             visualisation.create_layers_and_map(
                 geodataframes, points_gdf, polygons_gdf, multipolygons_gdf,
