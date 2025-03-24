@@ -192,70 +192,67 @@ def calculate_histogram_data(gdf, histogram_config):
     binsize = histogram_config.get("binsize", 10)
     groupby = histogram_config.get("groupby", "")
     aggregation = histogram_config.get("aggregation", {"type": "count", "column": ""})
+    custom_bins = histogram_config.get("customBins", None)
+    custom_labels = histogram_config.get("customLabels", None)
 
     print(f"Histogram config: {histogram_config}")
     print(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
-    print(f"Condition check: groupby={bool(groupby)}, type={aggregation['type'] == 'count'}, column={bool(aggregation['column'])}")
+    print(f"Custom Bins: {custom_bins}, Custom Labels: {custom_labels}")
 
     histogram_data = {}
 
+    # Validate the configuration
+    if not (groupby and aggregation["type"] == "count" and aggregation["column"]):
+        raise ValueError("Histogram configuration must include groupby, aggregation type 'count', and an aggregation column")
+
+    # Validate custom bins and labels
+    if custom_bins is None or custom_labels is None:
+        # Fallback to default bins and labels if not provided
+        custom_bins = [0, 10, 20, 40, float("inf")]
+        custom_labels = ["0-9", "10-19", "20-39", "40+"]
+    else:
+        # Ensure custom_bins is a list of numbers
+        if not isinstance(custom_bins, list) or len(custom_bins) < 2:
+            raise ValueError("customBins must be a list of at least two numbers")
+        if not all(isinstance(x, (int, float)) for x in custom_bins):
+            raise ValueError("All customBins values must be numbers")
+        if not all(custom_bins[i] <= custom_bins[i + 1] for i in range(len(custom_bins) - 1)):
+            raise ValueError("customBins must be in ascending order")
+
+        # Ensure custom_labels is a list of strings with correct length
+        if not isinstance(custom_labels, list) or len(custom_labels) != len(custom_bins) - 1:
+            raise ValueError(f"customLabels must be a list of {len(custom_bins) - 1} strings")
+        if not all(isinstance(label, str) for label in custom_labels):
+            raise ValueError("All customLabels values must be strings")
+
     for col in columns:
-        if groupby and aggregation["type"] == "count" and aggregation["column"]:
-            print("Entering count aggregation block")
-            # Step 1: Group by 'name_left' and count non-null 'stop_id' per group
-            agg_col = aggregation["column"]
-            grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
+        # Group by 'name_left' and count non-null 'stop_id' per group
+        agg_col = aggregation["column"]
+        grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
 
-            # Ensure 'count' column is numeric
-            grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
+        # Ensure 'count' column is numeric
+        grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
 
-            # Step 2: Define custom bins (0-9, 10-19, 20-39, 40+)
-            bins = [0, 10, 20, 40, float("inf")]
-            labels = ["0-9", "10-19", "20-39", "40+"]
+        # Bin the counts using custom bins and labels
+        grouped["bin"] = pd.cut(
+            grouped["count"],
+            bins=custom_bins,
+            labels=custom_labels,
+            include_lowest=True,
+            right=False
+        )
 
-            # Step 3: Bin the counts
-            grouped["bin"] = pd.cut(grouped["count"], bins=bins, labels=labels, include_lowest=True, right=False)
+        # Count the number of buffers in each bin
+        bin_counts = grouped["bin"].value_counts().sort_index()
 
-            # Step 4: Count the number of buffers in each bin
-            bin_counts = grouped["bin"].value_counts().sort_index()
-
-            # Step 5: Prepare data for visualization
-            histogram_data[col] = {
-                "bins": labels,
-                "counts": bin_counts.tolist(),
-                "title": f"Number of Buffers by Bus Stops (grouped by {groupby})",
-                "xlabel": "Number of Bus Stops",
-                "ylabel": "Number of Buffers"
-            }
-        else:
-            print("Entering fallback block")
-            # Fallback for other types of histograms
-            data = gdf[col].dropna()
-            # Ensure data is numeric
-            data = pd.to_numeric(data, errors='coerce').dropna()
-            if len(data) > 0:
-                # Ensure binsize results in a valid number of bins
-                bin_range = data.max() - data.min()
-                num_bins = int(bin_range / binsize) if bin_range > 0 else 1
-                num_bins = max(1, num_bins)  # Ensure at least 1 bin
-                hist, bin_edges = np.histogram(data, bins=num_bins)
-                histogram_data[col] = {
-                    "bins": bin_edges.tolist(),
-                    "counts": hist.tolist(),
-                    "title": f"Histogram of {col}",
-                    "xlabel": col,
-                    "ylabel": "Frequency"
-                }
-            else:
-                # If no numeric data, skip this column and log a message
-                print(f"Cannot create histogram for column {col}: No numeric data available after conversion")
-                histogram_data[col] = {
-                    "bins": [],
-                    "counts": [],
-                    "title": f"Histogram of {col} (No Numeric Data)",
-                    "xlabel": col,
-                    "ylabel": "Frequency"
-                }
+        # Prepare data for visualization
+        histogram_data[col] = {
+            "bins": custom_labels,
+            "counts": bin_counts.tolist(),
+            "title": f"Number of Buffers by Bus Stops (grouped by {groupby})",
+            "xlabel": "Number of Bus Stops",
+            "ylabel": "Number of Buffers"
+        }
 
     return histogram_data
 

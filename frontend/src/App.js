@@ -84,7 +84,9 @@ const App = () => {
     columns: [],
     binsize: 10,
     groupby: "",
-    aggregation: { type: "count", column: "" }
+    aggregation: { type: "count", column: "" },
+    customBins: "", // New field for custom bins
+    customLabels: "", // New field for custom labels
   });
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
@@ -315,6 +317,16 @@ const App = () => {
             title: "Column"
           }
         }
+      },
+      customBins: {
+        type: "string",
+        title: "Custom Bins (comma-separated, e.g., 0,10,20,40,Infinity)",
+        default: ""
+      },
+      customLabels: {
+        type: "string",
+        title: "Custom Labels (comma-separated, e.g., 0-9,10-19,20-39,40+)",
+        default: ""
       }
     }
   };
@@ -339,6 +351,12 @@ const App = () => {
       column: {
         "ui:placeholder": "Enter aggregation column"
       }
+    },
+    customBins: {
+      "ui:placeholder": "e.g., 0,10,20,40,Infinity"
+    },
+    customLabels: {
+      "ui:placeholder": "e.g., 0-9,10-19,20-39,40+"
     }
   };
 
@@ -443,10 +461,45 @@ const App = () => {
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
 
+    // Process customBins and customLabels
+    const bins = formData.customBins
+      .split(',')
+      .map((val) => {
+        val = val.trim();
+        if (val.toLowerCase() === 'infinity') return Infinity;
+        return parseFloat(val);
+      })
+      .filter((val) => !isNaN(val));
+
+    const labels = formData.customLabels
+      .split(',')
+      .map((val) => val.trim())
+      .filter((val) => val !== '');
+
+    // Validate bins and labels
+    if (bins.length < 2) {
+      setHistograms({
+        error: `<div class="error">Error: Please provide at least two bin edges (e.g., "0,10,20,40,Infinity").</div>`
+      });
+      return;
+    }
+    if (labels.length !== bins.length - 1) {
+      setHistograms({
+        error: `<div class="error">Error: Number of labels (${labels.length}) must be equal to number of bins (${bins.length - 1}).</div>`
+      });
+      return;
+    }
+
+    const configToSend = {
+      ...formData,
+      customBins: bins,
+      customLabels: labels,
+    };
+
     fetch('http://127.0.0.1:5000/generate_histogram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(configToSend),
     })
     .then(response => {
       if (!response.ok) throw new Error('Failed to generate histograms');
@@ -685,6 +738,8 @@ const App = () => {
           </div>
           {Object.keys(histograms).length === 0 ? (
             <p>No histograms generated yet. Configure and submit above to generate histograms.</p>
+          ) : histograms.error ? (
+            <div dangerouslySetInnerHTML={{ __html: histograms.error }} />
           ) : (
             Object.entries(histograms).map(([columnName, html]) => (
               <div key={columnName} className="histogram-item">

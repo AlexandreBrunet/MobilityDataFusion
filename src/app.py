@@ -95,15 +95,17 @@ def generate_histogram():
                 histogram_data,
                 col,
                 buffer_type="histogram"
-                # Removed histogram_config parameter
             )
             if histogram_filename:
                 generated_histograms[col] = histogram_filename
         
         return jsonify({"histograms": generated_histograms}), 200
+    except ValueError as ve:
+        logging.error(f"Validation error: {str(ve)}")
+        return jsonify({"error": f"Validation error: {str(ve)}"}), 400
     except Exception as e:
         logging.error(f"Error generating histogram: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error generating histogram: {str(e)}"}), 500
     
 @app.route('/get_histogram_html/<path:filename>')
 def get_histogram_html(filename):
