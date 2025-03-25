@@ -85,8 +85,8 @@ const App = () => {
     binsize: 10,
     groupby: "",
     aggregation: { type: "count", column: "" },
-    customBins: "", // New field for custom bins
-    customLabels: "", // New field for custom labels
+    customBins: "",
+    customLabels: "",
   });
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
@@ -320,12 +320,12 @@ const App = () => {
       },
       customBins: {
         type: "string",
-        title: "Custom Bins (comma-separated, e.g., 0,10,20,40,Infinity)",
+        title: "Custom Bins (comma-separated, e.g., 0,5,15,30,50,Infinity)",
         default: ""
       },
       customLabels: {
         type: "string",
-        title: "Custom Labels (comma-separated, e.g., 0-9,10-19,20-39,40+)",
+        title: "Custom Labels (comma-separated, e.g., 0-5,6-15,16-30,31-50,51+)",
         default: ""
       }
     }
@@ -353,10 +353,11 @@ const App = () => {
       }
     },
     customBins: {
-      "ui:placeholder": "e.g., 0,10,20,40,Infinity"
+      "ui:placeholder": "e.g., 0,5,15,30,50,Infinity"
     },
     customLabels: {
-      "ui:placeholder": "e.g., 0-9,10-19,20-39,40+"
+      "ui:placeholder": "e.g., 0-5,6-15,16-30,31-50,51+",
+      "ui:help": "Note: Intervals are right-inclusive (e.g., 0-5 includes 0 to 5). The number of labels must equal the number of bins (e.g., for bins 0,10,20,30,40,Infinity, provide 5 labels like 0-9,10-19,20-29,30-39,40+). The last label typically ends with '+' (e.g., 51+). If the last label ends with '+', the last bin will automatically extend to Infinity."
     }
   };
 
@@ -460,9 +461,9 @@ const App = () => {
 
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
-
+  
     // Process customBins and customLabels
-    const bins = formData.customBins
+    let bins = formData.customBins
       .split(',')
       .map((val) => {
         val = val.trim();
@@ -470,12 +471,12 @@ const App = () => {
         return parseFloat(val);
       })
       .filter((val) => !isNaN(val));
-
+  
     const labels = formData.customLabels
       .split(',')
       .map((val) => val.trim())
       .filter((val) => val !== '');
-
+  
     // Validate bins and labels
     if (bins.length < 2) {
       setHistograms({
@@ -483,19 +484,32 @@ const App = () => {
       });
       return;
     }
-    if (labels.length !== bins.length - 1) {
+  
+    // If the last label ends with "+", ensure the last bin edge is Infinity
+    const lastLabel = labels[labels.length - 1];
+    if (lastLabel.endsWith('+') && bins[bins.length - 1] !== Infinity) {
+      bins.push(Infinity);
+    }
+  
+    const expectedLabelCount = bins.length - 1;
+    if (labels.length !== expectedLabelCount) {
       setHistograms({
-        error: `<div class="error">Error: Number of labels (${labels.length}) must be equal to number of bins (${bins.length - 1}).</div>`
+        error: `<div class="error">Error: Number of labels (${labels.length}) must be equal to number of bins (${expectedLabelCount}). For bins ${bins.join(',')}, provide ${expectedLabelCount} labels (e.g., "0-9,10-19,20-29,30-39,40+").</div>`
       });
       return;
     }
-
+  
+    // Replace Infinity with a string placeholder for serialization
+    const binsForSerialization = bins.map((val) =>
+      val === Infinity ? "Infinity" : val
+    );
+  
     const configToSend = {
       ...formData,
-      customBins: bins,
+      customBins: binsForSerialization,
       customLabels: labels,
     };
-
+  
     fetch('http://127.0.0.1:5000/generate_histogram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -515,7 +529,7 @@ const App = () => {
             html: `<div class="error">Error loading histogram: ${error.message}</div>`
           }))
       );
-
+  
       Promise.all(histogramPromises)
         .then(results => {
           const newHistograms = {};

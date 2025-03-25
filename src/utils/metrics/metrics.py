@@ -211,27 +211,39 @@ def calculate_histogram_data(gdf, histogram_config):
         custom_bins = [0, 10, 20, 40, float("inf")]
         custom_labels = ["0-9", "10-19", "20-39", "40+"]
     else:
-        # Ensure custom_bins is a list of numbers
+        # Ensure custom_bins is a list of numbers, converting "Infinity" to float("inf")
         if not isinstance(custom_bins, list) or len(custom_bins) < 2:
             raise ValueError("customBins must be a list of at least two numbers")
+        
+        # Convert "Infinity" strings to float("inf")
+        custom_bins = [
+            float("inf") if x == "Infinity" else x for x in custom_bins
+        ]
+        
+        # Validate that all elements are numbers
         if not all(isinstance(x, (int, float)) for x in custom_bins):
-            raise ValueError("All customBins values must be numbers")
+            raise ValueError(f"All customBins values must be numbers, got: {custom_bins}")
         if not all(custom_bins[i] <= custom_bins[i + 1] for i in range(len(custom_bins) - 1)):
             raise ValueError("customBins must be in ascending order")
 
         # Ensure custom_labels is a list of strings with correct length
-        if not isinstance(custom_labels, list) or len(custom_labels) != len(custom_bins) - 1:
-            raise ValueError(f"customLabels must be a list of {len(custom_bins) - 1} strings")
+        expected_label_count = len(custom_bins) - 1
+        if not isinstance(custom_labels, list) or len(custom_labels) != expected_label_count:
+            raise ValueError(f"customLabels must be a list of exactly {expected_label_count} strings, but got {len(custom_labels)} labels: {custom_labels}")
         if not all(isinstance(label, str) for label in custom_labels):
             raise ValueError("All customLabels values must be strings")
 
     for col in columns:
-        # Group by 'name_left' and count non-null 'stop_id' per group
+        # Group by 'name' and count non-null 'stop_id' per group
         agg_col = aggregation["column"]
         grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
 
         # Ensure 'count' column is numeric
         grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
+
+        # Debugging: Print the counts to verify the data
+        print(f"Counts before binning for column {col}:\n{grouped[['name', 'count']]}")
+        print(f"Count distribution:\n{grouped['count'].value_counts().sort_index()}")
 
         # Bin the counts using custom bins and labels
         grouped["bin"] = pd.cut(
@@ -239,11 +251,19 @@ def calculate_histogram_data(gdf, histogram_config):
             bins=custom_bins,
             labels=custom_labels,
             include_lowest=True,
-            right=False
+            right=True  # Right-inclusive intervals
         )
+
+        # Debugging: Check for unassigned (NaN) bins
+        if grouped["bin"].isna().any():
+            print(f"Warning: Some counts were not binned for column {col}:\n{grouped[grouped['bin'].isna()][['name', 'count']]}")
+            raise ValueError(f"Some counts were not binned for column {col}. Check the bin edges: {custom_bins}")
 
         # Count the number of buffers in each bin
         bin_counts = grouped["bin"].value_counts().sort_index()
+
+        # Debugging: Print the bin counts
+        print(f"Bin counts for column {col}:\n{bin_counts}")
 
         # Prepare data for visualization
         histogram_data[col] = {
