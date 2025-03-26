@@ -15,14 +15,10 @@ def get_join_layers(points_gdfs, polygons_gdfs, multipolygons_gdfs, linestrings_
         join_data["linestrings"] = linestrings_gdfs
     return join_data
 
-import geopandas as gpd
-import pandas as pd
-from typing import Dict
 
 def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: Dict[str, Dict[str, gpd.GeoDataFrame]], join_layers: Dict[str, Dict[str, str]]) -> gpd.GeoDataFrame:
-    
     buffer_joins = []
-    
+
     for buffer_name, buffer_gdf in buffer_gdfs.items():
         buffer_crs = buffer_gdf.crs
         
@@ -67,13 +63,11 @@ def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: D
     if not buffer_joins:
         return gpd.GeoDataFrame()
     
-    # Preserve geometry information and combine results
     final_gdf = gpd.GeoDataFrame(
         pd.concat(buffer_joins, ignore_index=True),
         crs=buffer_gdfs[next(iter(buffer_gdfs))].crs
     )
-    
-    # Clean up index columns
+
     final_gdf = final_gdf.drop(columns=['index_right'], errors='ignore')
-    
+
     return final_gdf

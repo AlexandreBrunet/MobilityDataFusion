@@ -82,9 +82,10 @@ const App = () => {
   const [histograms, setHistograms] = useState({});
   const [histogramFormData, setHistogramFormData] = useState({
     columns: [],
-    binsize: 10,
     groupby: "",
-    aggregation: { type: "count", column: "" }
+    aggregation: { type: "count", column: "" },
+    customBins: "",
+    customLabels: "",
   });
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
@@ -292,11 +293,6 @@ const App = () => {
         title: "Columns",
         items: { type: "string" }
       },
-      binsize: {
-        type: "number",
-        title: "Bin Size",
-        default: 10
-      },
       groupby: {
         type: "string",
         title: "Group By Column"
@@ -315,6 +311,16 @@ const App = () => {
             title: "Column"
           }
         }
+      },
+      customBins: {
+        type: "string",
+        title: "Custom Bins (comma-separated, e.g., 0,5,15,30,50,Infinity)",
+        default: ""
+      },
+      customLabels: {
+        type: "string",
+        title: "Custom Labels (comma-separated, e.g., 0-5,6-15,16-30,31-50,51+)",
+        default: ""
       }
     }
   };
@@ -326,9 +332,6 @@ const App = () => {
         "ui:placeholder": "Enter column name"
       }
     },
-    binsize: {
-      "ui:placeholder": "Enter bin size"
-    },
     groupby: {
       "ui:placeholder": "Enter group by column"
     },
@@ -339,6 +342,13 @@ const App = () => {
       column: {
         "ui:placeholder": "Enter aggregation column"
       }
+    },
+    customBins: {
+      "ui:placeholder": "e.g., 0,5,15,30,50,Infinity"
+    },
+    customLabels: {
+      "ui:placeholder": "e.g., 0-5,6-15,16-30,31-50,51+",
+      "ui:help": "Note: Intervals are right-inclusive (e.g., 0-5 includes 0 to 5). The number of labels must equal the number of bins (e.g., for bins 0,10,20,30,40,Infinity, provide 5 labels like 0-9,10-19,20-29,30-39,40+). The last label typically ends with '+' (e.g., 51+). If the last label ends with '+', the last bin will automatically extend to Infinity."
     }
   };
 
@@ -442,34 +452,90 @@ const App = () => {
 
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
-
-    const histPromises = formData.columns.map(columnConfig => {
-      const aggregationType = formData.aggregation.type || 'count';
-      const aggregationColumn = formData.aggregation.column || columnConfig;
-      const groupBy = formData.groupby || "None";
-      
-      return fetch(
-        `http://127.0.0.1:5000/get_histogram_html/${encodeURIComponent(aggregationType)}/${encodeURIComponent(aggregationColumn)}/${encodeURIComponent(groupBy)}?t=${Date.now()}`
-      )
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.text();
+  
+    // Process customBins and customLabels
+    let bins = formData.customBins
+      .split(',')
+      .map((val) => {
+        val = val.trim();
+        if (val.toLowerCase() === 'infinity') return Infinity;
+        return parseFloat(val);
       })
-      .then(html => ({ column: aggregationColumn, html }))
-      .catch(error => {
-        console.error('Error loading histogram:', error);
-        return { column: aggregationColumn, html: `<div class="error">Error loading histogram: ${error.message}</div>` };
+      .filter((val) => !isNaN(val));
+  
+    const labels = formData.customLabels
+      .split(',')
+      .map((val) => val.trim())
+      .filter((val) => val !== '');
+  
+    // Validate bins and labels
+    if (bins.length < 2) {
+      setHistograms({
+        error: `<div class="error">Error: Please provide at least two bin edges (e.g., "0,10,20,40,Infinity").</div>`
+      });
+      return;
+    }
+  
+    // If the last label ends with "+", ensure the last bin edge is Infinity
+    const lastLabel = labels[labels.length - 1];
+    if (lastLabel.endsWith('+') && bins[bins.length - 1] !== Infinity) {
+      bins.push(Infinity);
+    }
+  
+    const expectedLabelCount = bins.length - 1;
+    if (labels.length !== expectedLabelCount) {
+      setHistograms({
+        error: `<div class="error">Error: Number of labels (${labels.length}) must be equal to number of bins (${expectedLabelCount}). For bins ${bins.join(',')}, provide ${expectedLabelCount} labels (e.g., "0-9,10-19,20-29,30-39,40+").</div>`
+      });
+      return;
+    }
+  
+    // Replace Infinity with a string placeholder for serialization
+    const binsForSerialization = bins.map((val) =>
+      val === Infinity ? "Infinity" : val
+    );
+  
+    const configToSend = {
+      ...formData,
+      customBins: binsForSerialization,
+      customLabels: labels,
+    };
+  
+    fetch('http://127.0.0.1:5000/generate_histogram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(configToSend),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to generate histograms');
+      return response.json();
+    })
+    .then(data => {
+      const histogramPromises = Object.entries(data.histograms).map(([column, filepath]) =>
+        fetch(`http://127.0.0.1:5000/get_histogram_html/${filepath.split('/').pop()}?t=${Date.now()}`)
+          .then(response => response.text())
+          .then(html => ({ column, html }))
+          .catch(error => ({
+            column,
+            html: `<div class="error">Error loading histogram: ${error.message}</div>`
+          }))
+      );
+  
+      Promise.all(histogramPromises)
+        .then(results => {
+          const newHistograms = {};
+          results.forEach(({ column, html }) => {
+            newHistograms[column] = html;
+          });
+          setHistograms(newHistograms);
+        });
+    })
+    .catch(error => {
+      console.error('Error generating histograms:', error);
+      setHistograms({
+        error: `<div class="error">Error: ${error.message}</div>`
       });
     });
-
-    Promise.all(histPromises)
-      .then(results => {
-        const newHistograms = {};
-        results.forEach(({ column, html }) => {
-          newHistograms[column] = html;
-        });
-        setHistograms(newHistograms);
-      });
   };
 
   const handleTabChange = (tab) => {
@@ -677,6 +743,8 @@ const App = () => {
           </div>
           {Object.keys(histograms).length === 0 ? (
             <p>No histograms generated yet. Configure and submit above to generate histograms.</p>
+          ) : histograms.error ? (
+            <div dangerouslySetInnerHTML={{ __html: histograms.error }} />
           ) : (
             Object.entries(histograms).map(([columnName, html]) => (
               <div key={columnName} className="histogram-item">

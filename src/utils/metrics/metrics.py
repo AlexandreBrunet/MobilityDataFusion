@@ -1,9 +1,6 @@
 import pandas as pd
 import warnings
-import os
-import geopandas as gpd
 import numpy as np
-import plotly.express as px
 
 def calculate_sum(gdf, groupby_columns, sum_columns):
     parsed_columns = [parse_column_name(col) for col in sum_columns]
@@ -190,68 +187,96 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
 
     return agg_stats.round(2)
 
-def calculate_histogram_data(gdf: gpd.GeoDataFrame, histogram_config: dict):
-    if not isinstance(histogram_config, dict):
-        raise TypeError("histogram_config must be a dictionary")
+def calculate_histogram_data(gdf, histogram_config):
+    columns = histogram_config.get("columns", [])
+    groupby = histogram_config.get("groupby", "")
+    aggregation = histogram_config.get("aggregation", {"type": "count", "column": ""})
+    custom_bins = histogram_config.get("customBins", None)
+    custom_labels = histogram_config.get("customLabels", None)
+
+    print(f"Histogram config: {histogram_config}")
+    print(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
+    print(f"Custom Bins: {custom_bins}, Custom Labels: {custom_labels}")
 
     histogram_data = {}
-    
-    # Get histogram parameters from config
-    columns = histogram_config.get('columns', [])
-    binsize = histogram_config.get('binsize', 10)  # Default bin size of 10
-    groupby_column = histogram_config.get('groupby', None)
-    aggregation = histogram_config.get('aggregation', {})
-    aggregation_type = aggregation.get('type', 'count')
-    aggregation_column = aggregation.get('column', None)
-    
+
+    # Validate the configuration
+    if not (groupby and aggregation["type"] == "count" and aggregation["column"]):
+        raise ValueError("Histogram configuration must include groupby, aggregation type 'count', and an aggregation column")
+
+    # Validate that groupby and aggregation column exist in the GeoDataFrame
+    if groupby not in gdf.columns:
+        raise ValueError(f"Groupby column '{groupby}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+    if aggregation["column"] not in gdf.columns:
+        raise ValueError(f"Aggregation column '{aggregation['column']}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+
+    # Validate custom bins and labels
+    if custom_bins is None or custom_labels is None:
+        # Fallback to default bins and labels if not provided
+        custom_bins = [0, 10, 20, 40, float("inf")]
+        custom_labels = ["0-9", "10-19", "20-39", "40+"]
+    else:
+        # Ensure custom_bins is a list of numbers, converting "Infinity" to float("inf")
+        if not isinstance(custom_bins, list) or len(custom_bins) < 2:
+            raise ValueError("customBins must be a list of at least two numbers")
+        
+        # Convert "Infinity" strings to float("inf")
+        custom_bins = [
+            float("inf") if x == "Infinity" else x for x in custom_bins
+        ]
+        
+        # Validate that all elements are numbers
+        if not all(isinstance(x, (int, float)) for x in custom_bins):
+            raise ValueError(f"All customBins values must be numbers, got: {custom_bins}")
+        if not all(custom_bins[i] <= custom_bins[i + 1] for i in range(len(custom_bins) - 1)):
+            raise ValueError("customBins must be in ascending order")
+
+        # Ensure custom_labels is a list of strings with correct length
+        expected_label_count = len(custom_bins) - 1
+        if not isinstance(custom_labels, list) or len(custom_labels) != expected_label_count:
+            raise ValueError(f"customLabels must be a list of exactly {expected_label_count} strings, but got {len(custom_labels)} labels: {custom_labels}")
+        if not all(isinstance(label, str) for label in custom_labels):
+            raise ValueError("All customLabels values must be strings")
+
     for col in columns:
-        if col not in gdf.columns:
-            print(f"Column {col} not found, skipping histogram calculation")
-            continue
-        
-        # Convert GeoDataFrame to DataFrame
-        df = pd.DataFrame(gdf)
-        
-        # Determine the min and max values of the column to set bin edges
-        min_val = df[col].min()
-        max_val = df[col].max()
-        
-        # Ensure binsize is positive
-        if binsize <= 0:
-            print(f"Bin size for column {col} must be positive, skipping histogram calculation")
-            continue
-        
-        # Handle case where min_val equals max_val
-        if min_val == max_val:
-            print(f"Minimum and maximum values for column {col} are the same, skipping histogram calculation")
-            continue
-        
-        # Create bin edges
-        try:
-            bin_edges = np.arange(min_val, max_val + binsize, binsize)
-            bin_labels = [f"[{bin_edges[i]}-{bin_edges[i+1]-1}]" for i in range(len(bin_edges)-1)]
-        except ValueError as e:
-            print(f"Error creating bin edges for column {col}: {str(e)}")
-            continue
-        
-        # Bin the column
-        df[f'{col}_bin'] = pd.cut(df[col], bins=bin_edges, labels=bin_labels, right=False)
-        
-        if groupby_column and groupby_column in df.columns:
-            group_columns = [groupby_column, f'{col}_bin']
-        else:
-            group_columns = [f'{col}_bin']
-        
-        if aggregation_type == 'sum':
-            if aggregation_column not in df.columns:
-                print(f"Column {aggregation_column} for summing not found, skipping histogram calculation")
-                continue
-            agg_data = df.groupby(group_columns)[aggregation_column].sum().reset_index(name='value')
-        else:  # Default to 'count'
-            agg_data = df.groupby(group_columns).size().reset_index(name='value')
-        
-        histogram_data[col] = agg_data
-    
+        agg_col = aggregation["column"]
+        grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
+
+        # Ensure 'count' column is numeric
+        grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
+
+        print(f"Counts before binning for column {col}:\n{grouped[[groupby, 'count']]}")
+        print(f"Count distribution:\n{grouped['count'].value_counts().sort_index()}")
+
+        # Bin the counts using custom bins and labels
+        grouped["bin"] = pd.cut(
+            grouped["count"],
+            bins=custom_bins,
+            labels=custom_labels,
+            include_lowest=True,
+            right=True  # Right-inclusive intervals
+        )
+
+        # Debugging: Check for unassigned (NaN) bins
+        if grouped["bin"].isna().any():
+            print(f"Warning: Some counts were not binned for column {col}:\n{grouped[grouped['bin'].isna()][[groupby, 'count']]}")
+            raise ValueError(f"Some counts were not binned for column {col}. Check the bin edges: {custom_bins}")
+
+        # Count the number of buffers in each bin
+        bin_counts = grouped["bin"].value_counts().sort_index()
+
+        # Debugging: Print the bin counts
+        print(f"Bin counts for column {col}:\n{bin_counts}")
+
+        # Prepare data for visualization
+        histogram_data[col] = {
+            "bins": custom_labels,
+            "counts": bin_counts.tolist(),
+            "title": f"Number of Buffers by {col} (grouped by {groupby})",
+            "xlabel": f"Number of {col}",
+            "ylabel": "Number of Buffers"
+        }
+
     return histogram_data
 
 def parse_column_name(column):

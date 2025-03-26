@@ -6,6 +6,10 @@ import subprocess
 import os
 import json
 from geopandas import GeoDataFrame
+import geopandas as gpd
+import utils.metrics.metrics as metrics
+import utils.visualisation.visualisation as visualisation
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
@@ -60,31 +64,57 @@ def get_map_html(params):
         logging.error(f"An error occurred while serving map HTML file: {str(e)}")
         return jsonify({"error": "Failed to serve map HTML file"}), 500
 
-@app.route('/get_histogram_html/<aggregation_type>/<aggregation_column>/<groupby_column>')
-def get_histogram_html(aggregation_type, aggregation_column, groupby_column):
+@app.route('/generate_histogram', methods=['POST'])
+def generate_histogram():
+    try:
+        histogram_config = request.json
+        fusion_gdf_path = './data/output/fusion_gdf.geojson'
+        
+        if not os.path.exists(fusion_gdf_path):
+            return jsonify({"error": "Fusion GeoDataFrame not found. Run main.py first."}), 400
+        
+        # Load the GeoDataFrame and ensure correct data types
+        fusion_gdf = gpd.read_file(fusion_gdf_path)
+        
+        # Debugging: Inspect stop_id values and data types
+        print(f"Loaded fusion_gdf data types: {fusion_gdf.dtypes}")
+        print(f"Sample stop_id values: {fusion_gdf['stop_id'].head(10)}")
+        print(f"Unique stop_id values: {fusion_gdf['stop_id'].unique()}")
+        
+        # Convert stop_id to nullable integer type if possible
+        if 'stop_id' in fusion_gdf.columns:
+            fusion_gdf['stop_id'] = pd.to_numeric(fusion_gdf['stop_id'], errors='coerce')
+            print(f"After conversion to numeric, stop_id values: {fusion_gdf['stop_id'].head(10)}")
+            fusion_gdf['stop_id'] = fusion_gdf['stop_id'].astype('Int64')
+        
+        histogram_data = metrics.calculate_histogram_data(fusion_gdf, histogram_config)
+        
+        generated_histograms = {}
+        for col in histogram_config.get('columns', []):
+            histogram_filename = visualisation.visualize_histogram(
+                histogram_data,
+                col,
+                buffer_type="histogram"
+            )
+            if histogram_filename:
+                generated_histograms[col] = histogram_filename
+        
+        return jsonify({"histograms": generated_histograms}), 200
+    except ValueError as ve:
+        logging.error(f"Validation error: {str(ve)}")
+        return jsonify({"error": f"Validation error: {str(ve)}"}), 400
+    except Exception as e:
+        logging.error(f"Error generating histogram: {str(e)}")
+        return jsonify({"error": f"Error generating histogram: {str(e)}"}), 500
+    
+@app.route('/get_histogram_html/<path:filename>')
+def get_histogram_html(filename):
     try:
         directory = './data/output/visualisation/'
-
-        aggregation_type = aggregation_type.replace(" ", "_").lower()
-        aggregation_column = aggregation_column.replace(" ", "_").lower()
-        groupby_column = groupby_column.replace(" ", "_").lower()  # Ensure lowercase
-
-        filename_base = f"hist_{aggregation_type}_{aggregation_column}"
-        if groupby_column != "none":
-            filename = f"{filename_base}_grouped_by_{groupby_column}.html"
-        else:
-            filename = f"{filename_base}.html"
-        
-        full_path = os.path.abspath(os.path.join(directory, filename))
-        logging.info(f"Searching for histogram at: {full_path}")
-
         return send_from_directory(directory, filename, mimetype='text/html')
-    except FileNotFoundError:
-        logging.error(f"Missing file: {filename} in {directory}")
-        return jsonify({"error": "Histogram not found"}), 404
     except Exception as e:
         logging.error(f"Error serving histogram: {str(e)}")
-        return jsonify({"error": "Server error"}), 500
+        return jsonify({"error": "Histogram not found"}), 404
 
 @app.route('/get_file_preview/<filename>')
 def get_file_preview(filename):
@@ -92,13 +122,10 @@ def get_file_preview(filename):
         filepath = os.path.join('./data/input/geojson/', filename + '.geojson')
         gdf = GeoDataFrame.from_file(filepath)
         
-        # Convert to GeoJSON and parse
         geojson = json.loads(gdf.head(100).to_json())
         
-        # Extract columns from properties
         columns = list(gdf.columns)
         
-        # Extract data with proper geometry serialization
         data = []
         for feature in geojson['features']:
             row = feature['properties'].copy()
@@ -113,5 +140,6 @@ def get_file_preview(filename):
     except Exception as e:
         logging.error(f"Error getting file preview: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
