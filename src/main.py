@@ -56,18 +56,29 @@ fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
 output_dir = "./data/output/"
 os.makedirs(output_dir, exist_ok=True)
 
-# Identify geometry columns (assuming 'geometry' is the primary one from buffers_gdf)
-geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype)]
+fusion_gdf['geometry'] = None
+for idx, row in fusion_gdf.iterrows():
+    join_layer = row['join_layer']
+    joined_geometry_col = f"{join_layer}_geometry"
+    if joined_geometry_col in fusion_gdf.columns:
+        fusion_gdf.at[idx, 'geometry'] = row[joined_geometry_col]
 
-if len(geometry_columns) > 1:
-    # Keep 'geometry' as the primary column, convert others to WKT
-    primary_geometry = 'geometry'  # Assuming this is the column from buffers_gdf
-    for geo_col in geometry_columns:
-        if geo_col != primary_geometry:
-            fusion_gdf[geo_col + '_wkt'] = fusion_gdf[geo_col].to_wkt()
-            fusion_gdf = fusion_gdf.drop(columns=[geo_col])
+fusion_gdf = gpd.GeoDataFrame(fusion_gdf, geometry='geometry', crs=fusion_gdf.crs)
 
-# Save the GeoDataFrame with a single geometry column
+fusion_gdf = fusion_gdf[~fusion_gdf['geometry'].isna()]
+
+geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype) and col != 'geometry']
+fusion_gdf = fusion_gdf.drop(columns=geometry_columns, errors='ignore')
+
+wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
+fusion_gdf = fusion_gdf.drop(columns=wkt_columns, errors='ignore')
+
+buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left')]
+fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
+
+redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
+fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
+
 fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
 
 agg_stats_gdf = metrics.calculate_metrics(
