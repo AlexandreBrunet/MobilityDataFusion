@@ -52,7 +52,6 @@ buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygo
 join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
 fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
 
-# Save fusion_gdf for histogram use later, handling multiple geometry columns
 output_dir = "./data/output/"
 os.makedirs(output_dir, exist_ok=True)
 

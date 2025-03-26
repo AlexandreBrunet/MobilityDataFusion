@@ -189,7 +189,6 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
 
 def calculate_histogram_data(gdf, histogram_config):
     columns = histogram_config.get("columns", [])
-    binsize = histogram_config.get("binsize", 10)
     groupby = histogram_config.get("groupby", "")
     aggregation = histogram_config.get("aggregation", {"type": "count", "column": ""})
     custom_bins = histogram_config.get("customBins", None)
@@ -204,6 +203,12 @@ def calculate_histogram_data(gdf, histogram_config):
     # Validate the configuration
     if not (groupby and aggregation["type"] == "count" and aggregation["column"]):
         raise ValueError("Histogram configuration must include groupby, aggregation type 'count', and an aggregation column")
+
+    # Validate that groupby and aggregation column exist in the GeoDataFrame
+    if groupby not in gdf.columns:
+        raise ValueError(f"Groupby column '{groupby}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+    if aggregation["column"] not in gdf.columns:
+        raise ValueError(f"Aggregation column '{aggregation['column']}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
 
     # Validate custom bins and labels
     if custom_bins is None or custom_labels is None:
@@ -234,15 +239,13 @@ def calculate_histogram_data(gdf, histogram_config):
             raise ValueError("All customLabels values must be strings")
 
     for col in columns:
-        # Group by 'name' and count non-null 'stop_id' per group
         agg_col = aggregation["column"]
         grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
 
         # Ensure 'count' column is numeric
         grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
 
-        # Debugging: Print the counts to verify the data
-        print(f"Counts before binning for column {col}:\n{grouped[['name', 'count']]}")
+        print(f"Counts before binning for column {col}:\n{grouped[[groupby, 'count']]}")
         print(f"Count distribution:\n{grouped['count'].value_counts().sort_index()}")
 
         # Bin the counts using custom bins and labels
@@ -256,7 +259,7 @@ def calculate_histogram_data(gdf, histogram_config):
 
         # Debugging: Check for unassigned (NaN) bins
         if grouped["bin"].isna().any():
-            print(f"Warning: Some counts were not binned for column {col}:\n{grouped[grouped['bin'].isna()][['name', 'count']]}")
+            print(f"Warning: Some counts were not binned for column {col}:\n{grouped[grouped['bin'].isna()][[groupby, 'count']]}")
             raise ValueError(f"Some counts were not binned for column {col}. Check the bin edges: {custom_bins}")
 
         # Count the number of buffers in each bin
@@ -269,8 +272,8 @@ def calculate_histogram_data(gdf, histogram_config):
         histogram_data[col] = {
             "bins": custom_labels,
             "counts": bin_counts.tolist(),
-            "title": f"Number of Buffers by Bus Stops (grouped by {groupby})",
-            "xlabel": "Number of Bus Stops",
+            "title": f"Number of Buffers by {col} (grouped by {groupby})",
+            "xlabel": f"Number of {col}",
             "ylabel": "Number of Buffers"
         }
 

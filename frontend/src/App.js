@@ -82,7 +82,6 @@ const App = () => {
   const [histograms, setHistograms] = useState({});
   const [histogramFormData, setHistogramFormData] = useState({
     columns: [],
-    binsize: 10,
     groupby: "",
     aggregation: { type: "count", column: "" },
     customBins: "",
@@ -294,11 +293,6 @@ const App = () => {
         title: "Columns",
         items: { type: "string" }
       },
-      binsize: {
-        type: "number",
-        title: "Bin Size",
-        default: 10
-      },
       groupby: {
         type: "string",
         title: "Group By Column"
@@ -337,9 +331,6 @@ const App = () => {
       "items": {
         "ui:placeholder": "Enter column name"
       }
-    },
-    binsize: {
-      "ui:placeholder": "Enter bin size"
     },
     groupby: {
       "ui:placeholder": "Enter group by column"
