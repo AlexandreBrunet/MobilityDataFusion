@@ -42,6 +42,7 @@ def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: D
                     if joined.empty:
                         continue
                         
+                    # Add the joined geometry as a proper geometry column
                     joined[f'{join_layer_name}_geometry'] = join_gdf.loc[
                         joined['index_right'], 
                         'geometry'
@@ -69,5 +70,9 @@ def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: D
     )
 
     final_gdf = final_gdf.drop(columns=['index_right'], errors='ignore')
+
+    # Ensure area_km2 column is preserved
+    if 'area_km2' not in final_gdf.columns:
+        raise ValueError("area_km2 column not found in the joined GeoDataFrame. Ensure it is present in buffer_gdfs.")
 
     return final_gdf

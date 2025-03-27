@@ -72,7 +72,7 @@ fusion_gdf = fusion_gdf.drop(columns=geometry_columns, errors='ignore')
 wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
 fusion_gdf = fusion_gdf.drop(columns=wkt_columns, errors='ignore')
 
-buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left')]
+buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left') and col != 'area_km2']
 fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
 
 redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
@@ -87,6 +87,11 @@ agg_stats_gdf = metrics.calculate_metrics(
 )
 
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
+
+if 'area_km2' not in agg_stats_gdf.columns:
+    # Get unique buffer_id and area_km2 from fusion_gdf
+    buffer_areas = fusion_gdf[['buffer_id', 'area_km2']].drop_duplicates()
+    agg_stats_gdf = agg_stats_gdf.merge(buffer_areas, on='buffer_id', how='left')
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')

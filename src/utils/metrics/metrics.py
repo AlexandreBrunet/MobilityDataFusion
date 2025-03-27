@@ -160,6 +160,19 @@ def calculate_multiply(gdf, groupby_columns, multiply_columns):
     return multiply_stats.round(2)
 
 def calculate_metrics(gdf, groupby_columns, metrics_config):
+    # Validate that groupby_columns exist in the GeoDataFrame
+    missing_cols = [col for col in groupby_columns if col not in gdf.columns]
+    if missing_cols:
+        raise ValueError(f"Groupby columns {missing_cols} not found in GeoDataFrame")
+
+    # Extract area_km2 along with groupby_columns before aggregation
+    if 'area_km2' in gdf.columns:
+        # Drop duplicates to ensure one area_km2 per group
+        area_data = gdf[groupby_columns + ['area_km2']].drop_duplicates(subset=groupby_columns)
+    else:
+        raise ValueError("area_km2 column not found in the GeoDataFrame")
+
+    # Build the aggregation dictionary
     agg_dict = {}
     for func, cols in metrics_config.items():
         if func != "ratio" and func != "multiply" and cols:
@@ -174,6 +187,8 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
         agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index()
     else:
         agg_stats = gdf[groupby_columns].drop_duplicates().reset_index(drop=True)
+
+    agg_stats = pd.merge(agg_stats, area_data, on=groupby_columns, how='left')
 
     if "ratio" in metrics_config and metrics_config["ratio"]:
         ratio_columns = metrics_config["ratio"]

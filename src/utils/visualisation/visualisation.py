@@ -153,14 +153,24 @@ def create_layers_and_map(
     create_map_layers(layers, initial_view, filename=filename)
 
 def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, **kwargs):
+    # Drop the geometry column to avoid issues with Plotly
+    df = agg_stats_gdf.drop(columns=['geometry'], errors='ignore')
+
+    # Ensure area_km2 is present and formatted
+    if 'area_km2' in df.columns:
+        df['area_km2'] = df['area_km2'].round(4)  # Round to 4 decimal places for readability
+    else:
+        print("Warning: area_km2 column not found in the GeoDataFrame")
+
+    # Create the Plotly table
     fig = go.Figure(data=[go.Table(
         header=dict(
-            values=list(agg_stats_gdf.columns),
+            values=list(df.columns),
             font=dict(size=10),  # Réduit la taille de la police des en-têtes
             align="center"
         ),
         cells=dict(
-            values=[agg_stats_gdf[col] for col in agg_stats_gdf.columns],
+            values=[df[col] for col in df.columns],
             align="left",
             height=50   # Ajuste la hauteur de chaque cellule pour plus de lisibilité
         )
@@ -168,21 +178,22 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
     
     fig.update_layout(width=2000)  # Augmente la largeur totale du tableau
     
-    # Determine the filename based on buffer type
+    output_dir = "./data/output/visualisation/"
+    os.makedirs(output_dir, exist_ok=True)
+
     if buffer_type == "circular":
         distance = kwargs.get('distance')
-        filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{distance}m.html"
+        filename = f"{output_dir}tableau_{buffer_type}_buffer_{distance}m.html"
     elif buffer_type == "grid":
         wide = kwargs.get('wide')
         length = kwargs.get('length')
-        filename = f"./data/output/visualisation/tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
+        filename = f"{output_dir}tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
     elif buffer_type == "zones":
-        filename = "./data/output/visualisation/tableau_zones_buffer.html"
+        filename = f"{output_dir}tableau_zones_buffer.html"
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type}")
             
     fig.write_html(filename)
-
 
 def visualize_histogram(histogram_data, column, buffer_type, histogram_config=None):
     """
