@@ -11,6 +11,7 @@ import time
 import pandas as pd
 import geopandas as gpd
 import os
+import subprocess
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -78,7 +79,32 @@ fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
 redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
 fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
 
-fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
+# Fix data types to ensure compatibility with Parquet
+# Convert object-type columns to strings to avoid type inference issues
+for col in fusion_gdf.columns:
+    if fusion_gdf[col].dtype == 'object' and col != 'geometry':
+        fusion_gdf[col] = fusion_gdf[col].astype(str)
+
+# Step 1: Save fusion_gdf as GeoParquet (faster than GeoJSON)
+fusion_gdf.to_parquet(os.path.join(output_dir, "fusion_gdf.parquet"))
+
+# Step 2: Convert GeoParquet to GeoJSON using ogr2ogr (faster than GeoPandas to_file)
+try:
+    subprocess.run([
+        "ogr2ogr",
+        "-f", "GeoJSON",
+        os.path.join(output_dir, "fusion_gdf.geojson"),
+        os.path.join(output_dir, "fusion_gdf.parquet")
+    ], check=True)
+    print(f"Successfully converted fusion_gdf.parquet to fusion_gdf.geojson")
+except subprocess.CalledProcessError as e:
+    print(f"Error converting GeoParquet to GeoJSON with ogr2ogr: {e}")
+    # Fallback to GeoPandas if ogr2ogr fails
+    print("Falling back to GeoPandas for GeoJSON conversion...")
+    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
+except FileNotFoundError:
+    print("ogr2ogr not found. Please ensure GDAL is installed. Falling back to GeoPandas for GeoJSON conversion...")
+    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=fusion_gdf,
@@ -89,7 +115,6 @@ agg_stats_gdf = metrics.calculate_metrics(
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
 if 'area_km2' not in agg_stats_gdf.columns:
-    # Get unique buffer_id and area_km2 from fusion_gdf
     buffer_areas = fusion_gdf[['buffer_id', 'area_km2']].drop_duplicates()
     agg_stats_gdf = agg_stats_gdf.merge(buffer_areas, on='buffer_id', how='left')
 
