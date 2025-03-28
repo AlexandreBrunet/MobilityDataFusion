@@ -42,6 +42,7 @@ def perform_spatial_joins(buffer_gdfs: Dict[str, gpd.GeoDataFrame], join_data: D
                     if joined.empty:
                         continue
                         
+                    # Add the joined geometry as a proper geometry column
                     joined[f'{join_layer_name}_geometry'] = join_gdf.loc[
                         joined['index_right'], 
                         'geometry'

@@ -11,6 +11,7 @@ import time
 import pandas as pd
 import geopandas as gpd
 import os
+import subprocess
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -72,13 +73,43 @@ fusion_gdf = fusion_gdf.drop(columns=geometry_columns, errors='ignore')
 wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
 fusion_gdf = fusion_gdf.drop(columns=wkt_columns, errors='ignore')
 
-buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left')]
+buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left') and col != 'area_km2']
 fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
 
 redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
 fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
 
-fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
+if config.get("groupby_columns"):
+    valid_groupby_cols = [col for col in config["groupby_columns"] if col in fusion_gdf.columns]
+    
+    if valid_groupby_cols:
+        initial_count = len(fusion_gdf)
+        fusion_gdf = fusion_gdf.dropna(subset=valid_groupby_cols)
+        dropped_count = initial_count - len(fusion_gdf)
+        print(f"Dropped {dropped_count} rows with NaN values in groupby columns: {valid_groupby_cols}")
+
+
+for col in fusion_gdf.columns:
+    if fusion_gdf[col].dtype == 'object' and col != 'geometry':
+        fusion_gdf[col] = fusion_gdf[col].astype(str)
+
+fusion_gdf.to_parquet(os.path.join(output_dir, "fusion_gdf.parquet"))
+
+try:
+    subprocess.run([
+        "ogr2ogr",
+        "-f", "GeoJSON",
+        os.path.join(output_dir, "fusion_gdf.geojson"),
+        os.path.join(output_dir, "fusion_gdf.parquet")
+    ], check=True)
+    print(f"Successfully converted fusion_gdf.parquet to fusion_gdf.geojson")
+except subprocess.CalledProcessError as e:
+    print(f"Error converting GeoParquet to GeoJSON with ogr2ogr: {e}")
+    print("Falling back to GeoPandas for GeoJSON conversion...")
+    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
+except FileNotFoundError:
+    print("ogr2ogr not found. Please ensure GDAL is installed. Falling back to GeoPandas for GeoJSON conversion...")
+    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=fusion_gdf,
@@ -87,6 +118,10 @@ agg_stats_gdf = metrics.calculate_metrics(
 )
 
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
+
+if 'area_km2' not in agg_stats_gdf.columns:
+    buffer_areas = fusion_gdf[['buffer_id', 'area_km2']].drop_duplicates()
+    agg_stats_gdf = agg_stats_gdf.merge(buffer_areas, on='buffer_id', how='left')
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')
