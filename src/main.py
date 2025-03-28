@@ -79,16 +79,22 @@ fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
 redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
 fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
 
-# Fix data types to ensure compatibility with Parquet
-# Convert object-type columns to strings to avoid type inference issues
+if config.get("groupby_columns"):
+    valid_groupby_cols = [col for col in config["groupby_columns"] if col in fusion_gdf.columns]
+    
+    if valid_groupby_cols:
+        initial_count = len(fusion_gdf)
+        fusion_gdf = fusion_gdf.dropna(subset=valid_groupby_cols)
+        dropped_count = initial_count - len(fusion_gdf)
+        print(f"Dropped {dropped_count} rows with NaN values in groupby columns: {valid_groupby_cols}")
+
+
 for col in fusion_gdf.columns:
     if fusion_gdf[col].dtype == 'object' and col != 'geometry':
         fusion_gdf[col] = fusion_gdf[col].astype(str)
 
-# Step 1: Save fusion_gdf as GeoParquet (faster than GeoJSON)
 fusion_gdf.to_parquet(os.path.join(output_dir, "fusion_gdf.parquet"))
 
-# Step 2: Convert GeoParquet to GeoJSON using ogr2ogr (faster than GeoPandas to_file)
 try:
     subprocess.run([
         "ogr2ogr",
@@ -99,7 +105,6 @@ try:
     print(f"Successfully converted fusion_gdf.parquet to fusion_gdf.geojson")
 except subprocess.CalledProcessError as e:
     print(f"Error converting GeoParquet to GeoJSON with ogr2ogr: {e}")
-    # Fallback to GeoPandas if ogr2ogr fails
     print("Falling back to GeoPandas for GeoJSON conversion...")
     fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
 except FileNotFoundError:
