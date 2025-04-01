@@ -119,9 +119,6 @@ agg_stats_gdf = metrics.calculate_metrics(
 
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
-if 'area_km2' not in agg_stats_gdf.columns:
-    buffer_areas = fusion_gdf[['buffer_id', 'area_km2']].drop_duplicates()
-    agg_stats_gdf = agg_stats_gdf.merge(buffer_areas, on='buffer_id', how='left')
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')
