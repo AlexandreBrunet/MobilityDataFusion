@@ -1,6 +1,7 @@
 import pandas as pd
 import warnings
 import numpy as np
+import logging
 
 def calculate_sum(gdf, groupby_columns, sum_columns):
     parsed_columns = [parse_column_name(col) for col in sum_columns]
@@ -202,6 +203,8 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
 
     return agg_stats.round(2)
 
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 def calculate_histogram_data(gdf, histogram_config):
     columns = histogram_config.get("columns", [])
     groupby = histogram_config.get("groupby", "")
@@ -209,87 +212,94 @@ def calculate_histogram_data(gdf, histogram_config):
     custom_bins = histogram_config.get("customBins", None)
     custom_labels = histogram_config.get("customLabels", None)
 
-    print(f"Histogram config: {histogram_config}")
-    print(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
-    print(f"Custom Bins: {custom_bins}, Custom Labels: {custom_labels}")
+    logging.info(f"Histogram config: {histogram_config}")
+    logging.info(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
+    logging.info(f"Custom Bins: {custom_bins}, Custom Labels: {custom_labels}")
 
     histogram_data = {}
 
-    # Validate the configuration
-    if not (groupby and aggregation["type"] == "count" and aggregation["column"]):
-        raise ValueError("Histogram configuration must include groupby, aggregation type 'count', and an aggregation column")
-
-    # Validate that groupby and aggregation column exist in the GeoDataFrame
+    # Validation de base
+    if not columns:
+        raise ValueError("No columns specified in histogram config")
+    if not groupby:
+        raise ValueError("groupby must be specified in histogram config")
     if groupby not in gdf.columns:
         raise ValueError(f"Groupby column '{groupby}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
-    if aggregation["column"] not in gdf.columns:
-        raise ValueError(f"Aggregation column '{aggregation['column']}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+    if aggregation["type"] not in ["count", "sum"]:
+        raise ValueError(f"Unsupported aggregation type '{aggregation['type']}'. Must be 'count' or 'sum'")
+    if aggregation["type"] == "sum" and (not aggregation["column"] or aggregation["column"] not in gdf.columns):
+        raise ValueError(f"For 'sum' aggregation, a valid 'column' must be specified. Got: {aggregation['column']}")
 
-    # Validate custom bins and labels
+    # Validation des bins et labels
     if custom_bins is None or custom_labels is None:
-        # Fallback to default bins and labels if not provided
         custom_bins = [0, 10, 20, 40, float("inf")]
         custom_labels = ["0-9", "10-19", "20-39", "40+"]
     else:
-        # Ensure custom_bins is a list of numbers, converting "Infinity" to float("inf")
         if not isinstance(custom_bins, list) or len(custom_bins) < 2:
             raise ValueError("customBins must be a list of at least two numbers")
-        
-        # Convert "Infinity" strings to float("inf")
-        custom_bins = [
-            float("inf") if x == "Infinity" else x for x in custom_bins
-        ]
-        
-        # Validate that all elements are numbers
-        if not all(isinstance(x, (int, float)) for x in custom_bins):
-            raise ValueError(f"All customBins values must be numbers, got: {custom_bins}")
+        try:
+            custom_bins = [float("inf") if str(x).lower() == "infinity" else float(x) for x in custom_bins]
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"All customBins values must be convertible to numbers, got: {custom_bins}. Error: {e}")
         if not all(custom_bins[i] <= custom_bins[i + 1] for i in range(len(custom_bins) - 1)):
-            raise ValueError("customBins must be in ascending order")
-
-        # Ensure custom_labels is a list of strings with correct length
+            raise ValueError(f"customBins must be in ascending order, got: {custom_bins}")
+        
         expected_label_count = len(custom_bins) - 1
         if not isinstance(custom_labels, list) or len(custom_labels) != expected_label_count:
-            raise ValueError(f"customLabels must be a list of exactly {expected_label_count} strings, but got {len(custom_labels)} labels: {custom_labels}")
+            raise ValueError(f"customLabels must be a list of exactly {expected_label_count} strings, got {len(custom_labels)}: {custom_labels}")
         if not all(isinstance(label, str) for label in custom_labels):
-            raise ValueError("All customLabels values must be strings")
+            raise ValueError(f"All customLabels values must be strings, got: {custom_labels}")
 
     for col in columns:
-        agg_col = aggregation["column"]
-        grouped = gdf.groupby(groupby)[agg_col].count().reset_index(name="count")
+        if col not in gdf.columns:
+            raise ValueError(f"Column '{col}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
 
-        # Ensure 'count' column is numeric
-        grouped["count"] = pd.to_numeric(grouped["count"], errors='coerce').fillna(0).astype(int)
+        # Groupby et agrégation
+        if aggregation["type"] == "count":
+            # Compter le nombre d'occurrences par groupe
+            grouped = gdf.groupby(groupby).size().reset_index(name="count")
+            agg_col = "count"
+            ylabel = "Number of Records"
+        elif aggregation["type"] == "sum":
+            # Sommer une colonne spécifique par groupe
+            agg_col = aggregation["column"]
+            if not pd.api.types.is_numeric_dtype(gdf[agg_col]):
+                gdf[agg_col] = pd.to_numeric(gdf[agg_col], errors='coerce')
+                logging.info(f"Converted '{agg_col}' to numeric. NaN count: {gdf[agg_col].isna().sum()}")
+            grouped = gdf.groupby(groupby)[agg_col].sum().reset_index(name="sum")
+            agg_col = "sum"
+            ylabel = f"Sum of {agg_col}"
 
-        print(f"Counts before binning for column {col}:\n{grouped[[groupby, 'count']]}")
-        print(f"Count distribution:\n{grouped['count'].value_counts().sort_index()}")
+        logging.info(f"Grouped data for {col}:\n{grouped[[groupby, agg_col]]}")
 
-        # Bin the counts using custom bins and labels
+        # Bin les résultats agrégés
         grouped["bin"] = pd.cut(
-            grouped["count"],
+            grouped[agg_col],
             bins=custom_bins,
             labels=custom_labels,
             include_lowest=True,
-            right=True  # Right-inclusive intervals
+            right=True
         )
 
-        # Debugging: Check for unassigned (NaN) bins
+        # Vérifier les valeurs non binnées
         if grouped["bin"].isna().any():
-            print(f"Warning: Some counts were not binned for column {col}:\n{grouped[grouped['bin'].isna()][[groupby, 'count']]}")
-            raise ValueError(f"Some counts were not binned for column {col}. Check the bin edges: {custom_bins}")
+            unbinned = grouped[grouped["bin"].isna()][[groupby, agg_col]]
+            raise ValueError(f"Some values in '{agg_col}' were not binned for {col}. Check bin edges: {custom_bins}. Unbinned data:\n{unbinned}")
 
-        # Count the number of buffers in each bin
+        # Compter les groupes dans chaque bin
         bin_counts = grouped["bin"].value_counts().sort_index()
 
-        # Debugging: Print the bin counts
-        print(f"Bin counts for column {col}:\n{bin_counts}")
+        # Remplir les bins manquants avec 0
+        bin_counts = bin_counts.reindex(custom_labels, fill_value=0)
 
-        # Prepare data for visualization
+        logging.info(f"Bin counts for {col}:\n{bin_counts}")
+
         histogram_data[col] = {
             "bins": custom_labels,
             "counts": bin_counts.tolist(),
-            "title": f"Number of Buffers by {col} (grouped by {groupby})",
-            "xlabel": f"Number of {col}",
-            "ylabel": "Number of Buffers"
+            "title": f"Histogram of {col} (grouped by {groupby})",
+            "xlabel": f"{aggregation['type'].capitalize()} of {col if aggregation['type'] == 'count' else agg_col}",
+            "ylabel": ylabel
         }
 
     return histogram_data

@@ -67,39 +67,59 @@ def get_map_html(params):
 @app.route('/generate_histogram', methods=['POST'])
 def generate_histogram():
     try:
+        # Get the histogram configuration from the request
         histogram_config = request.json
+        if not histogram_config or 'columns' not in histogram_config:
+            return jsonify({"error": "Missing or invalid histogram_config. 'columns' is required."}), 400
+
+        # Define the path to the GeoDataFrame
         fusion_gdf_path = './data/output/fusion_gdf.geojson'
-        
         if not os.path.exists(fusion_gdf_path):
             return jsonify({"error": "Fusion GeoDataFrame not found. Run main.py first."}), 400
-        
-        # Load the GeoDataFrame and ensure correct data types
+
+        # Load the GeoDataFrame
         fusion_gdf = gpd.read_file(fusion_gdf_path)
-        
-        # Debugging: Inspect stop_id values and data types
-        print(f"Loaded fusion_gdf data types: {fusion_gdf.dtypes}")
-        print(f"Sample stop_id values: {fusion_gdf['stop_id'].head(10)}")
-        print(f"Unique stop_id values: {fusion_gdf['stop_id'].unique()}")
-        
-        # Convert stop_id to nullable integer type if possible
-        if 'stop_id' in fusion_gdf.columns:
-            fusion_gdf['stop_id'] = pd.to_numeric(fusion_gdf['stop_id'], errors='coerce')
-            print(f"After conversion to numeric, stop_id values: {fusion_gdf['stop_id'].head(10)}")
-            fusion_gdf['stop_id'] = fusion_gdf['stop_id'].astype('Int64')
-        
+
+        # Log basic info for debugging
+        logging.info(f"Loaded fusion_gdf with columns: {list(fusion_gdf.columns)}")
+        logging.info(f"Sample data:\n{fusion_gdf.head().to_string()}")
+
+        # Validate requested columns exist in the GeoDataFrame
+        requested_columns = histogram_config.get('columns', [])
+        missing_columns = [col for col in requested_columns if col not in fusion_gdf.columns]
+        if missing_columns:
+            return jsonify({"error": f"Columns not found in GeoDataFrame: {missing_columns}"}), 400
+
+        # Convert columns to numeric where possible, coercing errors to NaN
+        for col in requested_columns:
+            if col in fusion_gdf.columns:
+                fusion_gdf[col] = pd.to_numeric(fusion_gdf[col], errors='coerce')
+                logging.info(f"Column '{col}' after conversion: {fusion_gdf[col].dtype}")
+                logging.info(f"Sample values for '{col}': {fusion_gdf[col].head(10).tolist()}")
+                logging.info(f"NaN count in '{col}': {fusion_gdf[col].isna().sum()}")
+
+        # Calculate histogram data (assumed to be a function in metrics module)
         histogram_data = metrics.calculate_histogram_data(fusion_gdf, histogram_config)
-        
+
+        # Generate histograms for each column
         generated_histograms = {}
-        for col in histogram_config.get('columns', []):
-            histogram_filename = visualisation.visualize_histogram(
-                histogram_data,
-                col,
-                buffer_type="histogram"
-            )
-            if histogram_filename:
-                generated_histograms[col] = histogram_filename
-        
+        for col in requested_columns:
+            try:
+                histogram_filename = visualisation.visualize_histogram(
+                    histogram_data,
+                    col,
+                    buffer_type="histogram"
+                )
+                if histogram_filename:
+                    generated_histograms[col] = histogram_filename
+                else:
+                    logging.warning(f"No histogram file generated for column '{col}'")
+            except Exception as e:
+                logging.error(f"Failed to generate histogram for '{col}': {str(e)}")
+                return jsonify({"error": f"Failed to generate histogram for '{col}': {str(e)}"}), 500
+
         return jsonify({"histograms": generated_histograms}), 200
+
     except ValueError as ve:
         logging.error(f"Validation error: {str(ve)}")
         return jsonify({"error": f"Validation error: {str(ve)}"}), 400
