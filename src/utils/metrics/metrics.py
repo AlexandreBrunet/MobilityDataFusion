@@ -304,6 +304,58 @@ def calculate_histogram_data(gdf, histogram_config):
 
     return histogram_data
 
+def calculate_barchart_data(gdf, barchart_config):
+    columns = barchart_config.get("columns", [])
+    groupby = barchart_config.get("groupby", "")
+    aggregation = barchart_config.get("aggregation", {"type": "count", "column": ""})
+
+    logging.info(f"Bar chart config: {barchart_config}")
+    logging.info(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
+
+    # Validation de base
+    if not columns:
+        raise ValueError("No columns specified in bar chart config")
+    if not groupby:
+        raise ValueError("groupby must be specified in bar chart config")
+    if groupby not in gdf.columns:
+        raise ValueError(f"Groupby column '{groupby}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+    if aggregation["type"] not in ["count", "sum"]:
+        raise ValueError(f"Unsupported aggregation type '{aggregation['type']}'. Must be 'count' or 'sum'")
+    if aggregation["type"] == "sum" and (not aggregation["column"] or aggregation["column"] not in gdf.columns):
+        raise ValueError(f"For 'sum' aggregation, a valid 'column' must be specified. Got: {aggregation['column']}")
+
+    barchart_data = {}
+    for col in columns:
+        if col not in gdf.columns:
+            raise ValueError(f"Column '{col}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
+
+        # Groupby et agrégation
+        if aggregation["type"] == "count":
+            grouped = gdf.groupby(groupby).size().reset_index(name="count")
+            agg_col = "count"
+            ylabel = "Number of Records"
+        elif aggregation["type"] == "sum":
+            agg_col = aggregation["column"]
+            if not pd.api.types.is_numeric_dtype(gdf[agg_col]):
+                gdf[agg_col] = pd.to_numeric(gdf[agg_col], errors='coerce')
+                logging.info(f"Converted '{agg_col}' to numeric. NaN count: {gdf[agg_col].isna().sum()}")
+            grouped = gdf.groupby(groupby)[agg_col].sum().reset_index(name="sum")
+            agg_col = "sum"
+            ylabel = f"Sum of {agg_col}"
+
+        logging.info(f"Grouped data for {col}:\n{grouped[[groupby, agg_col]]}")
+
+        # Préparer les données pour un bar chart (pas de binnage)
+        barchart_data[col] = {
+            "categories": grouped[groupby].tolist(),
+            "values": grouped[agg_col].tolist(),
+            "title": f"Bar Chart of {col} (grouped by {groupby})",
+            "xlabel": groupby,
+            "ylabel": ylabel
+        }
+
+    return barchart_data
+
 def parse_column_name(column):
     if " as " in column:
         original, renamed = column.split(" as ")

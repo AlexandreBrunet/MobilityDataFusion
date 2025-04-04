@@ -233,3 +233,45 @@ def visualize_histogram(histogram_data, column, buffer_type, histogram_config=No
     # Save the plot as HTML
     fig.write_html(os.path.join(output_dir, filename))
     return filename
+
+def visualize_barchart(barchart_data, column, buffer_type):
+    """
+    Visualize bar chart data and save as HTML.
+    """
+    output_dir = "./data/output/visualisation/"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Use a generic filename for bar charts
+    filename = f"barchart_{column}.html"
+
+    # Extract bar chart data for the column
+    data = barchart_data.get(column, {})
+    if not data:
+        return None
+
+    # Create a bar plot using Plotly
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=data["categories"],
+                y=data["values"],
+                text=data["values"],
+                textposition="auto",
+            )
+        ]
+    )
+
+    # Update layout with titles and labels
+    fig.update_layout(
+        title=data.get("title", f"Bar Chart of {column}"),
+        xaxis_title=data.get("xlabel", column),
+        yaxis_title=data.get("ylabel", "Value"),
+        bargap=0.2,
+        width=1200,  # Largeur ajustée pour mieux afficher les catégories
+        height=600,
+        xaxis={'tickangle': 45}  # Rotation des étiquettes pour lisibilité
+    )
+
+    # Save the plot as HTML
+    fig.write_html(os.path.join(output_dir, filename))
+    return filename

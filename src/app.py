@@ -160,6 +160,80 @@ def get_file_preview(filename):
     except Exception as e:
         logging.error(f"Error getting file preview: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/generate_barchart', methods=['POST'])
+def generate_barchart():
+    try:
+        # Get the bar chart configuration from the request
+        barchart_config = request.json
+        if not barchart_config or 'columns' not in barchart_config:
+            return jsonify({"error": "Missing or invalid barchart_config. 'columns' is required."}), 400
+
+        # Define the path to the GeoDataFrame
+        fusion_gdf_path = './data/output/fusion_gdf.geojson'
+        if not os.path.exists(fusion_gdf_path):
+            return jsonify({"error": "Fusion GeoDataFrame not found. Run main.py first."}), 400
+
+        # Load the GeoDataFrame
+        fusion_gdf = gpd.read_file(fusion_gdf_path)
+
+        # Log basic info for debugging
+        logging.info(f"Loaded fusion_gdf with columns: {list(fusion_gdf.columns)}")
+        logging.info(f"Sample data:\n{fusion_gdf.head().to_string()}")
+
+        # Validate requested columns exist in the GeoDataFrame
+        requested_columns = barchart_config.get('columns', [])
+        missing_columns = [col for col in requested_columns if col not in fusion_gdf.columns]
+        if missing_columns:
+            return jsonify({"error": f"Columns not found in GeoDataFrame: {missing_columns}"}), 400
+
+        # Convert columns to numeric where possible, coercing errors to NaN
+        for col in requested_columns:
+            if col in fusion_gdf.columns:
+                fusion_gdf[col] = pd.to_numeric(fusion_gdf[col], errors='coerce')
+                logging.info(f"Column '{col}' after conversion: {fusion_gdf[col].dtype}")
+                logging.info(f"Sample values for '{col}': {fusion_gdf[col].head(10).tolist()}")
+                logging.info(f"NaN count in '{col}': {fusion_gdf[col].isna().sum()}")
+
+        # Calculate bar chart data
+        barchart_data = metrics.calculate_barchart_data(fusion_gdf, barchart_config)
+
+        # Generate bar charts for each column
+        generated_barcharts = {}
+        for col in requested_columns:
+            try:
+                barchart_filename = visualisation.visualize_barchart(
+                    barchart_data,
+                    col,
+                    buffer_type="barchart"
+                )
+                if barchart_filename:
+                    generated_barcharts[col] = barchart_filename
+                else:
+                    logging.warning(f"No bar chart file generated for column '{col}'")
+            except Exception as e:
+                logging.error(f"Failed to generate bar chart for '{col}': {str(e)}")
+                return jsonify({"error": f"Failed to generate bar chart for '{col}': {str(e)}"}), 500
+
+        return jsonify({"barcharts": generated_barcharts}), 200
+
+    except ValueError as ve:
+        logging.error(f"Validation error: {str(ve)}")
+        return jsonify({"error": f"Validation error: {str(ve)}"}), 400
+    except Exception as e:
+        logging.error(f"Error generating bar chart: {str(e)}")
+        return jsonify({"error": f"Error generating bar chart: {str(e)}"}), 500
+
+@app.route('/get_barchart_html/<path:filename>')
+def get_barchart_html(filename):
+    try:
+        directory = './data/output/visualisation/'
+        return send_from_directory(directory, filename, mimetype='text/html')
+    except Exception as e:
+        logging.error(f"Error serving bar chart: {str(e)}")
+        return jsonify({"error": "Bar chart not found"}), 404
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -87,6 +87,12 @@ const App = () => {
     customBins: "",
     customLabels: "",
   });
+  const [barCharts, setBarCharts] = useState({});
+  const [barChartFormData, setBarChartFormData] = useState({
+    columns: [],
+    groupby: "",
+    aggregation: { type: "count", column: "" },
+  });
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
   const [dataFiles, setDataFiles] = useState([]);
@@ -352,6 +358,57 @@ const App = () => {
     }
   };
 
+  const barChartSchema = {
+    type: "object",
+    title: "Bar Chart Configuration",
+    properties: {
+      columns: {
+        type: "array",
+        title: "Columns",
+        items: { type: "string" }
+      },
+      groupby: {
+        type: "string",
+        title: "Group By Column"
+      },
+      aggregation: {
+        type: "object",
+        title: "Aggregation",
+        properties: {
+          type: {
+            type: "string",
+            title: "Type",
+            enum: ["count", "sum"]
+          },
+          column: {
+            type: "string",
+            title: "Column"
+          }
+        }
+      }
+    }
+  };
+
+  const barChartUiSchema = {
+    columns: {
+      "ui:widget": "array",
+      "items": {
+        "ui:placeholder": "Enter column name"
+      }
+    },
+    groupby: {
+      "ui:placeholder": "Enter group by column"
+    },
+    aggregation: {
+      type: {
+        "ui:widget": "select"
+      },
+      column: {
+        "ui:placeholder": "Enter aggregation column"
+      }
+    }
+  };
+
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = { ...currentSchema };
     const bufferProperties = newSchema.properties.buffer_layer.properties;
@@ -453,7 +510,6 @@ const App = () => {
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
   
-    // Process customBins and customLabels
     let bins = formData.customBins
       .split(',')
       .map((val) => {
@@ -468,7 +524,6 @@ const App = () => {
       .map((val) => val.trim())
       .filter((val) => val !== '');
   
-    // Validate bins and labels
     if (bins.length < 2) {
       setHistograms({
         error: `<div class="error">Error: Please provide at least two bin edges (e.g., "0,10,20,40,Infinity").</div>`
@@ -476,7 +531,6 @@ const App = () => {
       return;
     }
   
-    // If the last label ends with "+", ensure the last bin edge is Infinity
     const lastLabel = labels[labels.length - 1];
     if (lastLabel.endsWith('+') && bins[bins.length - 1] !== Infinity) {
       bins.push(Infinity);
@@ -490,7 +544,6 @@ const App = () => {
       return;
     }
   
-    // Replace Infinity with a string placeholder for serialization
     const binsForSerialization = bins.map((val) =>
       val === Infinity ? "Infinity" : val
     );
@@ -533,6 +586,50 @@ const App = () => {
     .catch(error => {
       console.error('Error generating histograms:', error);
       setHistograms({
+        error: `<div class="error">Error: ${error.message}</div>`
+      });
+    });
+  };
+
+  const onBarChartSubmit = ({ formData }) => {
+    setBarChartFormData(formData);
+
+    const configToSend = {
+      ...formData,
+    };
+
+    fetch('http://127.0.0.1:5000/generate_barchart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(configToSend),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to generate bar charts');
+      return response.json();
+    })
+    .then(data => {
+      const barChartPromises = Object.entries(data.barcharts).map(([column, filepath]) =>
+        fetch(`http://127.0.0.1:5000/get_barchart_html/${filepath.split('/').pop()}?t=${Date.now()}`)
+          .then(response => response.text())
+          .then(html => ({ column, html }))
+          .catch(error => ({
+            column,
+            html: `<div class="error">Error loading bar chart: ${error.message}</div>`
+          }))
+      );
+
+      Promise.all(barChartPromises)
+        .then(results => {
+          const newBarCharts = {};
+          results.forEach(({ column, html }) => {
+            newBarCharts[column] = html;
+          });
+          setBarCharts(newBarCharts);
+        });
+    })
+    .catch(error => {
+      console.error('Error generating bar charts:', error);
+      setBarCharts({
         error: `<div class="error">Error: ${error.message}</div>`
       });
     });
@@ -626,6 +723,7 @@ const App = () => {
         <button onClick={() => handleTabChange('tables')}>Tables</button>
         <button onClick={() => handleTabChange('map')}>Map</button>
         <button onClick={() => handleTabChange('histogram')}>Histograms</button>
+        <button onClick={() => handleTabChange('barchart')}>Bar Charts</button>
       </div>
 
       {activeTab === 'data-explorer' && (
@@ -753,6 +851,39 @@ const App = () => {
                   title={`histogram-${columnName}`}
                   srcDoc={html}
                   className="histogram-iframe"
+                />
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'barchart' && (
+        <div className="barchart-container">
+          <h2>Bar Charts</h2>
+          <div className="barchart-form">
+            <Form
+              schema={barChartSchema}
+              uiSchema={barChartUiSchema}
+              formData={barChartFormData}
+              onChange={({ formData }) => setBarChartFormData(formData)}
+              onSubmit={onBarChartSubmit}
+            >
+              <button type="submit">Generate Bar Charts</button>
+            </Form>
+          </div>
+          {Object.keys(barCharts).length === 0 ? (
+            <p>No bar charts generated yet. Configure and submit above to generate bar charts.</p>
+          ) : barCharts.error ? (
+            <div dangerouslySetInnerHTML={{ __html: barCharts.error }} />
+          ) : (
+            Object.entries(barCharts).map(([columnName, html]) => (
+              <div key={columnName} className="barchart-item">
+                <h3>{columnName}</h3>
+                <iframe
+                  title={`barchart-${columnName}`}
+                  srcDoc={html}
+                  className="barchart-iframe"
                 />
               </div>
             ))
