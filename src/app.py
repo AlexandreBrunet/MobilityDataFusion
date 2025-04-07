@@ -19,6 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 def submit():
     try:
         data = request.json
+        print("Configuration reçue du frontend :", data)
         with open('config.yaml', 'w') as file:
             yaml.dump(data, file)
         
@@ -232,8 +233,6 @@ def get_barchart_html(filename):
     except Exception as e:
         logging.error(f"Error serving bar chart: {str(e)}")
         return jsonify({"error": "Bar chart not found"}), 404
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

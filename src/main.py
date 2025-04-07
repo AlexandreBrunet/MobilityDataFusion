@@ -119,6 +119,9 @@ agg_stats_gdf = metrics.calculate_metrics(
 
 agg_stats_gdf = filtering.apply_global_filters(agg_stats_gdf, config)
 
+post_aggregation_config = config.get("post_aggregation_metrics", {})
+if post_aggregation_config:
+    agg_stats_gdf = metrics.calculate_post_aggregation_metrics(agg_stats_gdf, post_aggregation_config)
 
 for layer_name in buffer_layer:
     buffer_type = buffer_layer[layer_name].get('buffer_type')

@@ -356,6 +356,34 @@ def calculate_barchart_data(gdf, barchart_config):
 
     return barchart_data
 
+def calculate_post_aggregation_metrics(agg_stats_gdf, post_aggregation_config):
+    result_gdf = agg_stats_gdf.copy()
+
+    # Gestion des ratios
+    if "ratio" in post_aggregation_config:
+        for ratio in post_aggregation_config["ratio"]:
+            ratio_name = ratio.get("name")
+            numerator = ratio.get("numerator")
+            denominator = ratio.get("denominator")
+
+            if not all([ratio_name, numerator, denominator]):
+                warnings.warn(f"Ratio '{ratio_name}' incomplet. Ignoré.", UserWarning)
+                continue
+
+            if numerator not in result_gdf.columns or denominator not in result_gdf.columns:
+                warnings.warn(f"Colonnes '{numerator}' ou '{denominator}' absentes dans agg_stats_gdf. Ratio '{ratio_name}' ignoré.", UserWarning)
+                continue
+
+            try:
+                result_gdf[ratio_name] = result_gdf[numerator] / result_gdf[denominator]
+            except ZeroDivisionError:
+                warnings.warn(f"Division par zéro dans ratio '{ratio_name}'. Remplacement par NaN.", UserWarning)
+                result_gdf[ratio_name] = result_gdf[numerator] / result_gdf[denominator].replace(0, np.nan)
+
+    # Tu peux ajouter d'autres types de métriques ici (ex. multiply, diff, etc.)
+    
+    return result_gdf.round(2)
+
 def parse_column_name(column):
     if " as " in column:
         original, renamed = column.split(" as ")

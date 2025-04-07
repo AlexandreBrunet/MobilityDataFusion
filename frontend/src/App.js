@@ -224,6 +224,25 @@ const App = () => {
                 required: ["column", "value", "operator"]
               }
             },
+            post_aggregation_metrics: {
+              type: "object",
+              title: "Post-Aggregation Metrics",
+              properties: {
+                ratio: {
+                  type: "array",
+                  title: "Ratio Metrics",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", title: "Ratio Name" },
+                      numerator: { type: "string", title: "Numerator Column" },
+                      denominator: { type: "string", title: "Denominator Column" }
+                    },
+                    required: ["name", "numerator", "denominator"]
+                  }
+                }
+              }
+            },
             activate_visualisation: { type: "boolean", title: "Activate Visualisation" },
             join_layers: {
               type: "object",
@@ -463,11 +482,14 @@ const App = () => {
       count_distinct_columns: formData.count_distinct_columns,
       groupby_columns: formData.groupby_columns,
       filter_global: formData.filter_global,
+      post_aggregation_metrics: formData.post_aggregation_metrics,
       activate_visualisation: formData.activate_visualisation,
       join_layers: formData.join_layers,
       colors: formData.colors
     };
-  
+
+    console.log("yamlData envoyé au backend :", JSON.stringify(yamlData, null, 2));
+
     fetch('http://127.0.0.1:5000/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -682,7 +704,7 @@ const App = () => {
       "data_files", "buffer_layer", "filter_data_files", "ratio_columns", "multiply_columns",
       "sum_columns", "max_columns", "min_columns", "mean_columns", "std_columns",
       "count_columns", "count_distinct_columns", "groupby_columns", "filter_global",
-      "activate_visualisation", "join_layers", "colors"
+      "post_aggregation_metrics", "activate_visualisation", "join_layers", "colors"
     ],
     data_files: {
       "items": {
@@ -707,6 +729,14 @@ const App = () => {
       "items": {
         name: { "ui:placeholder": "Enter multiply name" },
         columns: { "items": { "ui:placeholder": "Enter column to multiply" } }
+      }
+    },
+    "post_aggregation_metrics": {
+    "ratio": {
+        "items": {
+        "name": { "ui:placeholder": "Enter ratio name" },
+        "numerator": { "ui:placeholder": "Enter numerator column" },
+        "denominator": { "ui:placeholder": "Enter denominator column" } }
       }
     },
     filter_data_files: {
