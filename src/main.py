@@ -11,7 +11,6 @@ import time
 import pandas as pd
 import geopandas as gpd
 import os
-import subprocess
 
 pd.set_option("future.no_silent_downcasting", True)
 

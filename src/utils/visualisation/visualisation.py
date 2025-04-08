@@ -4,7 +4,6 @@ from typing import List, Dict
 import utils.gdf.gdfExtraction as gdfExtraction
 import plotly.graph_objects as go
 import os
-import plotly.express as px
 
 def create_initial_view() -> pdk.ViewState:
     # Coordonnées de Montréal

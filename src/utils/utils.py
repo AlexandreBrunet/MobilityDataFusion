@@ -6,10 +6,7 @@ from shapely.geometry import shape
 import os
 import time
 import logging
-from shapely.errors import WKTReadingError
 import os
-from pathlib import Path
-import yaml
 
 # Configurer le logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
