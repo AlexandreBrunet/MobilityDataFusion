@@ -18,51 +18,125 @@ def calculate_sum(gdf, groupby_columns, sum_columns):
     agg_dict = {original: 'sum' for original, _ in valid_columns}
     sum_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
 
-    sum_stats = sum_stats.rename(columns={original: f"{renamed}_sum" for original, renamed in valid_columns})
+    sum_stats = sum_stats.rename(columns={original: renamed for original, renamed in valid_columns})
 
     return sum_stats.round(2)
 
 def calculate_max(gdf, groupby_columns, max_columns):
     parsed_columns = [parse_column_name(col) for col in max_columns]
-    agg_dict = {original: 'max' for original, _ in parsed_columns}
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour le maximum : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'max' for original, _ in valid_columns}
     max_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    max_stats = max_stats.rename(columns={original: f"{renamed}_max" for original, renamed in parsed_columns})
+
+    max_stats = max_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
     return max_stats.round(2)
 
 def calculate_min(gdf, groupby_columns, min_columns):
     parsed_columns = [parse_column_name(col) for col in min_columns]
-    agg_dict = {original: 'min' for original, _ in parsed_columns}
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour le minimum : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'min' for original, _ in valid_columns}
     min_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    min_stats = min_stats.rename(columns={original: f"{renamed}_min" for original, renamed in parsed_columns})
+
+    min_stats = min_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
     return min_stats.round(2)
 
 def calculate_mean(gdf, groupby_columns, mean_columns):
     parsed_columns = [parse_column_name(col) for col in mean_columns]
-    agg_dict = {original: 'mean' for original, _ in parsed_columns}
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour la moyenne : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'mean' for original, _ in valid_columns}
     mean_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    mean_stats = mean_stats.rename(columns={original: f"{renamed}_mean" for original, renamed in parsed_columns})
+
+    # Renommer les colonnes en utilisant le nom renommé ou le nom original
+    mean_stats = mean_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
     return mean_stats.round(2)
+
 
 def calculate_std(gdf, groupby_columns, std_columns):
     parsed_columns = [parse_column_name(col) for col in std_columns]
-    agg_dict = {original: 'std' for original, _ in parsed_columns}
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour l'écart-type : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'std' for original, _ in valid_columns}
     std_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    std_stats = std_stats.rename(columns={original: f"{renamed}_std" for original, renamed in parsed_columns})
+
+    std_stats = std_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
     return std_stats.round(2)
 
 def calculate_count(gdf, groupby_columns, count_columns):
     parsed_columns = [parse_column_name(col) for col in count_columns]
-    agg_dict = {original: 'count' for original, _ in parsed_columns}
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour le comptage : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: 'count' for original, _ in valid_columns}
     count_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    count_stats = count_stats.rename(columns={original: f"{renamed}_count" for original, renamed in parsed_columns})
-    return count_stats
+
+    count_stats = count_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
+    return count_stats.round(2)
 
 def calculate_count_distinct(gdf, groupby_columns, distinct_columns):
-    parsed_columns = [(col, f"{col}_distinct") for col in distinct_columns]
-    agg_dict = {original: pd.Series.nunique for original, _ in parsed_columns}
+    parsed_columns = [parse_column_name(col) for col in distinct_columns]
+    
+    valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+    invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+    if invalid_columns:
+        warnings.warn(
+            f"Les colonnes suivantes sont absentes du GeoDataFrame et seront ignorées pour le comptage distinct : {', '.join(invalid_columns)}.",
+            UserWarning
+        )
+
+    agg_dict = {original: pd.Series.nunique for original, _ in valid_columns}
     count_distinct_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
-    count_distinct_stats = count_distinct_stats.rename(columns={original: renamed for original, renamed in parsed_columns})
-    return count_distinct_stats
+
+    count_distinct_stats = count_distinct_stats.rename(columns={original: renamed for original, renamed in valid_columns})
+
+    return count_distinct_stats.round(2)
 
 def calculate_ratio(gdf, groupby_columns, ratio_columns):
     ratio_stats_list = []
@@ -79,7 +153,6 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
             )
             continue
 
-        # Vérifier que les colonnes existent dans le DataFrame
         if numerator not in gdf.columns or denominator not in gdf.columns:
             warnings.warn(
                 f"Le ratio '{ratio_name}' ne peut pas être calculé car '{numerator}' ou '{denominator}' n'existe pas dans le GeoDataFrame. Il sera ignoré.",
@@ -87,7 +160,6 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
             )
             continue
 
-        # Calculer le ratio et ajouter une colonne temporaire
         try:
             gdf[ratio_name] = gdf[numerator] / gdf[denominator]
         except ZeroDivisionError:
@@ -100,7 +172,6 @@ def calculate_ratio(gdf, groupby_columns, ratio_columns):
         ratio_stat = gdf.groupby(groupby_columns).agg({ratio_name: 'mean'}).reset_index()
         ratio_stats_list.append(ratio_stat)
 
-    # Fusionner tous les ratios calculés
     if ratio_stats_list:
         ratio_stats = pd.concat(ratio_stats_list, axis=1).loc[:, ~pd.concat(ratio_stats_list, axis=1).columns.duplicated()]
     else:
@@ -122,7 +193,6 @@ def calculate_multiply(gdf, groupby_columns, multiply_columns):
             )
             continue
 
-        # Parse column names and check validity
         parsed_columns = [parse_column_name(col) for col in columns]
         valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
         invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
@@ -140,19 +210,16 @@ def calculate_multiply(gdf, groupby_columns, multiply_columns):
             )
             continue
 
-        # Calculate the product
         temp_product = gdf[valid_columns[0][0]].copy()
         for original, _ in valid_columns[1:]:
             temp_product *= gdf[original]
 
-        # Group and aggregate
         temp_df = gdf[groupby_columns].copy()
         temp_df['temp_product'] = temp_product
         multiply_stat = temp_df.groupby(groupby_columns).agg({'temp_product': 'prod'}).reset_index()
         multiply_stat = multiply_stat.rename(columns={'temp_product': multiply_name})
         multiply_stats_list.append(multiply_stat)
 
-    # Merge all multiplication results
     if multiply_stats_list:
         multiply_stats = pd.concat(multiply_stats_list, axis=1).loc[:, ~pd.concat(multiply_stats_list, axis=1).columns.duplicated()]
     else:
@@ -161,28 +228,33 @@ def calculate_multiply(gdf, groupby_columns, multiply_columns):
     return multiply_stats.round(2)
 
 def calculate_metrics(gdf, groupby_columns, metrics_config):
-    # Validate that groupby_columns exist in the GeoDataFrame
     missing_cols = [col for col in groupby_columns if col not in gdf.columns]
     if missing_cols:
         raise ValueError(f"Groupby columns {missing_cols} not found in GeoDataFrame")
 
-    # Extract area_km2 along with groupby_columns before aggregation
     if 'area_km2' in gdf.columns:
-        # Drop duplicates to ensure one area_km2 per group
         area_data = gdf[groupby_columns + ['area_km2']].drop_duplicates(subset=groupby_columns)
     else:
         raise ValueError("area_km2 column not found in the GeoDataFrame")
 
-    # Build the aggregation dictionary
     agg_dict = {}
     for func, cols in metrics_config.items():
         if func != "ratio" and func != "multiply" and cols:
             parsed_columns = [parse_column_name(col) for col in cols]
-            for original, renamed in parsed_columns:
+            valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
+            invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
+
+            if invalid_columns:
+                warnings.warn(
+                    f"Les colonnes suivantes sont absentes du GeoDataFrame pour l'agrégation '{func}' : {', '.join(invalid_columns)}.",
+                    UserWarning
+                )
+
+            for original, renamed in valid_columns:
                 if func == "count_distinct":
-                    agg_dict[f"{renamed}_count_distinct"] = (original, "nunique")
+                    agg_dict[renamed] = (original, "nunique")
                 else:
-                    agg_dict[f"{renamed}_{func}"] = (original, func)
+                    agg_dict[renamed] = (original, func)
 
     if agg_dict:
         agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index()
@@ -218,7 +290,6 @@ def calculate_histogram_data(gdf, histogram_config):
 
     histogram_data = {}
 
-    # Validation de base
     if not columns:
         raise ValueError("No columns specified in histogram config")
     if not groupby:
@@ -230,7 +301,6 @@ def calculate_histogram_data(gdf, histogram_config):
     if aggregation["type"] == "sum" and (not aggregation["column"] or aggregation["column"] not in gdf.columns):
         raise ValueError(f"For 'sum' aggregation, a valid 'column' must be specified. Got: {aggregation['column']}")
 
-    # Validation des bins et labels
     if custom_bins is None or custom_labels is None:
         custom_bins = [0, 10, 20, 40, float("inf")]
         custom_labels = ["0-9", "10-19", "20-39", "40+"]
@@ -254,14 +324,11 @@ def calculate_histogram_data(gdf, histogram_config):
         if col not in gdf.columns:
             raise ValueError(f"Column '{col}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
 
-        # Groupby et agrégation
         if aggregation["type"] == "count":
-            # Compter le nombre d'occurrences par groupe
             grouped = gdf.groupby(groupby).size().reset_index(name="count")
             agg_col = "count"
             ylabel = "Number of Records"
         elif aggregation["type"] == "sum":
-            # Sommer une colonne spécifique par groupe
             agg_col = aggregation["column"]
             if not pd.api.types.is_numeric_dtype(gdf[agg_col]):
                 gdf[agg_col] = pd.to_numeric(gdf[agg_col], errors='coerce')
@@ -272,7 +339,6 @@ def calculate_histogram_data(gdf, histogram_config):
 
         logging.info(f"Grouped data for {col}:\n{grouped[[groupby, agg_col]]}")
 
-        # Bin les résultats agrégés
         grouped["bin"] = pd.cut(
             grouped[agg_col],
             bins=custom_bins,
@@ -281,15 +347,12 @@ def calculate_histogram_data(gdf, histogram_config):
             right=True
         )
 
-        # Vérifier les valeurs non binnées
         if grouped["bin"].isna().any():
             unbinned = grouped[grouped["bin"].isna()][[groupby, agg_col]]
             raise ValueError(f"Some values in '{agg_col}' were not binned for {col}. Check bin edges: {custom_bins}. Unbinned data:\n{unbinned}")
 
-        # Compter les groupes dans chaque bin
         bin_counts = grouped["bin"].value_counts().sort_index()
 
-        # Remplir les bins manquants avec 0
         bin_counts = bin_counts.reindex(custom_labels, fill_value=0)
 
         logging.info(f"Bin counts for {col}:\n{bin_counts}")
@@ -312,7 +375,6 @@ def calculate_barchart_data(gdf, barchart_config):
     logging.info(f"Bar chart config: {barchart_config}")
     logging.info(f"Columns: {columns}, Groupby: {groupby}, Aggregation: {aggregation}")
 
-    # Validation de base
     if not columns:
         raise ValueError("No columns specified in bar chart config")
     if not groupby:
@@ -329,7 +391,6 @@ def calculate_barchart_data(gdf, barchart_config):
         if col not in gdf.columns:
             raise ValueError(f"Column '{col}' not found in GeoDataFrame. Available columns: {list(gdf.columns)}")
 
-        # Groupby et agrégation
         if aggregation["type"] == "count":
             grouped = gdf.groupby(groupby).size().reset_index(name="count")
             agg_col = "count"
@@ -345,7 +406,6 @@ def calculate_barchart_data(gdf, barchart_config):
 
         logging.info(f"Grouped data for {col}:\n{grouped[[groupby, agg_col]]}")
 
-        # Préparer les données pour un bar chart (pas de binnage)
         barchart_data[col] = {
             "categories": grouped[groupby].tolist(),
             "values": grouped[agg_col].tolist(),
@@ -359,7 +419,6 @@ def calculate_barchart_data(gdf, barchart_config):
 def calculate_post_aggregation_metrics(agg_stats_gdf, post_aggregation_config):
     result_gdf = agg_stats_gdf.copy()
 
-    # Gestion des ratios
     if "ratio" in post_aggregation_config:
         for ratio in post_aggregation_config["ratio"]:
             ratio_name = ratio.get("name")
