@@ -17,11 +17,9 @@ pd.set_option("future.no_silent_downcasting", True)
 
 start_time = time.time()
 
-# Charger la configuration depuis le fichier YAML
 with open("config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
-# Accéder aux paramètres de configuration
 activate_visualisation = config.get("activate_visualisation")
 data_files = config.get("data_files")
 buffer_layer = config.get("buffer_layer")
@@ -39,77 +37,63 @@ metrics_config = {
     "count_distinct": config["count_distinct_columns"]
 }
 
-# Charger les fichiers geojson
-geodataframes = utils.load_files_to_gdf(data_files)
-
-geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
-
-gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
-
-points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf = extractGeo.extract_geometries(gdf)
-
-buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
-
-join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
-fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
-
 output_dir = "./data/output/"
 os.makedirs(output_dir, exist_ok=True)
+fusion_gdf_path = os.path.join(output_dir, "fusion_gdf.parquet")
 
-fusion_gdf['geometry'] = None
-for idx, row in fusion_gdf.iterrows():
-    join_layer = row['join_layer']
-    joined_geometry_col = f"{join_layer}_geometry"
-    if joined_geometry_col in fusion_gdf.columns:
-        fusion_gdf.at[idx, 'geometry'] = row[joined_geometry_col]
+if utils.should_regenerate_fusion_gdf(config, fusion_gdf_path):
+    geodataframes = utils.load_files_to_gdf(data_files)
 
-fusion_gdf = gpd.GeoDataFrame(fusion_gdf, geometry='geometry', crs=fusion_gdf.crs)
+    geodataframes = filtering.apply_filters_to_layers(geodataframes, config, filtering.filter_gdf)
 
-fusion_gdf = fusion_gdf[~fusion_gdf['geometry'].isna()]
+    gdf = gdfExtraction.process_geodataframes(geodataframes, utils)
 
-geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype) and col != 'geometry']
-fusion_gdf = fusion_gdf.drop(columns=geometry_columns, errors='ignore')
+    points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf = extractGeo.extract_geometries(gdf)
 
-wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
-fusion_gdf = fusion_gdf.drop(columns=wkt_columns, errors='ignore')
+    buffers_gdf = calculate_buffer.calculate_buffer(buffer_layer, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf)
 
-buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left') and col != 'area_km2']
-fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
+    join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
+    fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
 
-redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
-fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
+    fusion_gdf['geometry'] = None
+    for idx, row in fusion_gdf.iterrows():
+        join_layer = row['join_layer']
+        joined_geometry_col = f"{join_layer}_geometry"
+        if joined_geometry_col in fusion_gdf.columns:
+            fusion_gdf.at[idx, 'geometry'] = row[joined_geometry_col]
 
-if config.get("groupby_columns"):
-    valid_groupby_cols = [col for col in config["groupby_columns"] if col in fusion_gdf.columns]
-    
-    if valid_groupby_cols:
-        initial_count = len(fusion_gdf)
-        fusion_gdf = fusion_gdf.dropna(subset=valid_groupby_cols)
-        dropped_count = initial_count - len(fusion_gdf)
-        print(f"Dropped {dropped_count} rows with NaN values in groupby columns: {valid_groupby_cols}")
+    fusion_gdf = gpd.GeoDataFrame(fusion_gdf, geometry='geometry', crs=fusion_gdf.crs)
+    fusion_gdf = fusion_gdf[~fusion_gdf['geometry'].isna()]
 
+    geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype) and col != 'geometry']
+    fusion_gdf = fusion_gdf.drop(columns=geometry_columns, errors='ignore')
 
-for col in fusion_gdf.columns:
-    if fusion_gdf[col].dtype == 'object' and col != 'geometry':
-        fusion_gdf[col] = fusion_gdf[col].astype(str)
+    wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
+    fusion_gdf = fusion_gdf.drop(columns=wkt_columns, errors='ignore')
 
-fusion_gdf.to_parquet(os.path.join(output_dir, "fusion_gdf.parquet"))
+    buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left') and col != 'area_km2']
+    fusion_gdf = fusion_gdf.drop(columns=buffer_columns, errors='ignore')
 
-try:
-    subprocess.run([
-        "ogr2ogr",
-        "-f", "GeoJSON",
-        os.path.join(output_dir, "fusion_gdf.geojson"),
-        os.path.join(output_dir, "fusion_gdf.parquet")
-    ], check=True)
-    print(f"Successfully converted fusion_gdf.parquet to fusion_gdf.geojson")
-except subprocess.CalledProcessError as e:
-    print(f"Error converting GeoParquet to GeoJSON with ogr2ogr: {e}")
-    print("Falling back to GeoPandas for GeoJSON conversion...")
-    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
-except FileNotFoundError:
-    print("ogr2ogr not found. Please ensure GDAL is installed. Falling back to GeoPandas for GeoJSON conversion...")
-    fusion_gdf.to_file(os.path.join(output_dir, "fusion_gdf.geojson"), driver="GeoJSON")
+    redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
+    fusion_gdf = fusion_gdf.drop(columns=redundant_columns, errors='ignore')
+
+    if config.get("groupby_columns"):
+        valid_groupby_cols = [col for col in config["groupby_columns"] if col in fusion_gdf.columns]
+        if valid_groupby_cols:
+            initial_count = len(fusion_gdf)
+            fusion_gdf = fusion_gdf.dropna(subset=valid_groupby_cols)
+            dropped_count = initial_count - len(fusion_gdf)
+            print(f"Dropped {dropped_count} rows with NaN values in groupby columns: {valid_groupby_cols}")
+
+    for col in fusion_gdf.columns:
+        if fusion_gdf[col].dtype == 'object' and col != 'geometry':
+            fusion_gdf[col] = fusion_gdf[col].astype(str)
+
+    fusion_gdf.to_parquet(fusion_gdf_path)
+else:
+    print("Chargement de fusion_gdf depuis fusion_gdf.parquet...")
+    fusion_gdf = gpd.read_parquet(fusion_gdf_path)
+
 
 agg_stats_gdf = metrics.calculate_metrics(
     gdf=fusion_gdf,
@@ -178,5 +162,4 @@ if not activate_visualisation:
 
 end_time = time.time()
 execution_time = end_time - start_time
-
 print(f"Temps d'exécution total : {execution_time:.2f} secondes.")

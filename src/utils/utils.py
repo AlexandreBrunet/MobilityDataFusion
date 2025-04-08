@@ -7,6 +7,9 @@ import os
 import time
 import logging
 from shapely.errors import WKTReadingError
+import os
+from pathlib import Path
+import yaml
 
 # Configurer le logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -122,3 +125,36 @@ def add_lon_lat_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def prepare_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf = determine_crs(gdf)
     return add_lon_lat_columns(gdf)
+
+def should_regenerate_fusion_gdf(config: dict, fusion_gdf_path: str) -> bool:
+    """
+    Vérifie si fusion_gdf doit être régénéré en comparant les timestamps des fichiers sources et de la config.
+    :param config: Configuration YAML
+    :param fusion_gdf_path: Chemin vers fusion_gdf.parquet
+    :return: True si fusion_gdf doit être régénéré, False sinon
+    """
+    if not os.path.exists(fusion_gdf_path):
+        print("fusion_gdf.parquet n'existe pas. Régénération nécessaire.")
+        return True
+
+    fusion_mtime = os.path.getmtime(fusion_gdf_path)
+    config_mtime = os.path.getmtime("config.yaml")
+
+    # Vérifie si la config a changé
+    if config_mtime > fusion_mtime:
+        print("Le fichier config.yaml a été modifié. Régénération de fusion_gdf nécessaire.")
+        return True
+
+    # Vérifie si les fichiers sources ont changé
+    data_files = config.get("data_files", [])
+    source_files = [f["path"] for f in data_files]
+    for source_file in source_files:
+        if not os.path.exists(source_file):
+            print(f"Fichier source {source_file} introuvable. Régénération de fusion_gdf nécessaire.")
+            return True
+        if os.path.getmtime(source_file) > fusion_mtime:
+            print(f"Fichier source {source_file} modifié. Régénération de fusion_gdf nécessaire.")
+            return True
+
+    print("Aucune modification détectée. Réutilisation de fusion_gdf.parquet.")
+    return False
