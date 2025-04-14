@@ -143,7 +143,7 @@ const App = () => {
                 buffer_type: {
                   type: "string",
                   title: "Buffer Type",
-                  enum: ["circular", "grid", "isochrone", "zones", "zones_grid"],
+                  enum: ["circular", "grid", "isochrone", "zones"],
                   default: "circular"
                 },
                 distance: {
@@ -429,27 +429,81 @@ const App = () => {
   };
 
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
-    const newSchema = { ...currentSchema };
+    const newSchema = JSON.parse(JSON.stringify(currentSchema)); // Cloner pour éviter mutations
     const bufferProperties = newSchema.properties.buffer_layer.properties;
-    
+  
+    // Supprimer les propriétés dynamiques
     delete bufferProperties.distance;
     delete bufferProperties.wide;
     delete bufferProperties.length;
   
+    // Ajouter les propriétés selon buffer_type
     if (bufferType === "circular") {
-      bufferProperties.distance = { type: "number", title: "Distance (meters)", default: 1000 };
+      bufferProperties.distance = {
+        type: "number",
+        title: "Distance (meters)",
+        default: 1000,
+      };
     } else if (bufferType === "grid") {
-      bufferProperties.wide = { type: "number", title: "Width (meters)", default: 1000 };
-      bufferProperties.length = { type: "number", title: "Length (meters)", default: 1000 };
+      bufferProperties.wide = {
+        type: "number",
+        title: "Width (meters)",
+        default: 1000,
+      };
+      bufferProperties.length = {
+        type: "number",
+        title: "Length (meters)",
+        default: 1000,
+      };
+    }
+    // Pas de champs pour "zones" ou "isochrone"
+
+    newSchema.properties.buffer_layer.required = ["layer_name", "geometry_type", "buffer_type"];
+    if (bufferType === "circular") {
+      newSchema.properties.buffer_layer.required.push("distance");
+    } else if (bufferType === "grid") {
+      newSchema.properties.buffer_layer.required.push("wide", "length");
     }
 
+    console.log("Updated schema:", JSON.stringify(newSchema.properties.buffer_layer, null, 2)); // Debug
     return newSchema;
   };
 
   const onChange = ({ formData }) => {
-    const newBufferType = formData.buffer_layer.buffer_type;
+    const newBufferType = formData.buffer_layer?.buffer_type || "circular";
+  
+    // Mettre à jour le schéma dynamiquement pour buffer_layer
     setSchema(prev => updateBufferLayerSchema(prev, newBufferType));
-    setFormData(formData);
+  
+    // Mettre à jour formData uniquement pour buffer_layer
+    const updatedFormData = {
+      ...formData,
+      buffer_layer: {
+        ...formData.buffer_layer,
+        buffer_type: newBufferType,
+      },
+    };
+  
+    // Ajuster les champs dynamiques de buffer_layer
+    if (newBufferType === "circular") {
+      updatedFormData.buffer_layer.distance = formData.buffer_layer?.distance || 1000;
+      delete updatedFormData.buffer_layer.wide;
+      delete updatedFormData.buffer_layer.length;
+    } else if (newBufferType === "grid") {
+      updatedFormData.buffer_layer.wide = formData.buffer_layer?.wide || 1000;
+      updatedFormData.buffer_layer.length = formData.buffer_layer?.length || 1000;
+      delete updatedFormData.buffer_layer.distance;
+    } else if (newBufferType === "zones" || newBufferType === "isochrone") {
+      delete updatedFormData.buffer_layer.distance;
+      delete updatedFormData.buffer_layer.wide;
+      delete updatedFormData.buffer_layer.length;
+    }
+  
+    // Log pour déboguer
+    console.log("Updated formData:", JSON.stringify(updatedFormData, null, 2));
+  
+    // Mettre à jour l’état
+    setFormData(updatedFormData);
   };
 
   const onSubmit = ({ formData }) => {
@@ -716,7 +770,9 @@ const App = () => {
       layer_name: { "ui:placeholder": "Enter layer name" },
       geometry_type: { "ui:placeholder": "Select geometry type" },
       buffer_type: { "ui:placeholder": "Select buffer type" },
-      distance: { "ui:placeholder": "Enter buffer distance in meters" }
+      distance: { "ui:placeholder": "Enter buffer distance in meters" },
+      wide: { "ui:placeholder": "Enter buffer width in meters" },
+      length: { "ui:placeholder": "Enter buffer length in meters" },
     },
     ratio_columns: {
       "items": {
