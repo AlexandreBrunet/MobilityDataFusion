@@ -74,12 +74,12 @@ def generate_histogram():
             return jsonify({"error": "Missing or invalid histogram_config. 'columns' is required."}), 400
 
         # Define the path to the GeoDataFrame
-        fusion_gdf_path = './data/output/fusion_gdf.geojson'
+        fusion_gdf_path = './data/output/fusion_gdf.parquet'
         if not os.path.exists(fusion_gdf_path):
             return jsonify({"error": "Fusion GeoDataFrame not found. Run main.py first."}), 400
 
         # Load the GeoDataFrame
-        fusion_gdf = gpd.read_file(fusion_gdf_path)
+        fusion_gdf = gpd.read_parquet(fusion_gdf_path)
 
         # Log basic info for debugging
         logging.info(f"Loaded fusion_gdf with columns: {list(fusion_gdf.columns)}")
@@ -169,14 +169,14 @@ def generate_barchart():
         barchart_config = request.json
         if not barchart_config or 'columns' not in barchart_config:
             return jsonify({"error": "Missing or invalid barchart_config. 'columns' is required."}), 400
-
+        
         # Define the path to the GeoDataFrame
-        fusion_gdf_path = './data/output/fusion_gdf.geojson'
+        fusion_gdf_path = './data/output/fusion_gdf.parquet'
         if not os.path.exists(fusion_gdf_path):
             return jsonify({"error": "Fusion GeoDataFrame not found. Run main.py first."}), 400
 
         # Load the GeoDataFrame
-        fusion_gdf = gpd.read_file(fusion_gdf_path)
+        fusion_gdf = gpd.read_parquet(fusion_gdf_path)
 
         # Log basic info for debugging
         logging.info(f"Loaded fusion_gdf with columns: {list(fusion_gdf.columns)}")
