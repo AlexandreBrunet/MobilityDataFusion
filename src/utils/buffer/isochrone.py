@@ -26,7 +26,7 @@ def apply_points_isochrones(points_gdf: gpd.GeoDataFrame, layer_name: str, isoch
     
     # Extraction des paramètres avec valeurs par défaut
     params = isochrone_params[layer_name]
-    walk_time = params.get("walk_time", [5])
+    travel_time = params.get("travel_time", [5])
     speed = params.get("speed", 4.5)
     network_buffer = params.get("distance", 2000)
     network_type = params.get("network_type", "walk")
@@ -67,7 +67,7 @@ def apply_points_isochrones(points_gdf: gpd.GeoDataFrame, layer_name: str, isoch
                 center_node = ox.distance.nearest_nodes(G, point.x, point.y)
                 print(f"Point {idx}: Nœud le plus proche trouvé: {center_node}")
                 
-                subgraph = nx.ego_graph(G, center_node, radius=max(walk_time), distance="time")
+                subgraph = nx.ego_graph(G, center_node, radius=max(travel_time), distance="time")
                 print(f"Point {idx}: Sous-graphe généré avec {subgraph.number_of_nodes()} nœuds")
                 
                 node_points = [Point((data["x"], data["y"])) 

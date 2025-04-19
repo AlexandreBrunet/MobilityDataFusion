@@ -159,7 +159,7 @@ for layer_name in buffer_layer:
                 linestrings_gdf, buffers_gdf, colors, buffer_type
             )
     elif buffer_type == 'isochrone':
-        walk_time = buffer_layer[layer_name].get("walk_time", None)
+        travel_time = buffer_layer[layer_name].get("travel_time", None)
         speed = buffer_layer[layer_name].get("speed", None)
         network_buffer = buffer_layer[layer_name].get("distance", None)
         network_type = buffer_layer[layer_name].get("network_type", "walk")
@@ -167,7 +167,7 @@ for layer_name in buffer_layer:
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type,
-            walk_time=walk_time,
+            travel_time=travel_time,
             speed=speed,
             network_buffer = network_buffer,
             network_type=network_type
@@ -175,7 +175,7 @@ for layer_name in buffer_layer:
         if activate_visualisation:
             visualisation.create_layers_and_map(
                 geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
-                walk_time=walk_time,
+                travel_time=travel_time,
                 speed=speed,
                 network_buffer = network_buffer,
                 network_type=network_type
