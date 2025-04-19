@@ -145,6 +145,8 @@ def create_layers_and_map(
         wide = kwargs.get('wide')
         length = kwargs.get('length')
         filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_{wide}m_{length}m.html"
+    elif buffer_type == "isochrone":
+        filename = f"./data/output/visualisation/carte_{buffer_type}_buffer_isochrone_temp.html"
     elif buffer_type == "zones":
         filename = f"./data/output/visualisation/carte_{buffer_type}_buffer.html"
 
@@ -187,6 +189,9 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
         wide = kwargs.get('wide')
         length = kwargs.get('length')
         filename = f"{output_dir}tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
+    elif buffer_type == "isochrone":
+        network_type = kwargs.get('network_type')
+        filename = f"{output_dir}tableau_{buffer_type}_buffer_{network_type}.html"
     elif buffer_type == "zones":
         filename = f"{output_dir}tableau_zones_buffer.html"
     else:

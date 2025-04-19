@@ -228,50 +228,76 @@ def calculate_multiply(gdf, groupby_columns, multiply_columns):
     return multiply_stats.round(2)
 
 def calculate_metrics(gdf, groupby_columns, metrics_config):
+    # 1. Validation des colonnes de groupby
     missing_cols = [col for col in groupby_columns if col not in gdf.columns]
     if missing_cols:
-        raise ValueError(f"Groupby columns {missing_cols} not found in GeoDataFrame")
+        available_cols = [c for c in gdf.columns if c != 'geometry']
+        raise ValueError(
+            f"Groupby columns {missing_cols} not found in GeoDataFrame. "
+            f"Available columns: {available_cols}"
+        )
 
-    if 'area_km2' in gdf.columns:
-        area_data = gdf[groupby_columns + ['area_km2']].drop_duplicates(subset=groupby_columns)
-    else:
-        raise ValueError("area_km2 column not found in the GeoDataFrame")
+    # 2. Préparation des données d'aire
+    if 'area_km2' not in gdf.columns:
+        gdf['area_km2'] = gdf.geometry.area / 1e6 if gdf.geometry is not None else 0
+    
+    area_data = gdf[groupby_columns + ['area_km2']].drop_duplicates(subset=groupby_columns)
 
+    # 3. Construction du dictionnaire d'agrégation
     agg_dict = {}
     for func, cols in metrics_config.items():
-        if func != "ratio" and func != "multiply" and cols:
-            parsed_columns = [parse_column_name(col) for col in cols]
-            valid_columns = [(original, renamed) for original, renamed in parsed_columns if original in gdf.columns]
-            invalid_columns = [original for original, _ in parsed_columns if original not in gdf.columns]
-
-            if invalid_columns:
+        if func in ["ratio", "multiply"] or not cols:
+            continue
+            
+        for col in cols:
+            original, renamed = parse_column_name(col)
+            
+            if original not in gdf.columns:
                 warnings.warn(
-                    f"Les colonnes suivantes sont absentes du GeoDataFrame pour l'agrégation '{func}' : {', '.join(invalid_columns)}.",
+                    f"Column '{original}' not found for aggregation '{func}'. Skipping.",
                     UserWarning
                 )
+                continue
+                
+            if func == "count_distinct":
+                agg_dict[renamed] = (original, "nunique")
+            else:
+                agg_dict[renamed] = (original, func)
 
-            for original, renamed in valid_columns:
-                if func == "count_distinct":
-                    agg_dict[renamed] = (original, "nunique")
-                else:
-                    agg_dict[renamed] = (original, func)
-
+    # 4. Calcul des agrégations
     if agg_dict:
         agg_stats = gdf.groupby(groupby_columns).agg(**agg_dict).reset_index()
     else:
         agg_stats = gdf[groupby_columns].drop_duplicates().reset_index(drop=True)
 
-    agg_stats = pd.merge(agg_stats, area_data, on=groupby_columns, how='left')
+    # 5. Jointure avec les données d'aire
+    agg_stats = pd.merge(
+        agg_stats,
+        area_data,
+        on=groupby_columns,
+        how='left',
+        validate='one_to_one'
+    )
 
+    # 6. Calcul des ratios si nécessaire
     if "ratio" in metrics_config and metrics_config["ratio"]:
-        ratio_columns = metrics_config["ratio"]
-        ratio_stats = calculate_ratio(gdf, groupby_columns, ratio_columns)
-        agg_stats = pd.merge(agg_stats, ratio_stats, on=groupby_columns, how='left')
+        ratio_stats = calculate_ratio(gdf, groupby_columns, metrics_config["ratio"])
+        agg_stats = pd.merge(
+            agg_stats,
+            ratio_stats,
+            on=groupby_columns,
+            how='left'
+        )
 
+    # 7. Calcul des multiplications si nécessaire
     if "multiply" in metrics_config and metrics_config["multiply"]:
-        multiply_columns = metrics_config["multiply"]
-        multiply_stats = calculate_multiply(gdf, groupby_columns, multiply_columns)
-        agg_stats = pd.merge(agg_stats, multiply_stats, on=groupby_columns, how='left')
+        multiply_stats = calculate_multiply(gdf, groupby_columns, metrics_config["multiply"])
+        agg_stats = pd.merge(
+            agg_stats,
+            multiply_stats,
+            on=groupby_columns,
+            how='left'
+        )
 
     return agg_stats.round(2)
 

@@ -40,6 +40,9 @@ output_dir = "./data/output/"
 os.makedirs(output_dir, exist_ok=True)
 fusion_gdf_path = os.path.join(output_dir, "fusion_gdf.parquet")
 
+if os.path.exists(fusion_gdf_path):
+    os.remove(fusion_gdf_path)
+
 if utils.should_regenerate_fusion_gdf(config, fusion_gdf_path):
     geodataframes = utils.load_files_to_gdf(data_files)
 
@@ -53,6 +56,8 @@ if utils.should_regenerate_fusion_gdf(config, fusion_gdf_path):
 
     join_data = joins.get_join_layers(points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, join_layers)
     fusion_gdf = joins.perform_spatial_joins(buffers_gdf, join_data, join_layers)
+
+    print(fusion_gdf.columns.to_list())
 
     fusion_gdf['geometry'] = None
     for idx, row in fusion_gdf.iterrows():
@@ -152,6 +157,28 @@ for layer_name in buffer_layer:
             visualisation.create_layers_and_map(
                 geodataframes, points_gdf, polygons_gdf, multipolygons_gdf,
                 linestrings_gdf, buffers_gdf, colors, buffer_type
+            )
+    elif buffer_type == 'isochrone':
+        walk_time = buffer_layer[layer_name].get("walk_time", None)
+        speed = buffer_layer[layer_name].get("speed", None)
+        network_buffer = buffer_layer[layer_name].get("distance", None)
+        network_type = buffer_layer[layer_name].get("network_type", "walk")
+        print(f"Calculating {buffer_type} buffer of width {network_type} meters and length {network_buffer} meters for {layer_name}")
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type,
+            walk_time=walk_time,
+            speed=speed,
+            network_buffer = network_buffer,
+            network_type=network_type
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                walk_time=walk_time,
+                speed=speed,
+                network_buffer = network_buffer,
+                network_type=network_type
             )
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")
