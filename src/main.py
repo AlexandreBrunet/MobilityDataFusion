@@ -163,11 +163,12 @@ for layer_name in buffer_layer:
         speed = buffer_layer[layer_name].get("speed", None)
         network_buffer = buffer_layer[layer_name].get("distance", None)
         network_type = buffer_layer[layer_name].get("network_type", "walk")
+        travel_time_str = str(travel_time[0]) if isinstance(travel_time, list) and travel_time else "5"
         print(f"Calculating {buffer_type} buffer of width {network_type} meters and length {network_buffer} meters for {layer_name}")
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type,
-            travel_time=travel_time,
+            travel_time=travel_time_str,
             speed=speed,
             network_buffer = network_buffer,
             network_type=network_type
@@ -175,7 +176,7 @@ for layer_name in buffer_layer:
         if activate_visualisation:
             visualisation.create_layers_and_map(
                 geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
-                travel_time=travel_time,
+                travel_time=travel_time_str,
                 speed=speed,
                 network_buffer = network_buffer,
                 network_type=network_type

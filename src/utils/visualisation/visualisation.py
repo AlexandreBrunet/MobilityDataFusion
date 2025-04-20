@@ -173,7 +173,7 @@ def create_layers_and_map(
         length = kwargs.get('length')
         filename = f"{output_dir}carte_{buffer_type}_buffer_{wide}m_{length}m.html"
     elif buffer_type == "isochrone":
-        travel_time = kwargs.get('travel_time', '5min')  # Par défaut 5min
+        travel_time = kwargs.get('travel_time', '5')  # Par défaut 5min
         network_type = kwargs.get('network_type', 'walk')  # Par défaut walk
         filename = f"{output_dir}carte_{buffer_type}_buffer_{network_type}_{travel_time}min.html"
     elif buffer_type == "zones":
@@ -219,8 +219,9 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
         length = kwargs.get('length')
         filename = f"{output_dir}tableau_{buffer_type}_buffer_{wide}m_{length}m.html"
     elif buffer_type == "isochrone":
+        travel_time = kwargs.get('travel_time', '5')
         network_type = kwargs.get('network_type')
-        filename = f"{output_dir}tableau_{buffer_type}_buffer_{network_type}.html"
+        filename = f"{output_dir}tableau_{buffer_type}_buffer_{network_type}_{travel_time}min.html"
     elif buffer_type == "zones":
         filename = f"{output_dir}tableau_zones_buffer.html"
     else:

@@ -431,12 +431,16 @@ const App = () => {
   const updateBufferLayerSchema = (currentSchema, bufferType) => {
     const newSchema = JSON.parse(JSON.stringify(currentSchema)); // Cloner pour éviter mutations
     const bufferProperties = newSchema.properties.buffer_layer.properties;
-  
+
     // Supprimer les propriétés dynamiques
     delete bufferProperties.distance;
     delete bufferProperties.wide;
     delete bufferProperties.length;
-  
+    delete bufferProperties.travel_time;
+    delete bufferProperties.speed;
+    delete bufferProperties.network_type;
+    delete bufferProperties.network_buffer;
+
     // Ajouter les propriétés selon buffer_type
     if (bufferType === "circular") {
       bufferProperties.distance = {
@@ -455,14 +459,39 @@ const App = () => {
         title: "Length (meters)",
         default: 1000,
       };
+    } else if (bufferType === "isochrone") {
+      bufferProperties.travel_time = {
+        type: "array",
+        title: "Travel Time (minutes)",
+        items: { type: "number" },
+        default: [15],
+      };
+      bufferProperties.speed = {
+        type: "number",
+        title: "Speed (km/h)",
+        default: 4.5,
+      };
+      bufferProperties.network_type = {
+        type: "string",
+        title: "Network Type",
+        enum: ["walk", "bike", "drive"],
+        default: "walk",
+      };
+      bufferProperties.network_buffer = {
+        type: "number",
+        title: "Network Buffer Distance (meters)",
+        default: 5000,
+      };
     }
-    // Pas de champs pour "zones" ou "isochrone"
+    // Pas de champs pour "zones"
 
     newSchema.properties.buffer_layer.required = ["layer_name", "geometry_type", "buffer_type"];
     if (bufferType === "circular") {
       newSchema.properties.buffer_layer.required.push("distance");
     } else if (bufferType === "grid") {
       newSchema.properties.buffer_layer.required.push("wide", "length");
+    } else if (bufferType === "isochrone") {
+      newSchema.properties.buffer_layer.required.push("travel_time", "speed", "network_type", "network_buffer");
     }
 
     console.log("Updated schema:", JSON.stringify(newSchema.properties.buffer_layer, null, 2)); // Debug
@@ -471,10 +500,10 @@ const App = () => {
 
   const onChange = ({ formData }) => {
     const newBufferType = formData.buffer_layer?.buffer_type || "circular";
-  
+
     // Mettre à jour le schéma dynamiquement pour buffer_layer
     setSchema(prev => updateBufferLayerSchema(prev, newBufferType));
-  
+
     // Mettre à jour formData uniquement pour buffer_layer
     const updatedFormData = {
       ...formData,
@@ -483,25 +512,45 @@ const App = () => {
         buffer_type: newBufferType,
       },
     };
-  
+
     // Ajuster les champs dynamiques de buffer_layer
     if (newBufferType === "circular") {
       updatedFormData.buffer_layer.distance = formData.buffer_layer?.distance || 1000;
       delete updatedFormData.buffer_layer.wide;
       delete updatedFormData.buffer_layer.length;
+      delete updatedFormData.buffer_layer.travel_time;
+      delete updatedFormData.buffer_layer.speed;
+      delete updatedFormData.buffer_layer.network_type;
+      delete updatedFormData.buffer_layer.network_buffer;
     } else if (newBufferType === "grid") {
       updatedFormData.buffer_layer.wide = formData.buffer_layer?.wide || 1000;
       updatedFormData.buffer_layer.length = formData.buffer_layer?.length || 1000;
       delete updatedFormData.buffer_layer.distance;
-    } else if (newBufferType === "zones" || newBufferType === "isochrone") {
+      delete updatedFormData.buffer_layer.travel_time;
+      delete updatedFormData.buffer_layer.speed;
+      delete updatedFormData.buffer_layer.network_type;
+      delete updatedFormData.buffer_layer.network_buffer;
+    } else if (newBufferType === "isochrone") {
+      updatedFormData.buffer_layer.travel_time = formData.buffer_layer?.travel_time || [15];
+      updatedFormData.buffer_layer.speed = formData.buffer_layer?.speed || 4.5;
+      updatedFormData.buffer_layer.network_type = formData.buffer_layer?.network_type || "walk";
+      updatedFormData.buffer_layer.network_buffer = formData.buffer_layer?.network_buffer || 5000;
       delete updatedFormData.buffer_layer.distance;
       delete updatedFormData.buffer_layer.wide;
       delete updatedFormData.buffer_layer.length;
+    } else if (newBufferType === "zones") {
+      delete updatedFormData.buffer_layer.distance;
+      delete updatedFormData.buffer_layer.wide;
+      delete updatedFormData.buffer_layer.length;
+      delete updatedFormData.buffer_layer.travel_time;
+      delete updatedFormData.buffer_layer.speed;
+      delete updatedFormData.buffer_layer.network_type;
+      delete updatedFormData.buffer_layer.network_buffer;
     }
-  
+
     // Log pour déboguer
     console.log("Updated formData:", JSON.stringify(updatedFormData, null, 2));
-  
+
     // Mettre à jour l’état
     setFormData(updatedFormData);
   };
@@ -513,12 +562,17 @@ const App = () => {
         geometry_type: formData.buffer_layer.geometry_type
       }
     };
-  
+
     if (formData.buffer_layer.buffer_type === "circular") {
       bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
     } else if (formData.buffer_layer.buffer_type === "grid") {
       bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
       bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
+    } else if (formData.buffer_layer.buffer_type === "isochrone") {
+      bufferLayerData[formData.buffer_layer.layer_name].travel_time = formData.buffer_layer.travel_time;
+      bufferLayerData[formData.buffer_layer.layer_name].speed = formData.buffer_layer.speed;
+      bufferLayerData[formData.buffer_layer.layer_name].network_type = formData.buffer_layer.network_type;
+      bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.network_buffer;
     }
 
     const yamlData = {
@@ -556,7 +610,7 @@ const App = () => {
     .then(data => {
       setSubmitMessage('Configuration submitted successfully!');
       console.log('Success:', data);
-    
+
       const bufferType = formData.buffer_layer.buffer_type;
       let fetchParams;
 
@@ -564,6 +618,10 @@ const App = () => {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
       } else if (bufferType === 'grid') {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
+      } else if (bufferType === "isochrone") {
+        const travelTime = formData.buffer_layer.travel_time[0] || 15;
+        const networkType = formData.buffer_layer.network_type || "walk";
+        fetchParams = `${bufferType}_buffer_${networkType}_${travelTime}min`;
       } else if (bufferType === 'zones') {
         fetchParams = `${bufferType}_buffer`;
       }
@@ -585,7 +643,7 @@ const App = () => {
 
   const onHistogramSubmit = ({ formData }) => {
     setHistogramFormData(formData);
-  
+
     let bins = formData.customBins
       .split(',')
       .map((val) => {
@@ -594,24 +652,24 @@ const App = () => {
         return parseFloat(val);
       })
       .filter((val) => !isNaN(val));
-  
+
     const labels = formData.customLabels
       .split(',')
       .map((val) => val.trim())
       .filter((val) => val !== '');
-  
+
     if (bins.length < 2) {
       setHistograms({
         error: `<div class="error">Error: Please provide at least two bin edges (e.g., "0,10,20,40,Infinity").</div>`
       });
       return;
     }
-  
+
     const lastLabel = labels[labels.length - 1];
     if (lastLabel.endsWith('+') && bins[bins.length - 1] !== Infinity) {
       bins.push(Infinity);
     }
-  
+
     const expectedLabelCount = bins.length - 1;
     if (labels.length !== expectedLabelCount) {
       setHistograms({
@@ -619,17 +677,17 @@ const App = () => {
       });
       return;
     }
-  
+
     const binsForSerialization = bins.map((val) =>
       val === Infinity ? "Infinity" : val
     );
-  
+
     const configToSend = {
       ...formData,
       customBins: binsForSerialization,
       customLabels: labels,
     };
-  
+
     fetch('http://127.0.0.1:5000/generate_histogram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -649,7 +707,7 @@ const App = () => {
             html: `<div class="error">Error loading histogram: ${error.message}</div>`
           }))
       );
-  
+
       Promise.all(histogramPromises)
         .then(results => {
           const newHistograms = {};
@@ -773,6 +831,13 @@ const App = () => {
       distance: { "ui:placeholder": "Enter buffer distance in meters" },
       wide: { "ui:placeholder": "Enter buffer width in meters" },
       length: { "ui:placeholder": "Enter buffer length in meters" },
+      travel_time: {
+        "ui:placeholder": "Enter travel time in minutes (e.g., 15)",
+        items: { "ui:placeholder": "Enter a travel time value" },
+      },
+      speed: { "ui:placeholder": "Enter speed in km/h (e.g., 4.5)" },
+      network_type: { "ui:widget": "select", "ui:placeholder": "Select network type" },
+      network_buffer: { "ui:placeholder": "Enter network buffer distance in meters (e.g., 5000)" },
     },
     ratio_columns: {
       "items": {
@@ -788,11 +853,12 @@ const App = () => {
       }
     },
     "post_aggregation_metrics": {
-    "ratio": {
+      "ratio": {
         "items": {
-        "name": { "ui:placeholder": "Enter ratio name" },
-        "numerator": { "ui:placeholder": "Enter numerator column" },
-        "denominator": { "ui:placeholder": "Enter denominator column" } }
+          "name": { "ui:placeholder": "Enter ratio name" },
+          "numerator": { "ui:placeholder": "Enter numerator column" },
+          "denominator": { "ui:placeholder": "Enter denominator column" }
+        }
       }
     },
     filter_data_files: {
@@ -826,7 +892,7 @@ const App = () => {
               </button>
             ))}
           </div>
-          
+
           {activeDataExplorerFile && (
             <div className="file-preview">
               <h3>{activeDataExplorerFile}</h3>
@@ -845,7 +911,7 @@ const App = () => {
                         <tr key={index}>
                           {filePreviews[activeDataExplorerFile].columns?.map(col => (
                             <td key={col}>
-                              {typeof row[col] === 'object' 
+                              {typeof row[col] === 'object'
                                 ? JSON.stringify(row[col])
                                 : row[col]}
                             </td>
@@ -860,7 +926,7 @@ const App = () => {
               )}
             </div>
           )}
-          
+
           {!activeDataExplorerFile && (
             <p>Select a file from the tabs above to view its preview</p>
           )}
