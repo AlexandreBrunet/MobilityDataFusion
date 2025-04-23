@@ -121,6 +121,7 @@ for layer_name in buffer_layer:
     if buffer_type == 'circular':
         distance = buffer_layer[layer_name].get('distance')
         print(f"Calculating {buffer_type} buffer of {distance} meters for {layer_name}")
+        agg_stats_gdf.to_csv(f"./data/output/data/{buffer_type}_buffer_{distance}m.csv", mode='w')
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type, 
@@ -135,6 +136,7 @@ for layer_name in buffer_layer:
         wide = buffer_layer[layer_name].get('wide')
         length = buffer_layer[layer_name].get('length')
         print(f"Calculating {buffer_type} buffer of width {wide} meters and length {length} meters for {layer_name}")
+        agg_stats_gdf.to_csv(f"./data/output/data/{buffer_type}_buffer_{wide}m_{length}m.csv", mode='w')
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type, 
@@ -149,6 +151,7 @@ for layer_name in buffer_layer:
             )
     elif buffer_type == 'zones':
         print(f"Processing pre-defined zones for {layer_name}")
+        agg_stats_gdf.to_csv(f"./data/output/data/{buffer_type}.csv", mode='w')
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type
@@ -165,6 +168,7 @@ for layer_name in buffer_layer:
         network_type = buffer_layer[layer_name].get("network_type", "walk")
         travel_time_str = str(travel_time[0]) if isinstance(travel_time, list) and travel_time else "5"
         print(f"Calculating {buffer_type} buffer of width {network_type} meters and length {network_buffer} meters for {layer_name}")
+        agg_stats_gdf.to_csv(f"./data/output/data/{buffer_type}_buffer_{network_type}m_{network_buffer}m.csv", mode='w')
         visualisation.create_table_visualisation(
             agg_stats_gdf, 
             buffer_type,
