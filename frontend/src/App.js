@@ -132,7 +132,8 @@ const App = () => {
                 layer_name: {
                   type: "string",
                   title: "Layer Name",
-                  default: "stations_bixi"
+                  default: "stations_bixi",
+                  "description": "The name of the data file to create the buffers. This must match the File Name defined in the data source configuration."
                 },
                 geometry_type: {
                   type: "string",

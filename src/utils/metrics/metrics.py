@@ -2,6 +2,7 @@ import pandas as pd
 import warnings
 import numpy as np
 import logging
+import yaml
 
 def calculate_sum(gdf, groupby_columns, sum_columns):
     parsed_columns = [parse_column_name(col) for col in sum_columns]
@@ -303,7 +304,14 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
-def calculate_histogram_data(gdf, histogram_config):
+def calculate_histogram_data(gdf, histogram_config, config_file="config.yaml"):
+
+    with open(config_file, 'r') as file:
+        config = yaml.safe_load(file)
+        buffer_layer = config.get('buffer_layer', {})
+        layer_name = next(iter(buffer_layer), None)
+        distance = buffer_layer[layer_name].get('distance', None)
+
     columns = histogram_config.get("columns", [])
     groupby = histogram_config.get("groupby", "")
     aggregation = histogram_config.get("aggregation", {"type": "count", "column": ""})
@@ -382,6 +390,14 @@ def calculate_histogram_data(gdf, histogram_config):
         bin_counts = bin_counts.reindex(custom_labels, fill_value=0)
 
         logging.info(f"Bin counts for {col}:\n{bin_counts}")
+
+        bin_counts_df = pd.DataFrame({
+            'Bin': bin_counts.index,
+            'Count': bin_counts.values
+        })
+        csv_filename = f"./data/output/data/histogram_bin_counts_{col}_{distance}.csv"
+        bin_counts_df.to_csv(csv_filename, index=False)
+        logging.info(f"Bin counts for {col} saved to {csv_filename}")
 
         histogram_data[col] = {
             "bins": custom_labels,

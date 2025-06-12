@@ -26,7 +26,7 @@ def create_linestring_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         data=gdf,
         get_path='coordinates',
         get_color=color,
-        width_scale=20,
+        width_scale=10,
         width_min_pixels=2,
         pickable=True
     )
@@ -38,7 +38,7 @@ def create_point_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         data=gdf,
         get_position='[lon, lat]',
         get_color=color,
-        get_radius=10,
+        get_radius=5,
         pickable=True
         )
     return point_layer
@@ -60,9 +60,9 @@ def create_polygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         'PolygonLayer',
         data=gdf,
         get_polygon='coordinates',
-        get_fill_color='[0, 0, 200, 50]',
-        get_line_color='[139, 0, 0, 200]',
-        get_line_width=5,
+        get_fill_color='[0, 100, 255, 0]',
+        get_line_color=color,
+        get_line_width=3,
         pickable=True,
         auto_highlight=True
     )
@@ -109,7 +109,7 @@ def create_map_layers(layers: List[pdk.Layer], view_state: pdk.ViewState, filena
     r = pdk.Deck(
         layers= layers,
         initial_view_state=view_state,
-        map_style='dark'
+        map_style='road'
         )
     r.to_html(filename, open_browser=False)
 
@@ -157,7 +157,7 @@ def create_layers_and_map(
 
         # Ajouter la couche de buffer si elle existe
         if buffer_gdf_coord is not None:
-            buffer_layer = create_polygon_layer(buffer_gdf_coord, [128, 0, 128, 100])
+            buffer_layer = create_polygon_layer(buffer_gdf_coord, [50, 50, 50, 200])
             layers.append(buffer_layer)
 
     # Initialiser la vue de la carte
