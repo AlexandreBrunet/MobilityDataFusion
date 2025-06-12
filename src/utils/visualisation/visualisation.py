@@ -91,9 +91,9 @@ def create_multipolygon_layer(gdf: gpd.GeoDataFrame, color: List[int]):
         'PolygonLayer',
         data=gdf,
         get_polygon='coordinates',
-        get_fill_color=color,
-        get_line_color='[255, 140, 0, 255]',
-        get_line_width=5,
+        get_fill_color='[0, 0, 0, 0]',
+        get_line_color='[255, 140, 0, 200]',
+        get_line_width=7,
         pickable=True,
         auto_highlight=True
     )

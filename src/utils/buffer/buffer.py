@@ -240,6 +240,59 @@ def create_buffers(gdf, buffer_layer):
                 else:
                     buffer_gdfs[key]["area_km2"] = buffer_gdf.geometry.area / 1_000_000  # Assume already in a projected CRS
 
+        elif geometry_type == "LineString" and buffer_type == "isochrone":
+            buffer_gdfs = {
+                f"{layer_name}_buffer": isochrone.apply_lines_isochrones(gdf[layer_name], layer_name, buffer_layer)
+                .assign(layer_name=f"{layer_name}_buffer",
+                        buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+                for layer_name in buffer_layer
+            }
+            # Add area_km2 column for each buffer GeoDataFrame
+            for key in buffer_gdfs:
+                buffer_gdf = buffer_gdfs[key]
+                # Create a copy in a projected CRS for area calculation
+                original_crs = buffer_gdf.crs
+                if original_crs is None:
+                    buffer_gdf = buffer_gdf.set_crs("EPSG:4326")
+                    original_crs = "EPSG:4326"
+                if buffer_gdf.crs.to_string() == "EPSG:4326":
+                    # Estimate UTM zone based on the centroid
+                    centroid = buffer_gdf.geometry.centroid
+                    lon, lat = centroid.x.mean(), centroid.y.mean()
+                    utm_zone = int((lon + 180) / 6) + 1
+                    utm_crs = f"EPSG:326{utm_zone:02d}" if lat >= 0 else f"EPSG:327{utm_zone:02d}"
+                    buffer_gdf_projected = buffer_gdf.to_crs(utm_crs)
+                    buffer_gdfs[key]["area_km2"] = buffer_gdf_projected.geometry.area / 1_000_000  # Convert m² to km²
+                else:
+                    buffer_gdfs[key]["area_km2"] = buffer_gdf.geometry.area / 1_000_000  # Assume already in a projected CRS
+
+        elif geometry_type == "Polygon" and buffer_type == "isochrone":
+            buffer_gdfs = {
+                f"{layer_name}_buffer": isochrone.apply_polygon_isochrones(gdf[layer_name], layer_name, buffer_layer)
+                .assign(layer_name=f"{layer_name}_buffer",
+                        buffer_id=lambda df: [next(unique_id_counter) for _ in range(len(df))])
+                for layer_name in buffer_layer
+            }
+            # Add area_km2 column for each buffer GeoDataFrame
+            for key in buffer_gdfs:
+                buffer_gdf = buffer_gdfs[key]
+                # Create a copy in a projected CRS for area calculation
+                original_crs = buffer_gdf.crs
+                if original_crs is None:
+                    buffer_gdf = buffer_gdf.set_crs("EPSG:4326")
+                    original_crs = "EPSG:4326"
+                if buffer_gdf.crs.to_string() == "EPSG:4326":
+                    # Estimate UTM zone based on the centroid
+                    centroid = buffer_gdf.geometry.centroid
+                    lon, lat = centroid.x.mean(), centroid.y.mean()
+                    utm_zone = int((lon + 180) / 6) + 1
+                    utm_crs = f"EPSG:326{utm_zone:02d}" if lat >= 0 else f"EPSG:327{utm_zone:02d}"
+                    buffer_gdf_projected = buffer_gdf.to_crs(utm_crs)
+                    buffer_gdfs[key]["area_km2"] = buffer_gdf_projected.geometry.area / 1_000_000  # Convert m² to km²
+                else:
+                    buffer_gdfs[key]["area_km2"] = buffer_gdf.geometry.area / 1_000_000  # Assume already in a projected CRS
+
+
         elif geometry_type == "LineString":
             buffer_gdfs = {
                 f"{layer_name}_buffer": buffer.apply_linestring_buffer(gdf[layer_name], layer_name, buffer_layer)
