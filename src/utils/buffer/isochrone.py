@@ -278,5 +278,3 @@ def apply_polygon_isochrones(polygons_gdf: gpd.GeoDataFrame, layer_name: str, is
         return polygons_gdf
     
     return isochrone_gdf
-
-#####todo CHECK LE ISOCHRONE POUR POLY
