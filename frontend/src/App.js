@@ -144,7 +144,7 @@ const App = () => {
                 buffer_type: {
                   type: "string",
                   title: "Buffer Type",
-                  enum: ["circular", "grid", "isochrone", "zones"],
+                  enum: ["circular", "grid", "isochrone","network", "zones"],
                   default: "circular"
                 },
                 distance: {
@@ -483,6 +483,18 @@ const App = () => {
         title: "Network Buffer Distance (meters)",
         default: 5000,
       };
+    } else if (bufferType === "network") {
+      bufferProperties.distance = {
+        type: "number",
+        title: "Distance (meters)",
+        default: 500,
+      };
+      bufferProperties.network_type = {
+        type: "string",
+        title: "Network Type",
+        enum: ["walk", "bike", "drive"],
+        default: "walk",
+      };
     }
     // Pas de champs pour "zones"
 
@@ -539,6 +551,13 @@ const App = () => {
       delete updatedFormData.buffer_layer.distance;
       delete updatedFormData.buffer_layer.wide;
       delete updatedFormData.buffer_layer.length;
+    } else if (newBufferType === "network") {
+      updatedFormData.buffer_layer.distance = formData.buffer_layer?.distance || 500;
+      updatedFormData.buffer_layer.network_type = formData.buffer_layer?.network_type || "walk";
+      delete updatedFormData.buffer_layer.wide;
+      delete updatedFormData.buffer_layer.length;
+      delete updatedFormData.buffer_layer.travel_time;
+      delete updatedFormData.buffer_layer.speed;
     } else if (newBufferType === "zones") {
       delete updatedFormData.buffer_layer.distance;
       delete updatedFormData.buffer_layer.wide;
@@ -574,6 +593,9 @@ const App = () => {
       bufferLayerData[formData.buffer_layer.layer_name].speed = formData.buffer_layer.speed;
       bufferLayerData[formData.buffer_layer.layer_name].network_type = formData.buffer_layer.network_type;
       bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.network_buffer;
+    } else if (formData.buffer_layer.buffer_type === "network") {
+    bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
+    bufferLayerData[formData.buffer_layer.layer_name].network_type = formData.buffer_layer.network_type;
     }
 
     const yamlData = {
@@ -623,6 +645,9 @@ const App = () => {
         const travelTime = formData.buffer_layer.travel_time[0] || 15;
         const networkType = formData.buffer_layer.network_type || "walk";
         fetchParams = `${bufferType}_buffer_${networkType}_${travelTime}min`;
+      } else if (bufferType === 'network') {
+        const networkType = formData.buffer_layer.network_type || "walk";
+        fetchParams = `${bufferType}_buffer_${networkType}_${formData.buffer_layer.distance}m`;
       } else if (bufferType === 'zones') {
         fetchParams = `${bufferType}_buffer`;
       }

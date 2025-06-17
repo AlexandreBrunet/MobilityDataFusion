@@ -136,8 +136,8 @@ def create_layers_and_map(
         points_layer = create_point_layer(points_gdfs[layer_name], colors[layer_name])
         layers.append(points_layer)
 
-        # Créer les couches de polygones ou multipolygones pour les isochrones
-        if buffer_type == "isochrone":
+        # Créer les couches de polygones ou multipolygones pour les isochrones/network
+        if buffer_type in ["isochrone", "network"]:
             # Vérifier si la couche contient des MultiPolygon
             if any(polygons_gdfs[layer_name]['geometry'].geom_type == 'MultiPolygon'):
                 multipolygons_layer = create_multipolygon_layer(polygons_gdfs[layer_name], colors[layer_name])
@@ -176,6 +176,10 @@ def create_layers_and_map(
         travel_time = kwargs.get('travel_time', '5')  # Par défaut 5min
         network_type = kwargs.get('network_type', 'walk')  # Par défaut walk
         filename = f"{output_dir}carte_{buffer_type}_buffer_{network_type}_{travel_time}min.html"
+    elif buffer_type == "network":
+        distance = kwargs.get('distance', '500')  # Par défaut 500m
+        network_type = kwargs.get('network_type', 'walk')  # Par défaut walk
+        filename = f"{output_dir}carte_{buffer_type}_buffer_{network_type}_{distance}m.html"
     elif buffer_type == "zones":
         filename = f"{output_dir}carte_{buffer_type}_buffer.html"
 
@@ -222,6 +226,10 @@ def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str
         travel_time = kwargs.get('travel_time', '5')
         network_type = kwargs.get('network_type')
         filename = f"{output_dir}tableau_{buffer_type}_buffer_{network_type}_{travel_time}min.html"
+    elif buffer_type == "network":
+        distance = kwargs.get('distance', '500')
+        network_type = kwargs.get('network_type', 'walk')
+        filename = f"{output_dir}tableau_{buffer_type}_buffer_{network_type}_{distance}m.html"
     elif buffer_type == "zones":
         filename = f"{output_dir}tableau_zones_buffer.html"
     else:

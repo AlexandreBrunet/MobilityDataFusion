@@ -185,6 +185,23 @@ for layer_name in buffer_layer:
                 network_buffer = network_buffer,
                 network_type=network_type
             )
+    elif buffer_type == 'network':
+        distance = buffer_layer[layer_name].get("distance", 500)
+        network_type = buffer_layer[layer_name].get("network_type", "walk")
+        print(f"Calculating {buffer_type} buffer for {network_type} network with {distance} meters distance")
+        agg_stats_gdf.to_csv(f"./data/output/data/{buffer_type}_buffer_{network_type}_{distance}m.csv", mode='w')
+        visualisation.create_table_visualisation(
+            agg_stats_gdf, 
+            buffer_type,
+            distance=distance,
+            network_type=network_type
+        )
+        if activate_visualisation:
+            visualisation.create_layers_and_map(
+                geodataframes, points_gdf, polygons_gdf, multipolygons_gdf, linestrings_gdf, buffers_gdf, colors, buffer_type,
+                distance=distance,
+                network_type=network_type
+            )
     else:
         raise ValueError(f"Unsupported buffer type: {buffer_type} in configuration")
 
