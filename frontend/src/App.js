@@ -441,6 +441,7 @@ const App = () => {
     delete bufferProperties.speed;
     delete bufferProperties.network_type;
     delete bufferProperties.network_buffer;
+    delete bufferProperties.osm_file;
 
     // Ajouter les propriétés selon buffer_type
     if (bufferType === "circular") {
@@ -495,6 +496,11 @@ const App = () => {
         enum: ["walk", "bike", "drive"],
         default: "walk",
       };
+      bufferProperties.osm_file = {
+        type: "string",
+        title: "Network OSM File (optional)",
+        description: "Name of the file to use for the network buffers. The file needs to be in the path src/utils/buffer/networks and need to be in xml format.",
+      };
     }
     // Pas de champs pour "zones"
 
@@ -505,8 +511,9 @@ const App = () => {
       newSchema.properties.buffer_layer.required.push("wide", "length");
     } else if (bufferType === "isochrone") {
       newSchema.properties.buffer_layer.required.push("travel_time", "speed", "network_type", "network_buffer");
+    } else if (bufferType === "network") {
+    newSchema.properties.buffer_layer.required.push("distance", "network_type"); // osm_file reste optionnel
     }
-
     console.log("Updated schema:", JSON.stringify(newSchema.properties.buffer_layer, null, 2)); // Debug
     return newSchema;
   };
@@ -535,6 +542,7 @@ const App = () => {
       delete updatedFormData.buffer_layer.speed;
       delete updatedFormData.buffer_layer.network_type;
       delete updatedFormData.buffer_layer.network_buffer;
+      delete updatedFormData.buffer_layer.osm_file;
     } else if (newBufferType === "grid") {
       updatedFormData.buffer_layer.wide = formData.buffer_layer?.wide || 1000;
       updatedFormData.buffer_layer.length = formData.buffer_layer?.length || 1000;
@@ -543,6 +551,7 @@ const App = () => {
       delete updatedFormData.buffer_layer.speed;
       delete updatedFormData.buffer_layer.network_type;
       delete updatedFormData.buffer_layer.network_buffer;
+      delete updatedFormData.buffer_layer.osm_file;
     } else if (newBufferType === "isochrone") {
       updatedFormData.buffer_layer.travel_time = formData.buffer_layer?.travel_time || [15];
       updatedFormData.buffer_layer.speed = formData.buffer_layer?.speed || 4.5;
@@ -551,9 +560,11 @@ const App = () => {
       delete updatedFormData.buffer_layer.distance;
       delete updatedFormData.buffer_layer.wide;
       delete updatedFormData.buffer_layer.length;
+      delete updatedFormData.buffer_layer.osm_file;
     } else if (newBufferType === "network") {
       updatedFormData.buffer_layer.distance = formData.buffer_layer?.distance || 500;
       updatedFormData.buffer_layer.network_type = formData.buffer_layer?.network_type || "walk";
+      updatedFormData.buffer_layer.osm_file = formData.buffer_layer?.osm_file || "";
       delete updatedFormData.buffer_layer.wide;
       delete updatedFormData.buffer_layer.length;
       delete updatedFormData.buffer_layer.travel_time;
@@ -566,6 +577,7 @@ const App = () => {
       delete updatedFormData.buffer_layer.speed;
       delete updatedFormData.buffer_layer.network_type;
       delete updatedFormData.buffer_layer.network_buffer;
+      delete updatedFormData.buffer_layer.osm_file;
     }
 
     // Log pour déboguer
@@ -596,6 +608,9 @@ const App = () => {
     } else if (formData.buffer_layer.buffer_type === "network") {
     bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
     bufferLayerData[formData.buffer_layer.layer_name].network_type = formData.buffer_layer.network_type;
+    if (formData.buffer_layer.osm_file) {
+      bufferLayerData[formData.buffer_layer.layer_name].osm_file = formData.buffer_layer.osm_file;
+      }
     }
 
     const yamlData = {
@@ -851,6 +866,7 @@ const App = () => {
       }
     },
     buffer_layer: {
+      osm_file: {"ui:placeholder": "Nom du fichier OSM (ex: montreal_walk.graphml)"},
       layer_name: { "ui:placeholder": "Enter layer name" },
       geometry_type: { "ui:placeholder": "Select geometry type" },
       buffer_type: { "ui:placeholder": "Select buffer type" },

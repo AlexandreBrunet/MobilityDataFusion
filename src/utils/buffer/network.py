@@ -98,14 +98,12 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
     distance = params.get("distance", 500)  # meters
     network_type = params.get("network_type", "walk")
     use_convex_hull = params.get("use_convex_hull", False)
-    if network_type == "walk":
-        osm_file = "./utils/buffer/networks/montreal_walk.xml"
-    elif network_type == "bike":
-        osm_file = "./utils/buffer/networks/montreal_bike.xml"
-    elif network_type == "drive":
-        osm_file = "./utils/buffer/networks/montreal_drive.xml"
-    else:
-        print("You need to upload a xml file for the network")
+
+    osm_filename = params.get("osm_file")
+    if not osm_filename:
+        raise ValueError(f"Missing 'osm_file' name in buffer_params for layer '{layer_name}'")
+    
+    osm_file = os.path.join("./utils/buffer/networks", osm_filename)
 
     if distance <= 0:
         logger.warning(f"Invalid buffer distance {distance} for {layer_name}, returning unchanged")
