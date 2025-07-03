@@ -198,6 +198,67 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
         logger.error(f"Major error in network buffering for {layer_name}: {e}")
         return points_gdf.copy()
 
+def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
+    """
+    Génère un buffer réseau autour du centroïde de chaque ligne.
+    """
+    if lines_gdf.empty:
+        print(f"La couche '{layer_name}' est vide.")
+        return lines_gdf.copy()
+
+    if layer_name not in buffer_params:
+        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
+        return lines_gdf.copy()
+
+    if not all(lines_gdf.geometry.geom_type == "LineString"):
+        raise ValueError("Toutes les géométries doivent être de type LineString.")
+
+    try:
+        # Calcul du centroïde de chaque ligne
+        centroids_gdf = lines_gdf.copy()
+        centroids_gdf["geometry"] = centroids_gdf.geometry.centroid
+
+        # Application du buffer réseau comme pour des points
+        buffer_gdf = apply_points_network_buffer(centroids_gdf, layer_name, buffer_params)
+
+        # Dissolution facultative (si plusieurs points par entité initiale)
+        if "buffer_id" in buffer_gdf.columns:
+            buffer_gdf = buffer_gdf.dissolve(by="buffer_id").reset_index()
+
+        return buffer_gdf
+
+    except Exception as e:
+        print(f"Erreur dans apply_lines_network_buffer pour '{layer_name}': {e}")
+        return lines_gdf.copy()
+
+def apply_polygons_network_buffer(polygons_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
+    """
+    Génère un buffer réseau à partir du centroïde de chaque polygone.
+    """
+    if polygons_gdf.empty:
+        print(f"La couche '{layer_name}' est vide.")
+        return polygons_gdf.copy()
+
+    if layer_name not in buffer_params:
+        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
+        return polygons_gdf.copy()
+
+    if not polygons_gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all():
+        raise ValueError("Toutes les géométries doivent être de type Polygon ou MultiPolygon.")
+
+    try:
+        centroids_gdf = polygons_gdf.copy()
+        centroids_gdf["geometry"] = centroids_gdf.geometry.centroid
+
+        buffer_gdf = apply_points_network_buffer(centroids_gdf, layer_name, buffer_params)
+
+        return buffer_gdf
+
+    except Exception as e:
+        print(f"Erreur dans apply_polygons_network_buffer pour '{layer_name}': {e}")
+        return polygons_gdf.copy()
+
+
 #TODO Add this logic too 
 # def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
 #     """
@@ -241,65 +302,3 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
 #         return lines_gdf
     
 #     return buffer_gdf
-
-def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
-    """
-    Génère un buffer réseau autour du centroïde de chaque ligne.
-    """
-    buffer_gdf = lines_gdf.copy()
-
-    if layer_name not in buffer_params:
-        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
-        return buffer_gdf
-
-    params = buffer_params[layer_name]
-    # Ici on utilise une distance réseau, pas besoin de vitesse
-    network_type = params.get("network_type", "walk")
-    distance = params.get("distance", 500)  # Distance réseau
-
-    if not all(buffer_gdf.geometry.geom_type == "LineString"):
-        raise ValueError("Toutes les géométries doivent être de type LineString.")
-
-    try:
-        # 1. Calculer le centroïde de chaque ligne
-        buffer_gdf["geometry"] = buffer_gdf.geometry.centroid
-
-        # 2. Appliquer la fonction de buffer réseau sur ces points-centroïdes
-        buffer_gdf = apply_points_network_buffer(buffer_gdf, layer_name, buffer_params)
-
-        # 3. Dissoudre les buffers si identifiants disponibles
-        if "buffer_id" in buffer_gdf.columns:
-            buffer_gdf = buffer_gdf.dissolve(by="buffer_id").reset_index()
-
-    except Exception as e:
-        print(f"Erreur majeure : {str(e)}")
-        return lines_gdf
-
-    return buffer_gdf
-
-
-def apply_polygons_network_buffer(polygons_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
-    """
-    Génère des zones tampon réseau pour chaque polygone (à partir du centroïde).
-    """
-    buffer_gdf = polygons_gdf.copy()
-    
-    if layer_name not in buffer_params:
-        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
-        return buffer_gdf
-    
-    if not all(buffer_gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])):
-        raise ValueError("Toutes les géométries doivent être de type Polygon ou MultiPolygon.")
-    
-    try:
-        # 1. Utiliser les centroïdes comme points
-        buffer_gdf['geometry'] = buffer_gdf.geometry.centroid
-        
-        # 2. Appliquer le buffer réseau sur les points
-        buffer_gdf = apply_points_network_buffer(buffer_gdf, layer_name, buffer_params)
-        
-    except Exception as e:
-        print(f"Erreur majeure: {str(e)}")
-        return polygons_gdf
-    
-    return buffer_gdf
