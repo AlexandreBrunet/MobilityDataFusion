@@ -116,7 +116,7 @@ def main():
         params = layer_config.copy(); params.pop('buffer_type', None)
 
         distance = params.get('distance', None)
-        fusion_gdf.to_csv(path_or_buf=f"./data/output/data/fusion/joined_data_{buffer_type}_{distance}m.csv")
+        fusion_gdf.to_csv(path_or_buf=f"./data/output/data/fusion/joined_data_{layer_name}_{buffer_type}_{distance}m.csv")
 
         filename = f"./data/output/data/agg/{buffer_type}_buffer"
         if buffer_type == 'circular':
