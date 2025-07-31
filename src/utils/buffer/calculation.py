@@ -13,25 +13,25 @@ def calculate_buffer(buffer_layer: Dict[str, Dict[str, str]], points_gdfs: gpd.G
 
         if geometry_type == "Point":
             buffer_gdfs = buffer.create_buffers(points_gdfs, buffer_layer)
-            if buffer_type == "grid":
+            if (buffer_type == "grid" or "zones_grid"):
                 save_buffers_to_geojson(buffer_type, wide, buffer_gdfs)
             else:
                 save_buffers_to_geojson(buffer_type, distance, buffer_gdfs)
         elif geometry_type == "Polygon":
             buffer_gdfs = buffer.create_buffers(polygons_gdfs, buffer_layer)
-            if buffer_type == "grid":
+            if (buffer_type == "grid" or "zones_grid"):
                 save_buffers_to_geojson(buffer_type, wide, buffer_gdfs)
             else:
                 save_buffers_to_geojson(buffer_type, distance, buffer_gdfs)
         elif geometry_type == "MultiPolygon":
             buffer_gdfs = buffer.create_buffers(multipolygons_gdfs, buffer_layer)
-            if buffer_type == "grid":
+            if (buffer_type == "grid" or "zones_grid"):
                 save_buffers_to_geojson(buffer_type, wide, buffer_gdfs)
             else:
                 save_buffers_to_geojson(buffer_type, distance, buffer_gdfs)
         elif geometry_type == "LineString":
             buffer_gdfs = buffer.create_buffers(linestrings_gdfs, buffer_layer)
-            if buffer_type == "grid":
+            if (buffer_type == "grid" or "zones_grid"):
                 save_buffers_to_geojson(buffer_type, wide, buffer_gdfs)
             else:
                 save_buffers_to_geojson(buffer_type, distance, buffer_gdfs)

@@ -129,6 +129,8 @@ def main():
             filename += f"_{params.get('network_type', 'walk')}_{params.get('distance', 500)}m.csv"
         elif buffer_type == 'zones':
             filename = f"./data/output/data/agg/{buffer_type}.csv"
+        elif buffer_type == 'zones_grid':
+            filename += f"_{params['wide']}m_{params['length']}m.csv"
 
         agg_stats_gdf.to_csv(filename, mode='w')
         visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, **params)

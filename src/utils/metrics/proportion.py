@@ -21,18 +21,18 @@ def calculate_geometric_proportions(geometry: gpd.GeoSeries, buffer_geometry: gp
     intersections = geometry.intersection(buffer_geometry, align=False)
 
     proportions = []
-    for geom, inter in zip(geometry, intersections):
+    for geom, buf, inter in zip(geometry, buffer_geometry, intersections):
         if geom.is_empty or inter.is_empty:
             proportions.append(0.0)
-        elif isinstance(geom, (LineString,)):
+        elif isinstance(geom, LineString):
             length = geom.length
             inter_length = inter.length
             proportions.append(round(inter_length / length, 4) if length > 0 else 0.0)
-        elif isinstance(geom, (Polygon,)):
+        elif isinstance(geom, Polygon):
             area = geom.area
             inter_area = inter.area
             proportions.append(round(inter_area / area, 4) if area > 0 else 0.0)
         else:
-            proportions.append(1.0 if buffer_geometry.contains(geom) else 0.0)
+            proportions.append(1.0 if buf.contains(geom) else 0.0)
 
     return pd.Series(proportions, index=geometry.index)

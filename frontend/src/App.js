@@ -144,7 +144,7 @@ const App = () => {
                 buffer_type: {
                   type: "string",
                   title: "Buffer Type",
-                  enum: ["circular", "grid", "isochrone","network", "zones"],
+                  enum: ["circular", "grid", "isochrone","network", "zones", "zones_grid"],
                   default: "circular"
                 },
                 distance: {
@@ -461,6 +461,17 @@ const App = () => {
         title: "Length (meters)",
         default: 1000,
       };
+          } else if (bufferType === "zones_grid") {
+      bufferProperties.wide = {
+        type: "number",
+        title: "Width (meters)",
+        default: 1000,
+      };
+      bufferProperties.length = {
+        type: "number",
+        title: "Length (meters)",
+        default: 1000,
+      };
     } else if (bufferType === "isochrone") {
       bufferProperties.travel_time = {
         type: "array",
@@ -509,6 +520,8 @@ const App = () => {
       newSchema.properties.buffer_layer.required.push("distance");
     } else if (bufferType === "grid") {
       newSchema.properties.buffer_layer.required.push("wide", "length");
+    } else if (bufferType === "zones_grid") {
+      newSchema.properties.buffer_layer.required.push("wide", "length");
     } else if (bufferType === "isochrone") {
       newSchema.properties.buffer_layer.required.push("travel_time", "speed", "network_type", "network_buffer");
     } else if (bufferType === "network") {
@@ -544,6 +557,15 @@ const App = () => {
       delete updatedFormData.buffer_layer.network_buffer;
       delete updatedFormData.buffer_layer.osm_file;
     } else if (newBufferType === "grid") {
+      updatedFormData.buffer_layer.wide = formData.buffer_layer?.wide || 1000;
+      updatedFormData.buffer_layer.length = formData.buffer_layer?.length || 1000;
+      delete updatedFormData.buffer_layer.distance;
+      delete updatedFormData.buffer_layer.travel_time;
+      delete updatedFormData.buffer_layer.speed;
+      delete updatedFormData.buffer_layer.network_type;
+      delete updatedFormData.buffer_layer.network_buffer;
+      delete updatedFormData.buffer_layer.osm_file;
+    } else if (newBufferType === "zones_grid") {
       updatedFormData.buffer_layer.wide = formData.buffer_layer?.wide || 1000;
       updatedFormData.buffer_layer.length = formData.buffer_layer?.length || 1000;
       delete updatedFormData.buffer_layer.distance;
@@ -598,6 +620,9 @@ const App = () => {
     if (formData.buffer_layer.buffer_type === "circular") {
       bufferLayerData[formData.buffer_layer.layer_name].distance = formData.buffer_layer.distance;
     } else if (formData.buffer_layer.buffer_type === "grid") {
+      bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
+      bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
+    } else if (formData.buffer_layer.buffer_type === "zones_grid") {
       bufferLayerData[formData.buffer_layer.layer_name].wide = formData.buffer_layer.wide;
       bufferLayerData[formData.buffer_layer.layer_name].length = formData.buffer_layer.length;
     } else if (formData.buffer_layer.buffer_type === "isochrone") {
@@ -655,6 +680,8 @@ const App = () => {
       if (bufferType === 'circular') {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.distance}m`;
       } else if (bufferType === 'grid') {
+        fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
+      } else if (bufferType === 'zones_grid') {
         fetchParams = `${bufferType}_buffer_${formData.buffer_layer.wide}m_${formData.buffer_layer.length}m`;
       } else if (bufferType === "isochrone") {
         const travelTime = formData.buffer_layer.travel_time[0] || 15;
