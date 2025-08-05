@@ -49,11 +49,8 @@ def apply_linestring_buffer(linestrings_gdf: gpd.GeoDataFrame, layer_name: str, 
                 # Reprojeter en CRS UTM pour appliquer le buffer en mètres
                 buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Adapter l'EPSG selon la région
 
-                # Calculer le centroïde de chaque LineString
-                buffer_gdf['geometry'] = buffer_gdf['geometry'].centroid
-
-                # Appliquer le buffer autour des centroïdes
-                buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
+                # Appliquer le buffer directement autour des lignes
+                buffer_gdf["geometry"] = buffer_gdf["geometry"].buffer(buffer_distance)
 
                 # Reprojeter en WGS 84 pour revenir aux coordonnées d'origine
                 buffer_gdf = buffer_gdf.to_crs(epsg=4326)
@@ -77,7 +74,7 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
 
         if buffer_type == "zones":
             buffer_gdf = buffer_gdf.explode(index_parts=False)
-            buffer_gdf = buffer_gdf.reset_index(drop=True) 
+            buffer_gdf = buffer_gdf.reset_index(drop=True)
             return buffer_gdf
 
         # Vérifie si le type de géométrie est un Polygon ou MultiPolygon
@@ -86,10 +83,7 @@ def apply_polygon_buffer(polygon_gdf: gpd.GeoDataFrame, layer_name: str, buffer_
                 # Reprojeter en CRS UTM pour appliquer le buffer en mètres
                 buffer_gdf = buffer_gdf.to_crs(epsg=32618)  # Adapter l'EPSG selon la région
 
-                # Calculer le centroïde de chaque Polygon ou MultiPolygon
-                buffer_gdf['geometry'] = buffer_gdf['geometry'].centroid
-
-                # Appliquer le buffer autour des centroïdes
+                # Application du buffer directement sur les polygones
                 buffer_gdf['geometry'] = buffer_gdf['geometry'].buffer(buffer_distance)
 
                 # Reprojeter en WGS 84 pour revenir aux coordonnées d'origine
