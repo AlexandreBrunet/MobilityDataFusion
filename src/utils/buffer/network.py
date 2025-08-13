@@ -1,7 +1,7 @@
 import geopandas as gpd
 import networkx as nx
 import osmnx as ox
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, MultiPolygon
 from shapely.ops import unary_union
 from multiprocessing import Pool, cpu_count, set_start_method
 from tqdm import tqdm
@@ -25,12 +25,12 @@ def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str, 
     Create a network buffer for a single point using a provided graph.
     
     Args:
-        args: Tuple of (idx, nearest_node, x, y, distance, use_convex_hull, crs, G).
+        args: Tuple of (idx, nearest_node, x, y, distance, remove_holes, crs, G).
     
     Returns:
         Tuple of (index, buffer geometry in WGS84).
     """
-    idx, nearest_node, x, y, distance, use_convex_hull, crs, G = args
+    idx, nearest_node, x, y, distance, remove_holes, crs, G = args
     try:
         logger.debug(f"Point {idx}: Processing nearest node {nearest_node}")
 
@@ -53,9 +53,13 @@ def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str, 
         else:
             buffer = unary_union(edge_geoms).buffer(10)  # 10m buffer around edges
 
-        if use_convex_hull and buffer.geom_type in ['Polygon', 'MultiPolygon']:
-            buffer = buffer.convex_hull
-            logger.debug(f"Point {idx}: Applied convex hull")
+        # Remove holes if requested
+        if remove_holes and buffer.geom_type in ['Polygon', 'MultiPolygon']:
+            if buffer.geom_type == 'Polygon':
+                buffer = Polygon(buffer.exterior)
+            elif buffer.geom_type == 'MultiPolygon':
+                buffer = MultiPolygon([Polygon(poly.exterior) for poly in buffer.geoms])
+            logger.debug(f"Point {idx}: Removed holes from geometry")
 
         if not buffer.is_valid:
             buffer = buffer.buffer(0)
@@ -97,7 +101,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
     params = buffer_params[layer_name]
     distance = params.get("distance", 500)  # meters
     network_type = params.get("network_type", "walk")
-    use_convex_hull = params.get("use_convex_hull", False)
+    use_enveloppe = params.get("use_envelope", True)
 
     osm_filename = params.get("osm_file")
     if not osm_filename:
