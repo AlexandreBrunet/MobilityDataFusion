@@ -262,3 +262,52 @@ def apply_zones_grid(zones_gdf: gpd.GeoDataFrame, layer_name: str, grid_layers: 
 #             print(f"Le type de géométrie '{geometry_type}' n'est pas supporté pour cette couche.")
     
 #     return grid_gdf
+
+
+##THIS FUNCTION WITH CREATE MULTIPLE BOXES AROUND ALL THE LINE
+# import numpy as np
+
+# def apply_linestring_grid(lines_gdf: gpd.GeoDataFrame, layer_name: str, grid_layers: dict) -> gpd.GeoDataFrame:
+#     """
+#     Génère une grille régulière couvrant chaque LineString (pas juste autour du centroïde).
+#     """
+#     grid_gdf = gpd.GeoDataFrame(columns=lines_gdf.columns, geometry=[], crs=lines_gdf.crs)
+    
+#     if layer_name in grid_layers:
+#         cell_width = grid_layers[layer_name].get("wide", 100)
+#         cell_height = grid_layers[layer_name].get("length", 100)
+#         geometry_type = grid_layers[layer_name].get("geometry_type", None)
+
+#         if geometry_type == "LineString":
+#             try:
+#                 # Reprojection métrique
+#                 lines_proj = lines_gdf.to_crs(epsg=32618)
+#                 grid_cells = []
+#                 properties = []
+
+#                 for idx, row in lines_proj.iterrows():
+#                     line = row.geometry
+#                     bounds = line.bounds  # (minx, miny, maxx, maxy)
+#                     minx, miny, maxx, maxy = bounds
+                    
+#                     # Génère les cellules couvrant la ligne
+#                     x_range = np.arange(minx, maxx, cell_width)
+#                     y_range = np.arange(miny, maxy, cell_height)
+                    
+#                     for x in x_range:
+#                         for y in y_range:
+#                             cell = box(x, y, x + cell_width, y + cell_height)
+#                             if cell.intersects(line):
+#                                 grid_cells.append(cell)
+#                                 properties.append(row.drop("geometry"))
+
+#                 # Créer le GeoDataFrame des cellules
+#                 grid_gdf = gpd.GeoDataFrame(properties, geometry=grid_cells, crs=32618)
+#                 grid_gdf = grid_gdf.to_crs(epsg=4326)
+
+#             except Exception as e:
+#                 print(f"Erreur lors de la génération de la grille : {e}")
+#         else:
+#             print(f"Le type de géométrie '{geometry_type}' n'est pas supporté.")
+    
+#     return grid_gdf
