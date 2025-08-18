@@ -81,7 +81,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
     Args:
         points_gdf: GeoDataFrame with Point geometries.
         layer_name: Name of the layer for buffer parameters.
-        buffer_params: Dictionary of buffer parameters (e.g., distance, network_type, osm_file, use_convex_hull).
+        buffer_params: Dictionary of buffer parameters (e.g., distance, network_type, osm_file, use_envelope).
 
     Returns:
         GeoDataFrame with network buffer polygons.
@@ -101,7 +101,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
     params = buffer_params[layer_name]
     distance = params.get("distance", 500)  # meters
     network_type = params.get("network_type", "walk")
-    use_enveloppe = params.get("use_envelope", True)
+    use_envelope = params.get("use_envelope", True)
 
     osm_filename = params.get("osm_file")
     if not osm_filename:
@@ -123,7 +123,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
         raise FileNotFoundError(f"OSM file not found: {osm_file_path}")
 
     logger.info(f"Creating network buffers for {layer_name}: distance={distance}m, network_type={network_type}, "
-                f"use_convex_hull={use_convex_hull}, osm_file={osm_file_path}")
+                f"use_envelope={use_envelope}, osm_file={osm_file_path}")
 
     try:
         # 1. Load street network from OSM XML file
@@ -161,7 +161,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
 
             # Prepare arguments for workers
             worker_args = [
-                (i + start, chunk_nodes[i], chunk_utm.iloc[i].x, chunk_utm.iloc[i].y, distance, use_convex_hull, utm_crs, G)
+                (i + start, chunk_nodes[i], chunk_utm.iloc[i].x, chunk_utm.iloc[i].y, distance, use_envelope, utm_crs, G)
                 for i in range(len(chunk_utm))
             ]
 
