@@ -202,9 +202,16 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
         logger.error(f"Major error in network buffering for {layer_name}: {e}")
         return points_gdf.copy()
 
-def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
+def apply_lines_network_buffer(
+    lines_gdf: gpd.GeoDataFrame,
+    layer_name: str,
+    buffer_params: dict,
+    mode: str = "all"  # "centroid" ou "all"
+) -> gpd.GeoDataFrame:
     """
-    Génère un buffer réseau autour du centroïde de chaque ligne.
+    Génère un buffer réseau autour des lignes :
+      - mode="centroid" : buffer autour du centroïde
+      - mode="all" : buffer autour du centroïde + extrémités, puis union
     """
     if lines_gdf.empty:
         print(f"La couche '{layer_name}' est vide.")
@@ -218,18 +225,33 @@ def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buf
         raise ValueError("Toutes les géométries doivent être de type LineString.")
 
     try:
-        # Calcul du centroïde de chaque ligne
-        centroids_gdf = lines_gdf.copy()
-        centroids_gdf["geometry"] = centroids_gdf.geometry.centroid
+        buffer_list = []
 
-        # Application du buffer réseau comme pour des points
-        buffer_gdf = apply_points_network_buffer(centroids_gdf, layer_name, buffer_params)
+        for idx, row in lines_gdf.iterrows():
+            line = row.geometry
 
-        # Dissolution facultative (si plusieurs points par entité initiale)
-        if "buffer_id" in buffer_gdf.columns:
-            buffer_gdf = buffer_gdf.dissolve(by="buffer_id").reset_index()
+            # Points à bufferiser
+            points = [line.centroid]
+            if mode == "all":
+                points.append(Point(line.coords[0]))       # Extrémité début
+                points.append(Point(line.coords[-1]))      # Extrémité fin
 
-        return buffer_gdf
+            # Construire un GDF temporaire avec ces points
+            temp_gdf = gpd.GeoDataFrame([row] * len(points), geometry=points, crs=lines_gdf.crs)
+
+            # Appliquer les buffers réseaux
+            temp_buffers = apply_points_network_buffer(temp_gdf, layer_name, buffer_params)
+
+            if not temp_buffers.empty:
+                # Union des buffers
+                merged = temp_buffers.unary_union
+                buffer_list.append({"geometry": merged, **row.drop("geometry")})
+
+        if buffer_list:
+            return gpd.GeoDataFrame(buffer_list, crs=lines_gdf.crs)
+        else:
+            print(f"Aucun buffer valide généré pour {layer_name}")
+            return lines_gdf.copy()
 
     except Exception as e:
         print(f"Erreur dans apply_lines_network_buffer pour '{layer_name}': {e}")
