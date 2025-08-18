@@ -257,9 +257,16 @@ def apply_lines_network_buffer(
         print(f"Erreur dans apply_lines_network_buffer pour '{layer_name}': {e}")
         return lines_gdf.copy()
 
-def apply_polygons_network_buffer(polygons_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
+def apply_polygons_network_buffer(
+    polygons_gdf: gpd.GeoDataFrame,
+    layer_name: str,
+    buffer_params: dict,
+    mode: str = "all"  # "centroid" ou "all"
+) -> gpd.GeoDataFrame:
     """
-    Génère un buffer réseau à partir du centroïde de chaque polygone.
+    Génère un buffer réseau autour des polygones :
+      - mode="centroid" : buffer autour du centroïde
+      - mode="all" : buffer autour du centroïde + coins du bounding box, puis union
     """
     if polygons_gdf.empty:
         print(f"La couche '{layer_name}' est vide.")
@@ -273,12 +280,39 @@ def apply_polygons_network_buffer(polygons_gdf: gpd.GeoDataFrame, layer_name: st
         raise ValueError("Toutes les géométries doivent être de type Polygon ou MultiPolygon.")
 
     try:
-        centroids_gdf = polygons_gdf.copy()
-        centroids_gdf["geometry"] = centroids_gdf.geometry.centroid
+        buffer_list = []
 
-        buffer_gdf = apply_points_network_buffer(centroids_gdf, layer_name, buffer_params)
+        for idx, row in polygons_gdf.iterrows():
+            poly = row.geometry
 
-        return buffer_gdf
+            # Points à bufferiser
+            points = [poly.centroid]
+
+            if mode == "all":
+                minx, miny, maxx, maxy = poly.bounds
+                points.extend([
+                    Point(minx, miny),
+                    Point(minx, maxy),
+                    Point(maxx, miny),
+                    Point(maxx, maxy),
+                ])
+
+            # Construire un GDF temporaire avec ces points
+            temp_gdf = gpd.GeoDataFrame([row] * len(points), geometry=points, crs=polygons_gdf.crs)
+
+            # Appliquer les buffers réseaux
+            temp_buffers = apply_points_network_buffer(temp_gdf, layer_name, buffer_params)
+
+            if not temp_buffers.empty:
+                # Union des buffers
+                merged = temp_buffers.unary_union
+                buffer_list.append({"geometry": merged, **row.drop("geometry")})
+
+        if buffer_list:
+            return gpd.GeoDataFrame(buffer_list, crs=polygons_gdf.crs)
+        else:
+            print(f"Aucun buffer valide généré pour {layer_name}")
+            return polygons_gdf.copy()
 
     except Exception as e:
         print(f"Erreur dans apply_polygons_network_buffer pour '{layer_name}': {e}")
