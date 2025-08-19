@@ -101,13 +101,28 @@ Les étapes suivantes permettent de générer le voisinage désiré et fusionner
 - Une fois la configuration terminée, cliquer sur **Submit** pour lancer les calculs.
 
 
-### Fichers de sortie
-Fichers GeoJSON permettant de visualiser les buffer:
-src/data/output/data/buffers/
+### Différents outputs
 
-exemple de ficher: metro_station_buffer_circular_500m.geojson
+Une fois l’analyse lancée (**Submit**), plusieurs résultats sont accessibles à l’utilisateur :
 
-Fichers fuisonnées en CSV
-Contiennent les données de la couche de base enrichies des attributs des autres couches fusionnées.
-src/data/output/data/fusion/
-exemple de ficher: joined_data_stations_bixi_montreal_only_circular_300m.csv)
+#### 1) Interface
+- **Tables** : affiche un tableau avec les résultats d’agrégation (ex. `count_distinct` groupé par `buffer_id` et `bus_stop_name`).  
+- **Map** : permet de visualiser les différentes couches de données ainsi que les voisinages sur un fond de carte.  
+- **Histogram** et **Bar Chart** : fonctionnalités en cours de développement.
+
+#### 2) Fichiers de sortie
+Les résultats sont également exportés dans le dossier suivant :  
+
+Ce répertoire contient plusieurs sous-dossiers :  
+`MobilityDataFusion/src/data/output/data`
+
+- **/agg** : fichiers CSV correspondant aux tableaux d’agrégation affichés dans l’onglet *Tables*.  
+  *Exemple :* `circular_buffer_500m.csv`  
+
+- **/buffers** : fichiers **GeoJSON** représentant les voisinages générés autour des objets choisis.  
+  *Exemple :* `bus_stop_and_lines_network_300m.geojson`  
+
+- **/fusion** : fichiers CSV résultant des jointures spatiales entre voisinages et autres couches de données.  
+  Chaque voisinage peut apparaître sur plusieurs lignes s’il contient plusieurs objets dans son aire définie.  
+
+
