@@ -123,6 +123,4 @@ Ce répertoire contient plusieurs sous-dossiers :
   *Exemple :* `bus_stop_and_lines_network_300m.geojson`  
 
 - **/fusion** : fichiers CSV résultant des jointures spatiales entre voisinages et autres couches de données.  
-  Chaque voisinage peut apparaître sur plusieurs lignes s’il contient plusieurs objets dans son aire définie.  
-
-
+  Chaque voisinage peut apparaître sur plusieurs lignes s’il contient plusieurs objets dans son aire définie.
