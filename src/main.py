@@ -85,7 +85,7 @@ def main():
         geometry_columns = [col for col in fusion_gdf.columns if isinstance(fusion_gdf[col].dtype, gpd.array.GeometryDtype) and col != 'geometry']
         wkt_columns = [col for col in fusion_gdf.columns if col.endswith('_wkt')]
         buffer_columns = [col for col in fusion_gdf.columns if col.endswith('_left') and col != 'area_km2']
-        redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right') and col.replace('_right', '') in fusion_gdf.columns]
+        redundant_columns = [col for col in fusion_gdf.columns if col.endswith('_right')]
         fusion_gdf = fusion_gdf.drop(columns=geometry_columns + wkt_columns + buffer_columns + redundant_columns, errors='ignore')
 
         if config.get("groupby_columns"):
@@ -116,7 +116,9 @@ def main():
         params = layer_config.copy(); params.pop('buffer_type', None)
 
         distance = params.get('distance', None)
-        fusion_gdf.to_csv(path_or_buf=f"./data/output/data/fusion/joined_data_{layer_name}_{buffer_type}_{distance}m.csv")
+        # Exclure la colonne geometry lors de l'export CSV
+        fusion_gdf_csv = fusion_gdf.drop(columns=['geometry'], errors='ignore')
+        fusion_gdf_csv.to_csv(path_or_buf=f"./data/output/data/fusion/joined_data_{layer_name}_{buffer_type}_{distance}m.csv", index=False)
 
         filename = f"./data/output/data/agg/{buffer_type}_buffer"
         if buffer_type == 'circular':
@@ -132,7 +134,7 @@ def main():
         elif buffer_type == 'zones_grid':
             filename += f"_{params['wide']}m_{params['length']}m.csv"
 
-        agg_stats_gdf.to_csv(filename, mode='w')
+        agg_stats_gdf.to_csv(filename, mode='w', index=False)
         visualisation.create_table_visualisation(agg_stats_gdf, buffer_type, **params)
 
         if activate_visualisation:
