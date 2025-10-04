@@ -5,6 +5,9 @@ venv/
 src/__pycache__/
 tests/__pycache__/
 src/data/input/geojson/*.geojson
+!src/data/input/geojson/points_geojson.geojson
+!src/data/input/geojson/lines_geojson.geojson
+!src/data/input/geojson/polygons_geojson.geojson
 src/data/input/parquet/*.parquet
 src/data/output/data/*.csv
 src/data/output/visualisation/*.html
@@ -17,3 +20,4 @@ cache/
 !src/data/input/stations_bixi.geojson
 src/map.html
 **/__pycache__/
+src/data/output/fusion_gdf.parquet

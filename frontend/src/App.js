@@ -3,76 +3,54 @@ import Form from 'react-jsonschema-form';
 import * as yaml from 'js-yaml';
 import './App.css';
 
-const sampleConfig = `
-buffer_layer:
-  bixi_stations:
+// Configuration par défaut basée sur config.yaml actuel
+const defaultConfig = {
+  activate_visualisation: true,
+  buffer_layer: {
+    layer_name: "points_geojson",
+    buffer_type: "circular",
+    distance: 200,
     geometry_type: "Point"
-    buffer_type: "circular"
-    distance: 500
-filter_data_files:
-  bus_stops:
-    column:
-    value:
-  bixi_stations:
-    column: "capacity"
-    value: 0
-    operator: ">="
-ratio_columns:
-  - name: "permis_perslogi_ratio"
-    numerator: "permis"
-    denominator: "perslogi"
-multiply_columns:
-  - name: "product_capacity_area"
-    columns:
-      - "capacity"
-      - "SUPERFICIE_TERRAIN"
-sum_columns:
-  - "permis as total_permis"
-  - "autologi as total_autologi"
-max_columns:
-  - "capacity as max_capacity"
-min_columns:
-  - "capacity as min_capacity"
-mean_columns:
-  - "SUPERFICIE_TERRAIN as moy_superficie_terrain"
-  - "LONGUEUR as moy_long_piste_cy"
-std_columns:
-  - "SUPERFICIE_TERRAIN as std_superficie_terrain"
-count_columns:
-  - "stop_id as count_arret_bus"
-  - "feuillet as count_nb_menage"
-  - "ID_UEV as count_num_bati"
-count_distinct_columns:
-  - "station_id as count_bixi_station"
-groupby_columns:
-  - "buffer_id"
-  - "name"
-filter_global:
-  - column: "count_arret_bus_count"
-    value: 0
-    operator: ">="
-activate_visualisation: false
-join_layers:
-  points:
-    type: "contains"
-  polygons:
-    type: "intersects"
-  multipolygons:
-    type: "intersects"
-  linestrings:
-    type: "intersects"
-colors:
-  bus_stops: "[0, 200, 0, 160]"
-  bixi_stations: "[200, 30, 0, 160]"
-  evaluation_fonciere: "[0, 30, 200, 160]"
-  menage_2018: "[255, 255, 0, 160]"
-  reseau_cyclable: "[255, 165, 0, 160]"
-`;
-
-const config = yaml.load(sampleConfig);
+  },
+  colors: {
+    lines_geojson: "[255, 165, 0, 160]",
+    points_geojson: "[255, 0, 0, 160]",
+    polygons_geojson: "[0, 255, 0, 160]"
+  },
+  count_columns: [
+    "line_name as nbr_line",
+    "polygon_name as nbr_polygon"
+  ],
+  count_distinct_columns: [],
+  data_files: [
+    { name: "lines_geojson", path: "./data/input/geojson/lines_geojson.geojson" },
+    { name: "points_geojson", path: "./data/input/geojson/points_geojson.geojson" },
+    { name: "polygons_geojson", path: "./data/input/geojson/polygons_geojson.geojson" }
+  ],
+  filter_data_files: {},
+  filter_global: [],
+  groupby_columns: [
+    "buffer_id",
+    "point_name"
+  ],
+  join_layers: {
+    linestrings: { type: "intersects" },
+    multipolygons: { type: "intersects" },
+    points: { type: "contains" },
+    polygons: { type: "intersects" }
+  },
+  max_columns: [],
+  mean_columns: [],
+  min_columns: [],
+  multiply_columns: [],
+  post_aggregation_metrics: {},
+  ratio_columns: [],
+  std_columns: [],
+  sum_columns: []
+};
 
 const App = () => {
-  const [formData, setFormData] = useState(config);
+  const [formData, setFormData] = useState(defaultConfig);
   const [schema, setSchema] = useState({});
   const [submitMessage, setSubmitMessage] = useState('');
   const [fileList, setFileList] = useState({});
@@ -274,22 +252,21 @@ const App = () => {
 
         setSchema(baseSchema);
 
-        setFormData(prevFormData => ({
-          ...prevFormData,
+        // Utiliser la configuration par défaut mais adapter aux fichiers détectés
+        const updatedFormData = {
+          ...defaultConfig,
           data_files: dataFilesList,
-          buffer_layer: {
-            [prevFormData.buffer_layer ? Object.keys(prevFormData.buffer_layer)[0] : "bixi_stations"]: {
-              buffer_type: "circular",
-              distance: 1000,
-              geometry_type: "Point"
-            }
-          },
-          filter_data_files: {},
+          // Adapter les couleurs aux fichiers détectés
           colors: Object.keys(data).reduce((acc, layerName) => {
-            acc[layerName] = "[200, 30, 0, 160]";
+            // Utiliser les couleurs par défaut si disponibles, sinon couleur par défaut
+            acc[layerName] = defaultConfig.colors[layerName] || "[200, 30, 0, 160]";
             return acc;
-          }, {})
-        }));
+          }, {}),
+          // Utiliser la configuration par défaut du buffer_layer
+          buffer_layer: defaultConfig.buffer_layer
+        };
+        
+        setFormData(updatedFormData);
       })
       .catch(error => console.error('Error fetching file list:', error));
   }, []);

@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.5673,
+          45.5017
+        ]
+      },
+      "properties": {
+        "point_name": "Point Central",
+        "point_type": "center_point",
+        "latitude": 45.5017,
+        "longitude": -73.5673,
+        "description": "Point central pour la génération des données de test",
+        "created_by": "OSM Data Generator"
+      }
+    }
+  ]
+}

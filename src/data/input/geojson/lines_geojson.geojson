@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -73.56849401634342,
+            45.501596268298314
+          ],
+          [
+            -73.56780717388287,
+            45.500614085663216
+          ]
+        ]
+      },
+      "properties": {
+        "line_name": "Route Simulée 1",
+        "highway": "residential",
+        "simulated": true,
+        "length_m": 121.6267829000629,
+        "description": "Ligne simulée 1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -73.56550721070289,
+            45.50076187572156
+          ],
+          [
+            -73.5655911658944,
+            45.5027835389357
+          ]
+        ]
+      },
+      "properties": {
+        "line_name": "Route Simulée 2",
+        "highway": "residential",
+        "simulated": true,
+        "length_m": 224.89389468940095,
+        "description": "Ligne simulée 2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -73.56673503142008,
+            45.49949950357385
+          ],
+          [
+            -73.56511182990405,
+            45.50108902892947
+          ]
+        ]
+      },
+      "properties": {
+        "line_name": "Route Simulée 3",
+        "highway": "residential",
+        "simulated": true,
+        "length_m": 217.3562830988927,
+        "description": "Ligne simulée 3"
+      }
+    }
+  ]
+}

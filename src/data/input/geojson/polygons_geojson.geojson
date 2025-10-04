@@ -1,0 +1,116 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.56901069906714,
+              45.500238349089216
+            ],
+            [
+              -73.56847015852661,
+              45.500238349089216
+            ],
+            [
+              -73.56847015852661,
+              45.50077888962976
+            ],
+            [
+              -73.56901069906714,
+              45.50077888962976
+            ],
+            [
+              -73.56901069906714,
+              45.500238349089216
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "polygon_name": "Zone Simulée 1",
+        "landuse": "residential",
+        "simulated": true,
+        "area_m2": 2538.0659785866737,
+        "description": "Polygone simulé 1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.5686713373636,
+              45.50221601327551
+            ],
+            [
+              -73.56813079682307,
+              45.50221601327551
+            ],
+            [
+              -73.56813079682307,
+              45.50275655381605
+            ],
+            [
+              -73.5686713373636,
+              45.50275655381605
+            ],
+            [
+              -73.5686713373636,
+              45.50221601327551
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "polygon_name": "Zone Simulée 2",
+        "landuse": "residential",
+        "simulated": true,
+        "area_m2": 2537.9780039191246,
+        "description": "Polygone simulé 2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.56555085608846,
+              45.500773620562995
+            ],
+            [
+              -73.56501031554794,
+              45.500773620562995
+            ],
+            [
+              -73.56501031554794,
+              45.50131416110354
+            ],
+            [
+              -73.56555085608846,
+              45.50131416110354
+            ],
+            [
+              -73.56555085608846,
+              45.500773620562995
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "polygon_name": "Zone Simulée 3",
+        "landuse": "residential",
+        "simulated": true,
+        "area_m2": 2538.042167723179,
+        "description": "Polygone simulé 3"
+      }
+    }
+  ]
+}

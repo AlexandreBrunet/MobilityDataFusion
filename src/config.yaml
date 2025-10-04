@@ -1,33 +1,29 @@
 activate_visualisation: true
 buffer_layer:
-  stations_bixi:
+  points_geojson:
     buffer_type: circular
-    distance: 500
+    distance: 200
     geometry_type: Point
 colors:
-  mtlzonage: '[0, 0, 0, 0]'
-  od_2018agg: '[200, 30, 0, 160]'
-  stations_bixi: '[200, 30, 0, 160]'
-count_columns: []
+  lines_geojson: '[255, 165, 0, 160]'
+  points_geojson: '[255, 0, 0, 160]'
+  polygons_geojson: '[0, 255, 0, 160]'
+count_columns:
+- line_name as nbr_line
+- polygon_name as nbr_polygon
 count_distinct_columns: []
 data_files:
-- name: od_2018agg
-  path: ./data/input/geojson/od_2018agg.geojson
-- name: stations_bixi
-  path: ./data/input/geojson/stations_bixi.geojson
+- name: lines_geojson
+  path: ./data/input/geojson/lines_geojson.geojson
+- name: points_geojson
+  path: ./data/input/geojson/points_geojson.geojson
+- name: polygons_geojson
+  path: ./data/input/geojson/polygons_geojson.geojson
 filter_data_files: {}
 filter_global: []
 groupby_columns:
 - buffer_id
-- name
-histogram_config:
-  aggregation:
-    column: autologi
-    type: sum
-  binsize: 2
-  columns:
-  - AUTOLOGI
-  groupby: name
+- point_name
 join_layers:
   linestrings:
     type: intersects
@@ -40,13 +36,8 @@ join_layers:
 max_columns: []
 mean_columns: []
 min_columns: []
-multiply_columns:
-- columns:
-  - faclog_s27
-  - autologi
-  name: faclog_autologi
+multiply_columns: []
+post_aggregation_metrics: {}
 ratio_columns: []
 std_columns: []
-sum_columns:
-- facper_s27 as total_pers
-- autologi as total_autologi
+sum_columns: []
