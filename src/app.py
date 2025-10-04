@@ -45,6 +45,27 @@ def list_files():
         logging.error(f"An error occurred while listing files: {str(e)}")
         return jsonify({"error": "Failed to list files"}), 500
 
+@app.route('/get_geojson_data/<filename>', methods=['GET'])
+def get_geojson_data(filename):
+    try:
+        # Chercher le fichier GeoJSON
+        input_dir = './data/input/geojson/'
+        file_path = os.path.join(input_dir, f'{filename}.geojson')
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'Fichier {filename} non trouvé'}), 404
+        
+        # Charger le GeoJSON
+        gdf = gpd.read_file(file_path)
+        
+        # Convertir en GeoJSON
+        geojson_data = gdf.to_json()
+        
+        return geojson_data
+    except Exception as e:
+        logging.error(f"An error occurred while loading GeoJSON data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/get_table_html/<path:params>')
 def get_table_html(params):
     try:

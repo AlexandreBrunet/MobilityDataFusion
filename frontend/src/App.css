@@ -1182,6 +1182,85 @@ textarea:disabled {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
+/* Map tabs styling */
+.map-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: var(--border-radius-small);
+  backdrop-filter: blur(10px);
+}
+
+.map-tab {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-gradient);
+  transition: var(--transition);
+  z-index: -1;
+}
+
+.map-tab:hover::before,
+.map-tab.active::before {
+  left: 0;
+}
+
+.map-tab:hover,
+.map-tab.active {
+  color: white;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Map container improvements */
+.map-container {
+  position: relative;
+}
+
+.map-container .full-iframe {
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Loading state for map */
+.map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background: var(--glass-bg);
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.map-loading p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
 /* Responsive improvements for mobile */
 @media (max-width: 768px) {
   .form-container {
@@ -1219,5 +1298,15 @@ textarea:disabled {
   .submit-section .submit-button {
     padding: 0.75rem 2rem;
     font-size: 1rem;
+  }
+  
+  .map-tabs {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .map-tab {
+    padding: 0.75rem 1rem;
+    text-align: center;
   }
 }

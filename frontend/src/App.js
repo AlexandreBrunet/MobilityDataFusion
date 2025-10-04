@@ -92,14 +92,150 @@ const App = () => {
   const [activeDataExplorerFile, setActiveDataExplorerFile] = useState(null);
   const [filePreviews, setFilePreviews] = useState({});
   const [dataFiles, setDataFiles] = useState([]);
+  const [geojsonData, setGeojsonData] = useState({});
+  const [baseMapHTML, setBaseMapHTML] = useState('');
+
+  // Fonction pour charger les données GeoJSON
+  const loadGeojsonData = async (fileList) => {
+    const geojsonFiles = Object.entries(fileList).filter(([key, value]) => 
+      value.endsWith('.geojson')
+    );
+    
+    const geojsonData = {};
+    for (const [name, path] of geojsonFiles) {
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/get_geojson_data/${name}`);
+        if (response.ok) {
+          const data = await response.json();
+          geojsonData[name] = data;
+        }
+      } catch (error) {
+        console.error(`Error loading ${name}:`, error);
+      }
+    }
+    setGeojsonData(geojsonData);
+    return geojsonData;
+  };
+
+  // Fonction pour créer une carte de base avec les GeoJSON
+  const createBaseMap = (geojsonData) => {
+    const colors = {
+      cd: '#667eea',
+      fsa: '#f093fb',
+      points: '#ff6b6b',
+      lines: '#4ecdc4',
+      polygons: '#45b7d1'
+    };
+
+    const mapHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100%; }
+        .legend { 
+            position: absolute; 
+            bottom: 20px; 
+            right: 20px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 5px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .legend-item { 
+            display: flex; 
+            align-items: center; 
+            margin: 5px 0; 
+        }
+        .legend-color { 
+            width: 20px; 
+            height: 15px; 
+            margin-right: 10px; 
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="legend">
+        <h4>Couches de données</h4>
+        ${Object.keys(geojsonData).map(name => `
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${colors[name] || '#666'}"></div>
+                <span>${name}</span>
+            </div>
+        `).join('')}
+    </div>
+    <script>
+        const map = L.map('map').setView([45.5017, -73.5673], 10);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        const geojsonData = ${JSON.stringify(geojsonData)};
+        const colors = ${JSON.stringify(colors)};
+        
+        Object.entries(geojsonData).forEach(([name, data]) => {
+            if (data && data.features) {
+                const layer = L.geoJSON(data, {
+                    style: {
+                        color: colors[name] || '#666',
+                        weight: 2,
+                        opacity: 0.8,
+                        fillOpacity: 0.3
+                    },
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 6,
+                            fillColor: colors[name] || '#666',
+                            color: colors[name] || '#666',
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties) {
+                            const props = Object.entries(feature.properties)
+                                .map(([key, value]) => \`<b>\${key}:</b> \${value}\`)
+                                .join('<br>');
+                            layer.bindPopup(\`<b>\${name}</b><br>\${props}\`);
+                        }
+                    }
+                }).addTo(map);
+                
+                // Ajuster la vue pour inclure toutes les données
+                if (layer.getBounds().isValid()) {
+                    map.fitBounds(layer.getBounds());
+                }
+            }
+        });
+    </script>
+</body>
+</html>`;
+    
+    return mapHTML;
+  };
 
   useEffect(() => {
     fetch('http://127.0.0.1:5000/list_files')
       .then(response => response.json())
-      .then(data => {
+      .then(async (data) => {
         console.log('Fetched file list:', data);
         setFileList(data);
         setDataFiles(Object.keys(data));
+
+        // Charger les données GeoJSON et créer la carte de base
+        const geojsonData = await loadGeojsonData(data);
+        if (Object.keys(geojsonData).length > 0) {
+          const baseMap = createBaseMap(geojsonData);
+          setBaseMapHTML(baseMap);
+        }
 
         const dataFilesList = Object.entries(data).map(([key, value]) => ({
           name: key,
@@ -1083,14 +1219,51 @@ const App = () => {
         <div className="map-container fade-in">
           <h2>{Icons.map} Visualisation cartographique</h2>
           {mapHTML ? (
-            <iframe
-              title="map-visualization"
-              srcDoc={mapHTML}
-              className="full-iframe"
-            />
+            <div>
+              <div className="map-tabs">
+                <button 
+                  className={`map-tab ${!baseMapHTML ? 'active' : ''}`}
+                  onClick={() => setMapHTML('')}
+                >
+                  {Icons.map} Carte d'analyse
+                </button>
+                {baseMapHTML && (
+                  <button 
+                    className={`map-tab ${baseMapHTML ? 'active' : ''}`}
+                    onClick={() => setMapHTML(baseMapHTML)}
+                  >
+                    {Icons.data} Données brutes
+                  </button>
+                )}
+              </div>
+              <iframe
+                title="map-visualization"
+                srcDoc={mapHTML}
+                className="full-iframe"
+              />
+            </div>
+          ) : baseMapHTML ? (
+            <div>
+              <div className="map-tabs">
+                <button className="map-tab active">
+                  {Icons.data} Données brutes
+                </button>
+                <button 
+                  className="map-tab"
+                  onClick={() => setMapHTML('')}
+                >
+                  {Icons.map} Carte d'analyse
+                </button>
+              </div>
+              <iframe
+                title="base-map"
+                srcDoc={baseMapHTML}
+                className="full-iframe"
+              />
+            </div>
           ) : (
             <div className="empty-state">
-              <p>{Icons.info} Aucune carte générée. Configurez et lancez l'analyse pour voir la visualisation.</p>
+              <p>{Icons.info} Aucune donnée géographique disponible. Vérifiez que vos fichiers GeoJSON sont correctement chargés.</p>
             </div>
           )}
         </div>
