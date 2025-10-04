@@ -8,6 +8,7 @@ pyproj==3.6.1
 pandas==2.2.2
 numpy==2.0.2
 pyarrow==18.1.0
+scipy==1.13.1
 
 # Visualization
 plotly==5.23.0

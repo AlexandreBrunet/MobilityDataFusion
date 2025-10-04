@@ -120,11 +120,9 @@ const App = () => {
   // Fonction pour créer une carte de base avec les GeoJSON
   const createBaseMap = (geojsonData) => {
     const colors = {
-      cd: '#667eea',
-      fsa: '#f093fb',
-      points: '#ff6b6b',
-      lines: '#4ecdc4',
-      polygons: '#45b7d1'
+      points: '#ff6b6b',    // Rouge pour les points
+      lines: '#4ecdc4',     // Bleu pour les lignes
+      polygons: '#45b7d1'   // Vert pour les polygones
     };
 
     const mapHTML = `
@@ -163,6 +161,18 @@ const App = () => {
     <div id="map"></div>
     <div class="legend">
         <h4>Couches de données</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ff6b6b"></div>
+            <span>Points (Rouge)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #4ecdc4"></div>
+            <span>Lignes (Bleu)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #45b7d1"></div>
+            <span>Polygones (Vert)</span>
+        </div>
         ${Object.keys(geojsonData).map(name => `
             <div class="legend-item">
                 <div class="legend-color" style="background-color: ${colors[name] || '#666'}"></div>
@@ -182,19 +192,58 @@ const App = () => {
         
         Object.entries(geojsonData).forEach(([name, data]) => {
             if (data && data.features) {
+                // Déterminer le type de géométrie principal
+                const geometryTypes = data.features.map(f => f.geometry.type);
+                const hasPoints = geometryTypes.includes('Point');
+                const hasLines = geometryTypes.includes('LineString') || geometryTypes.includes('MultiLineString');
+                const hasPolygons = geometryTypes.includes('Polygon') || geometryTypes.includes('MultiPolygon');
+                
+                // Déterminer la couleur selon le type de données
+                let color = '#666';
+                if (name.includes('lines') || hasLines) {
+                    color = '#4ecdc4'; // Bleu pour les lignes
+                } else if (name.includes('polygons') || hasPolygons) {
+                    color = '#45b7d1'; // Vert pour les polygones
+                } else if (name.includes('points') || hasPoints) {
+                    color = '#ff6b6b'; // Rouge pour les points
+                } else {
+                    color = colors[name] || '#666';
+                }
+                
+                console.log(\`Layer: \${name}, hasLines: \${hasLines}, hasPolygons: \${hasPolygons}, hasPoints: \${hasPoints}, color: \${color}\`);
+                
                 const layer = L.geoJSON(data, {
-                    style: {
-                        color: colors[name] || '#666',
-                        weight: 2,
-                        opacity: 0.8,
-                        fillOpacity: 0.3
+                    style: function(feature) {
+                        const geomType = feature.geometry.type;
+                        if (geomType === 'LineString' || geomType === 'MultiLineString') {
+                            return {
+                                color: '#4ecdc4', // Bleu pour les lignes
+                                weight: 3,
+                                opacity: 0.8
+                            };
+                        } else if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+                            return {
+                                color: '#45b7d1', // Vert pour les polygones
+                                weight: 2,
+                                opacity: 0.8,
+                                fillColor: '#45b7d1',
+                                fillOpacity: 0.3
+                            };
+                        } else {
+                            return {
+                                color: color,
+                                weight: 2,
+                                opacity: 0.8,
+                                fillOpacity: 0.3
+                            };
+                        }
                     },
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 6,
-                            fillColor: colors[name] || '#666',
-                            color: colors[name] || '#666',
-                            weight: 1,
+                            radius: 8,
+                            fillColor: '#ff6b6b', // Rouge pour les points
+                            color: '#ff6b6b',
+                            weight: 2,
                             opacity: 1,
                             fillOpacity: 0.8
                         });
@@ -202,7 +251,18 @@ const App = () => {
                     onEachFeature: function(feature, layer) {
                         if (feature.properties) {
                             const props = Object.entries(feature.properties)
-                                .map(([key, value]) => \`<b>\${key}:</b> \${value}\`)
+                                .map(([key, value]) => {
+                                    // Gérer les valeurs NaN, null, undefined
+                                    let displayValue = value;
+                                    if (value === null || value === undefined) {
+                                        displayValue = 'N/A';
+                                    } else if (typeof value === 'number' && isNaN(value)) {
+                                        displayValue = 'N/A';
+                                    } else if (typeof value === 'string' && value.toLowerCase() === 'nan') {
+                                        displayValue = 'N/A';
+                                    }
+                                    return \`<b>\${key}:</b> \${displayValue}\`;
+                                })
                                 .join('<br>');
                             layer.bindPopup(\`<b>\${name}</b><br>\${props}\`);
                         }

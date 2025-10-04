@@ -101,7 +101,7 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
     params = buffer_params[layer_name]
     distance = params.get("distance", 500)  # meters
     network_type = params.get("network_type", "walk")
-    use_envelope = params.get("use_envelope", False)
+    use_envelope = params.get("use_envelope", True)
 
     osm_filename = params.get("osm_file")
     if not osm_filename:
