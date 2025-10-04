@@ -1,26 +1,43 @@
-fiona==1.10.1
-numpy==2.0.2
-packaging==24.1
-pandas==2.2.2
-pyproj==3.6.1
-python-dateutil==2.9.0.post0
-pytz==2024.1
-shapely==2.0.7
-six==1.16.0
-tzdata==2024.1
-zipp==3.19.2
-pytest==8.3.2
-plotly==5.23.0
-pydeck==0.9.1
-geojson==3.1.0
-requests==2.32.3
-openpyxl==3.1.5
-seaborn==0.13.2
+# Core geospatial libraries
 geopandas==1.0.1
 fiona==1.10.1
-PyYAML==6.0.2
+shapely==2.0.7
+pyproj==3.6.1
+
+# Data processing
+pandas==2.2.2
+numpy==2.0.2
 pyarrow==18.1.0
+
+# Visualization
+plotly==5.23.0
+pydeck==0.9.1
+seaborn==0.13.2
+
+# Web framework
 Flask==3.1.1
-osmnx==2.0.5
+flask-cors==4.0.0
+
+# Utilities
+PyYAML==6.0.2
+requests==2.32.3
+geojson==3.1.0
+openpyxl==3.1.5
 tqdm==4.66.1
-Flasknetworkx==3.4.2
+networkx==3.2.1
+
+# OSM data processing
+osmnx==2.0.5
+
+# Testing
+pytest==8.3.2
+
+# Date/time utilities
+python-dateutil==2.9.0.post0
+pytz==2024.1
+tzdata==2024.1
+
+# Other utilities
+packaging==24.1
+six==1.16.0
+zipp==3.19.2
