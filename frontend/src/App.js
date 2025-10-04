@@ -3,6 +3,24 @@ import Form from 'react-jsonschema-form';
 import * as yaml from 'js-yaml';
 import './App.css';
 
+// Icons (using Unicode symbols for simplicity)
+const Icons = {
+  config: '⚙️',
+  table: '📊',
+  map: '🗺️',
+  chart: '📈',
+  data: '💾',
+  play: '▶️',
+  stop: '⏹️',
+  refresh: '🔄',
+  download: '⬇️',
+  upload: '⬆️',
+  success: '✅',
+  error: '❌',
+  warning: '⚠️',
+  info: 'ℹ️'
+};
+
 // Configuration par défaut basée sur config.yaml actuel
 const defaultConfig = {
   activate_visualisation: true,
@@ -914,19 +932,55 @@ const App = () => {
 
   return (
     <div className="App">
-      <h1>Data Fusion UI</h1>
+      <header className="header">
+        <h1>MobilityDataFusion</h1>
+        <p style={{ textAlign: 'center', opacity: 0.8, marginTop: '0.5rem' }}>
+          Analyse et visualisation de données de mobilité géospatiales
+        </p>
+      </header>
+
       <div className="tab-buttons">
-        <button onClick={() => handleTabChange('data-explorer')}>Data Explorer</button>
-        <button onClick={() => handleTabChange('form')}>Form</button>
-        <button onClick={() => handleTabChange('tables')}>Tables</button>
-        <button onClick={() => handleTabChange('map')}>Map</button>
-        <button onClick={() => handleTabChange('histogram')}>Histograms</button>
-        <button onClick={() => handleTabChange('barchart')}>Bar Charts</button>
+        <button 
+          className={`tab-button ${activeTab === 'data-explorer' ? 'active' : ''}`}
+          onClick={() => handleTabChange('data-explorer')}
+        >
+          {Icons.data} Explorateur
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'form' ? 'active' : ''}`}
+          onClick={() => handleTabChange('form')}
+        >
+          {Icons.config} Configuration
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'tables' ? 'active' : ''}`}
+          onClick={() => handleTabChange('tables')}
+        >
+          {Icons.table} Tableaux
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'map' ? 'active' : ''}`}
+          onClick={() => handleTabChange('map')}
+        >
+          {Icons.map} Carte
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'histogram' ? 'active' : ''}`}
+          onClick={() => handleTabChange('histogram')}
+        >
+          {Icons.chart} Histogrammes
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'barchart' ? 'active' : ''}`}
+          onClick={() => handleTabChange('barchart')}
+        >
+          {Icons.chart} Bar Charts
+        </button>
       </div>
 
       {activeTab === 'data-explorer' && (
-        <div className="data-explorer-container">
-          <h2>Data Explorer</h2>
+        <div className="data-explorer-container fade-in">
+          <h2>{Icons.data} Explorateur de données</h2>
           <div className="file-tabs">
             {dataFiles.map(fileName => (
               <button
@@ -989,43 +1043,55 @@ const App = () => {
               onChange={onChange}
               onSubmit={onSubmit}
             >
-              <button type="submit">Submit</button>
+              <button type="submit" className="submit-button">
+                {Icons.play} Lancer l'analyse
+              </button>
             </Form>
           ) : (
-            <div>Loading configuration...</div>
+            <div className="loading-message">
+              {Icons.refresh} Chargement de la configuration...
+            </div>
           )}
         </div>
       )}
 
       {activeTab === 'tables' && (
-        <div className="table-container">
-          <h2>Data Table</h2>
-          {tableHTML && (
+        <div className="table-container fade-in">
+          <h2>{Icons.table} Tableau de données</h2>
+          {tableHTML ? (
             <iframe
               title="data-table"
               srcDoc={tableHTML}
               className="full-iframe"
             />
+          ) : (
+            <div className="empty-state">
+              <p>{Icons.info} Aucun tableau généré. Configurez et lancez l'analyse pour voir les résultats.</p>
+            </div>
           )}
         </div>
       )}
 
       {activeTab === 'map' && (
-        <div className="map-container">
-          <h2>Map Visualization</h2>
-          {mapHTML && (
+        <div className="map-container fade-in">
+          <h2>{Icons.map} Visualisation cartographique</h2>
+          {mapHTML ? (
             <iframe
               title="map-visualization"
               srcDoc={mapHTML}
               className="full-iframe"
             />
+          ) : (
+            <div className="empty-state">
+              <p>{Icons.info} Aucune carte générée. Configurez et lancez l'analyse pour voir la visualisation.</p>
+            </div>
           )}
         </div>
       )}
 
       {activeTab === 'histogram' && (
-        <div className="histogram-container">
-          <h2>Histograms</h2>
+        <div className="histogram-container fade-in">
+          <h2>{Icons.chart} Histogrammes</h2>
           <div className="histogram-form">
             <Form
               schema={histogramSchema}
@@ -1034,7 +1100,9 @@ const App = () => {
               onChange={({ formData }) => setHistogramFormData(formData)}
               onSubmit={onHistogramSubmit}
             >
-              <button type="submit">Generate Histograms</button>
+              <button type="submit" className="submit-button">
+                {Icons.chart} Générer les histogrammes
+              </button>
             </Form>
           </div>
           {Object.keys(histograms).length === 0 ? (
@@ -1057,8 +1125,8 @@ const App = () => {
       )}
 
       {activeTab === 'barchart' && (
-        <div className="barchart-container">
-          <h2>Bar Charts</h2>
+        <div className="barchart-container fade-in">
+          <h2>{Icons.chart} Bar Charts</h2>
           <div className="barchart-form">
             <Form
               schema={barChartSchema}
@@ -1067,7 +1135,9 @@ const App = () => {
               onChange={({ formData }) => setBarChartFormData(formData)}
               onSubmit={onBarChartSubmit}
             >
-              <button type="submit">Generate Bar Charts</button>
+              <button type="submit" className="submit-button">
+                {Icons.chart} Générer les bar charts
+              </button>
             </Form>
           </div>
           {Object.keys(barCharts).length === 0 ? (
