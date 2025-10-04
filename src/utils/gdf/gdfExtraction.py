@@ -39,9 +39,18 @@ def extract_polygons_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         print(f"Conversion de {len(multipolygons_gdf)} MultiPolygon(s) en Polygon(s) individuels")
         # Exploser les MultiPolygon en Polygon individuels
         exploded_multipolygons = multipolygons_gdf.explode(index_parts=False).reset_index(drop=True)
+        
+        # Modifier les noms des polygon_name pour que chaque partie ait un nom unique
+        if 'polygon_name' in exploded_multipolygons.columns:
+            for idx, row in exploded_multipolygons.iterrows():
+                original_name = row['polygon_name']
+                # Ajouter un suffixe pour chaque partie du MultiPolygon explosé
+                exploded_multipolygons.at[idx, 'polygon_name'] = f"{original_name}_part_{idx + 1}"
+        
         # Ajouter les Polygon convertis
         polygons_gdf = gpd.pd.concat([polygons_gdf, exploded_multipolygons], ignore_index=True)
         print(f"Total de {len(polygons_gdf)} Polygon(s) après conversion")
+        print("Les MultiPolygons originaux sont supprimés - seules les parties explosées sont conservées")
     
     polygons_gdf = extract_poly_coordinates(polygons_gdf)
     return polygons_gdf
@@ -69,11 +78,8 @@ def extract_line_coordinates(linestrings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFr
     return linestrings_gdf
 
 def extract_multipolygons_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Extrait les géométries de type MultiPolygon et ajoute une colonne 'coordinates' contenant leurs coordonnées."""
-    multipolygons_gdf = gdf[gdf.geometry.type == "MultiPolygon"].copy()
-    
-    multipolygons_gdf['coordinates'] = multipolygons_gdf['geometry'].apply(
-        lambda geom: [poly.__geo_interface__['coordinates'] for poly in geom.geoms]
-    )
-    
-    return multipolygons_gdf
+    """Les MultiPolygons sont explosés en Polygons - cette fonction retourne un GeoDataFrame vide."""
+    # Les MultiPolygons sont traités dans extract_polygons_gdf et explosés
+    # Ils ne doivent plus apparaître comme MultiPolygons dans les résultats
+    print("Les MultiPolygons sont explosés en Polygons - aucun MultiPolygon ne sera conservé")
+    return gpd.GeoDataFrame(columns=gdf.columns, crs=gdf.crs)

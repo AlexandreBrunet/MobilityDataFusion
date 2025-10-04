@@ -132,7 +132,14 @@ def calculate_count_distinct(gdf, groupby_columns, distinct_columns):
             UserWarning
         )
 
-    agg_dict = {original: pd.Series.nunique for original, _ in valid_columns}
+    # Créer des fonctions personnalisées qui excluent les valeurs 'nan' et 'nan' string
+    def nunique_no_nan(series):
+        # Exclure les vraies valeurs NaN et les chaînes 'nan'
+        filtered_series = series.dropna()
+        filtered_series = filtered_series[filtered_series != 'nan']
+        return filtered_series.nunique()
+    
+    agg_dict = {original: nunique_no_nan for original, _ in valid_columns}
     count_distinct_stats = gdf.groupby(groupby_columns).agg(agg_dict).reset_index()
 
     count_distinct_stats = count_distinct_stats.rename(columns={original: renamed for original, renamed in valid_columns})
@@ -261,7 +268,12 @@ def calculate_metrics(gdf, groupby_columns, metrics_config):
                 continue
                 
             if func == "count_distinct":
-                agg_dict[renamed] = (original, "nunique")
+                # Utiliser la fonction personnalisée qui exclut les 'nan' strings
+                def nunique_no_nan(series):
+                    filtered_series = series.dropna()
+                    filtered_series = filtered_series[filtered_series != 'nan']
+                    return filtered_series.nunique()
+                agg_dict[renamed] = (original, nunique_no_nan)
             else:
                 agg_dict[renamed] = (original, func)
 
