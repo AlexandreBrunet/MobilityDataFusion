@@ -30,7 +30,19 @@ def extract_linestrings_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return linestrings_gdf
 
 def extract_polygons_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    # Extraire les Polygon existants
     polygons_gdf = gdf[gdf.geometry.type == "Polygon"].copy()
+    
+    # Extraire et convertir les MultiPolygon en Polygon individuels
+    multipolygons_gdf = gdf[gdf.geometry.type == "MultiPolygon"].copy()
+    if not multipolygons_gdf.empty:
+        print(f"Conversion de {len(multipolygons_gdf)} MultiPolygon(s) en Polygon(s) individuels")
+        # Exploser les MultiPolygon en Polygon individuels
+        exploded_multipolygons = multipolygons_gdf.explode(index_parts=False).reset_index(drop=True)
+        # Ajouter les Polygon convertis
+        polygons_gdf = gpd.pd.concat([polygons_gdf, exploded_multipolygons], ignore_index=True)
+        print(f"Total de {len(polygons_gdf)} Polygon(s) après conversion")
+    
     polygons_gdf = extract_poly_coordinates(polygons_gdf)
     return polygons_gdf
 
