@@ -35,11 +35,11 @@ const defaultConfig = {
     points_geojson: "[255, 0, 0, 160]",
     polygons_geojson: "[0, 255, 0, 160]"
   },
-  count_columns: [
+  count_columns: [],
+  count_distinct_columns: [
     "line_name as nbr_line",
     "polygon_name as nbr_polygon"
   ],
-  count_distinct_columns: [],
   data_files: [
     { name: "lines_geojson", path: "./data/input/geojson/lines_geojson.geojson" },
     { name: "points_geojson", path: "./data/input/geojson/points_geojson.geojson" },
