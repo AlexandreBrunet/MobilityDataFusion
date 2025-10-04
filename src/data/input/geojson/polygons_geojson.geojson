@@ -78,6 +78,69 @@
     {
       "type": "Feature",
       "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                -73.5675,
+                45.5015
+              ],
+              [
+                -73.5670,
+                45.5015
+              ],
+              [
+                -73.5670,
+                45.5020
+              ],
+              [
+                -73.5675,
+                45.5020
+              ],
+              [
+                -73.5675,
+                45.5015
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -73.5665,
+                45.5005
+              ],
+              [
+                -73.5660,
+                45.5005
+              ],
+              [
+                -73.5660,
+                45.5010
+              ],
+              [
+                -73.5665,
+                45.5010
+              ],
+              [
+                -73.5665,
+                45.5005
+              ]
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "polygon_name": "Zone MultiPolygon",
+        "landuse": "commercial",
+        "simulated": true,
+        "area_m2": 2538.0,
+        "description": "MultiPolygone simulé proche des autres zones"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
