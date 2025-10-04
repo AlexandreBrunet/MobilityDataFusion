@@ -1036,17 +1036,24 @@ const App = () => {
       {activeTab === 'form' && (
         <div className="form-container">
           {Object.keys(schema).length > 0 ? (
-            <Form
-              schema={schema}
-              uiSchema={uiSchema}
-              formData={formData}
-              onChange={onChange}
-              onSubmit={onSubmit}
-            >
-              <button type="submit" className="submit-button">
-                {Icons.play} Lancer l'analyse
-              </button>
-            </Form>
+            <div className="enhanced-form">
+              <div className="section-header">
+                <h3>{Icons.config} Configuration de l'analyse</h3>
+              </div>
+              <Form
+                schema={schema}
+                uiSchema={uiSchema}
+                formData={formData}
+                onChange={onChange}
+                onSubmit={onSubmit}
+              >
+                <div className="submit-section">
+                  <button type="submit" className="submit-button">
+                    {Icons.play} Lancer l'analyse
+                  </button>
+                </div>
+              </Form>
+            </div>
           ) : (
             <div className="loading-message">
               {Icons.refresh} Chargement de la configuration...
