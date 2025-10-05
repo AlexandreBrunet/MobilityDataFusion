@@ -48,9 +48,16 @@ def list_files():
 @app.route('/get_geojson_data/<filename>', methods=['GET'])
 def get_geojson_data(filename):
     try:
-        # Chercher le fichier GeoJSON
+        # Chercher le fichier GeoJSON dans les répertoires input et output
         input_dir = './data/input/geojson/'
+        output_dir = './data/output/data/buffers/'
+        
+        # Essayer d'abord dans le répertoire input
         file_path = os.path.join(input_dir, f'{filename}.geojson')
+        
+        # Si pas trouvé, essayer dans le répertoire output (pour les buffers)
+        if not os.path.exists(file_path):
+            file_path = os.path.join(output_dir, f'{filename}.geojson')
         
         if not os.path.exists(file_path):
             return jsonify({'error': f'Fichier {filename} non trouvé'}), 404
@@ -64,6 +71,19 @@ def get_geojson_data(filename):
         return geojson_data
     except Exception as e:
         logging.error(f"An error occurred while loading GeoJSON data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/list_buffer_files', methods=['GET'])
+def list_buffer_files():
+    try:
+        buffer_dir = './data/output/data/buffers/'
+        if not os.path.exists(buffer_dir):
+            return jsonify([])
+        
+        files = [f.replace('.geojson', '') for f in os.listdir(buffer_dir) if f.endswith('.geojson')]
+        return jsonify(files)
+    except Exception as e:
+        logging.error(f"An error occurred while listing buffer files: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_table_html/<path:params>')

@@ -73,7 +73,6 @@ const App = () => {
   const [submitMessage, setSubmitMessage] = useState('');
   const [fileList, setFileList] = useState({});
   const [tableHTML, setTableHTML] = useState('');
-  const [mapHTML, setMapHTML] = useState('');
   const [activeTab, setActiveTab] = useState('form');
   const [histograms, setHistograms] = useState({});
   const [histogramFormData, setHistogramFormData] = useState({
@@ -113,17 +112,47 @@ const App = () => {
         console.error(`Error loading ${name}:`, error);
       }
     }
+    
+    // Charger dynamiquement tous les buffers du dossier output/data/buffers/
+    try {
+      const bufferResponse = await fetch('http://127.0.0.1:5000/list_buffer_files');
+      if (bufferResponse.ok) {
+        const bufferFiles = await bufferResponse.json();
+        console.log('Fichiers buffer trouvés:', bufferFiles);
+        
+        for (const bufferName of bufferFiles) {
+          try {
+            const response = await fetch(`http://127.0.0.1:5000/get_geojson_data/${bufferName}`);
+            if (response.ok) {
+              const data = await response.json();
+              geojsonData[bufferName] = data;
+              console.log(`Buffer chargé: ${bufferName}`);
+            }
+          } catch (error) {
+            console.error(`Erreur lors du chargement de ${bufferName}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la liste des buffers:', error);
+    }
+    
     setGeojsonData(geojsonData);
     return geojsonData;
   };
 
   // Fonction pour créer une carte de base avec les GeoJSON
   const createBaseMap = (geojsonData) => {
-    const colors = {
-      points: '#ff6b6b',    // Rouge pour les points
-      lines: '#4ecdc4',     // Bleu pour les lignes
-      polygons: '#45b7d1'   // Vert pour les polygones
+    // Générer des couleurs aléatoires pour chaque couche
+    const generateRandomColor = () => {
+      const hue = Math.floor(Math.random() * 360);
+      return `hsl(${hue}, 70%, 50%)`;
     };
+    
+    const layerColors = {};
+    Object.keys(geojsonData).forEach(name => {
+      layerColors[name] = generateRandomColor();
+    });
 
     const mapHTML = `
 <!DOCTYPE html>
@@ -161,21 +190,9 @@ const App = () => {
     <div id="map"></div>
     <div class="legend">
         <h4>Couches de données</h4>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #ff6b6b"></div>
-            <span>Points (Rouge)</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #4ecdc4"></div>
-            <span>Lignes (Bleu)</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #45b7d1"></div>
-            <span>Polygones (Vert)</span>
-        </div>
         ${Object.keys(geojsonData).map(name => `
             <div class="legend-item">
-                <div class="legend-color" style="background-color: ${colors[name] || '#666'}"></div>
+                <div class="legend-color" style="background-color: ${layerColors[name]}"></div>
                 <span>${name}</span>
             </div>
         `).join('')}
@@ -188,45 +205,29 @@ const App = () => {
         }).addTo(map);
         
         const geojsonData = ${JSON.stringify(geojsonData)};
-        const colors = ${JSON.stringify(colors)};
+        const layerColors = ${JSON.stringify(layerColors)};
         
         Object.entries(geojsonData).forEach(([name, data]) => {
             if (data && data.features) {
-                // Déterminer le type de géométrie principal
-                const geometryTypes = data.features.map(f => f.geometry.type);
-                const hasPoints = geometryTypes.includes('Point');
-                const hasLines = geometryTypes.includes('LineString') || geometryTypes.includes('MultiLineString');
-                const hasPolygons = geometryTypes.includes('Polygon') || geometryTypes.includes('MultiPolygon');
+                const color = layerColors[name] || '#666';
                 
-                // Déterminer la couleur selon le type de données
-                let color = '#666';
-                if (name.includes('lines') || hasLines) {
-                    color = '#4ecdc4'; // Bleu pour les lignes
-                } else if (name.includes('polygons') || hasPolygons) {
-                    color = '#45b7d1'; // Vert pour les polygones
-                } else if (name.includes('points') || hasPoints) {
-                    color = '#ff6b6b'; // Rouge pour les points
-                } else {
-                    color = colors[name] || '#666';
-                }
-                
-                console.log(\`Layer: \${name}, hasLines: \${hasLines}, hasPolygons: \${hasPolygons}, hasPoints: \${hasPoints}, color: \${color}\`);
+                console.log(\`Layer: \${name}, color: \${color}\`);
                 
                 const layer = L.geoJSON(data, {
                     style: function(feature) {
                         const geomType = feature.geometry.type;
                         if (geomType === 'LineString' || geomType === 'MultiLineString') {
                             return {
-                                color: '#4ecdc4', // Bleu pour les lignes
+                                color: color,
                                 weight: 3,
                                 opacity: 0.8
                             };
                         } else if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
                             return {
-                                color: '#45b7d1', // Vert pour les polygones
+                                color: color,
                                 weight: 2,
                                 opacity: 0.8,
-                                fillColor: '#45b7d1',
+                                fillColor: color,
                                 fillOpacity: 0.3
                             };
                         } else {
@@ -241,8 +242,8 @@ const App = () => {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 8,
-                            fillColor: '#ff6b6b', // Rouge pour les points
-                            color: '#ff6b6b',
+                            fillColor: color,
+                            color: color,
                             weight: 2,
                             opacity: 1,
                             fillOpacity: 0.8
@@ -890,9 +891,7 @@ const App = () => {
         .then(response => response.text())
         .then(setTableHTML);
 
-      fetch(`http://127.0.0.1:5000/get_map_html/${fetchParams}${cacheBuster}`)
-        .then(response => response.text())
-        .then(setMapHTML);
+      // La visualisation de carte est maintenant gérée par baseMapHTML
     })
     .catch(error => {
       setSubmitMessage(`Error: ${error.message}`);
@@ -1278,41 +1277,11 @@ const App = () => {
       {activeTab === 'map' && (
         <div className="map-container fade-in">
           <h2>{Icons.map} Visualisation cartographique</h2>
-          {mapHTML ? (
-            <div>
-              <div className="map-tabs">
-                <button 
-                  className={`map-tab ${!baseMapHTML ? 'active' : ''}`}
-                  onClick={() => setMapHTML('')}
-                >
-                  {Icons.map} Carte d'analyse
-                </button>
-                {baseMapHTML && (
-                  <button 
-                    className={`map-tab ${baseMapHTML ? 'active' : ''}`}
-                    onClick={() => setMapHTML(baseMapHTML)}
-                  >
-                    {Icons.data} Données brutes
-                  </button>
-                )}
-              </div>
-              <iframe
-                title="map-visualization"
-                srcDoc={mapHTML}
-                className="full-iframe"
-              />
-            </div>
-          ) : baseMapHTML ? (
+          {baseMapHTML ? (
             <div>
               <div className="map-tabs">
                 <button className="map-tab active">
                   {Icons.data} Données brutes
-                </button>
-                <button 
-                  className="map-tab"
-                  onClick={() => setMapHTML('')}
-                >
-                  {Icons.map} Carte d'analyse
                 </button>
               </div>
               <iframe

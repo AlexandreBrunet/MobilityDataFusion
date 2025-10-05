@@ -187,8 +187,162 @@ def create_layers_and_map(
     elif buffer_type == "zones":
         filename = f"{output_dir}carte_{buffer_type}_buffer.html"
 
-    # Créer la carte avec les couches et l'enregistrer sans ouvrir
-    create_map_layers(layers, initial_view, filename=filename)
+    # Utiliser la nouvelle fonction simple au lieu de pydeck
+    create_simple_leaflet_map(filename, buffer_type, **kwargs)
+
+def create_simple_leaflet_map(filename: str, buffer_type: str, **kwargs):
+    """Crée une carte Leaflet simple avec les GeoJSON générés"""
+    
+    # Déterminer les fichiers GeoJSON à charger
+    input_geojson_files = [
+        ('points_geojson', './data/input/geojson/points_geojson.geojson', '#ff0000'),
+        ('lines_geojson', './data/input/geojson/lines_geojson.geojson', '#4ecdc4'),
+        ('polygons_geojson', './data/input/geojson/polygons_geojson.geojson', '#45b7d1')
+    ]
+    
+    # Déterminer le fichier buffer
+    buffer_files = []
+    if buffer_type == "circular":
+        distance = kwargs.get('distance')
+        buffer_file = f'./data/output/data/buffers/points_geojson_buffer_circular_{distance}m.geojson'
+        buffer_files.append(('buffer', buffer_file, '#ffa500'))
+    elif buffer_type == "network":
+        distance = kwargs.get('distance', '500')
+        network_type = kwargs.get('network_type', 'walk')
+        buffer_file = f'./data/output/data/buffers/points_geojson_buffer_network_{distance}m.geojson'
+        buffer_files.append(('buffer', buffer_file, '#ffa500'))
+    
+    # Créer le HTML
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Carte de visualisation - {buffer_type}</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body {{ margin: 0; padding: 0; }}
+        #map {{ height: 100vh; width: 100vw; }}
+        .legend {{ 
+            position: absolute; 
+            bottom: 10px; 
+            right: 10px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }}
+        .legend-item {{ 
+            display: flex; 
+            align-items: center; 
+            margin: 5px 0; 
+        }}
+        .legend-color {{ 
+            width: 20px; 
+            height: 20px; 
+            margin-right: 10px; 
+            border: 1px solid #ccc;
+        }}
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="legend">
+        <h4>Couches de données</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ff0000"></div>
+            <span>Points (Rouge)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #4ecdc4"></div>
+            <span>Lignes (Bleu)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #45b7d1"></div>
+            <span>Polygones (Vert)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ffa500"></div>
+            <span>Buffer (Orange)</span>
+        </div>
+    </div>
+
+    <script>
+        // Initialiser la carte centrée sur Montréal
+        const map = L.map('map').setView([45.5017, -73.5673], 12);
+        
+        // Ajouter la couche de tuiles
+        L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+            attribution: '© OpenStreetMap contributors'
+        }}).addTo(map);
+        
+        // Fonction pour charger et afficher un GeoJSON
+        function loadGeoJSON(url, color, name) {{
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {{
+                    L.geoJSON(data, {{
+                        style: function(feature) {{
+                            return {{
+                                color: color,
+                                weight: 2,
+                                opacity: 0.8,
+                                fillColor: color,
+                                fillOpacity: 0.3
+                            }};
+                        }},
+                        onEachFeature: function(feature, layer) {{
+                            if (feature.properties) {{
+                                const props = Object.entries(feature.properties)
+                                    .map(([key, value]) => {{
+                                        let displayValue = value;
+                                        if (value === null || value === undefined) {{
+                                            displayValue = 'N/A';
+                                        }} else if (typeof value === 'number' && isNaN(value)) {{
+                                            displayValue = 'N/A';
+                                        }} else if (typeof value === 'string' && value.toLowerCase() === 'nan') {{
+                                            displayValue = 'N/A';
+                                        }}
+                                        return `<b>${{key}}:</b> ${{displayValue}}`;
+                                    }})
+                                    .join('<br>');
+                                layer.bindPopup(`<b>${{name}}</b><br>${{props}}`);
+                            }}
+                        }}
+                    }}).addTo(map);
+                    console.log(`${{name}} chargé: ${{data.features.length}} features`);
+                }})
+                .catch(error => {{
+                    console.error(`Erreur lors du chargement de ${{name}}:`, error);
+                }});
+        }}
+        
+        // Charger les données
+        const inputFiles = {input_geojson_files};
+        const bufferFiles = {buffer_files};
+        
+        // Charger les fichiers d'entrée
+        inputFiles.forEach(([name, url, color]) => {{
+            loadGeoJSON(url, color, name);
+        }});
+        
+        // Charger les fichiers buffer
+        bufferFiles.forEach(([name, url, color]) => {{
+            loadGeoJSON(url, color, name);
+        }});
+    </script>
+</body>
+</html>
+"""
+    
+    # Sauvegarder le fichier
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    print(f"Carte Leaflet créée: {filename}")
 
 def create_table_visualisation(agg_stats_gdf: gpd.GeoDataFrame, buffer_type: str, **kwargs):
     # Drop the geometry column to avoid issues with Plotly
