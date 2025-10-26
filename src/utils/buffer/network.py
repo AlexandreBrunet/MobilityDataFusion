@@ -1,4 +1,5 @@
 import geopandas as gpd
+import pandas as pd
 import networkx as nx
 import osmnx as ox
 from shapely.geometry import Point, Polygon, MultiPolygon
@@ -10,8 +11,8 @@ import os
 import logging
 from typing import Dict, Tuple
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(processName)s - %(message)s")
+# Configure logging - ONLY INFO level for performance
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Set multiprocessing start method to 'spawn' for macOS compatibility
@@ -20,38 +21,54 @@ try:
 except RuntimeError:
     pass  # Already set
 
-def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str, nx.MultiDiGraph]) -> Tuple[int, Polygon]:
+# Global variable to hold the graph (avoids serialization overhead)
+_GRAPH = None
+
+def _init_worker(graph_data):
+    """Initialize worker process with graph data."""
+    global _GRAPH
+    _GRAPH = graph_data
+
+def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str]) -> Tuple[int, Polygon]:
     """
-    Create a network buffer for a single point using a provided graph.
+    Create a network buffer for a single point using the global graph.
     
     Args:
-        args: Tuple of (idx, nearest_node, x, y, distance, remove_holes, crs, G).
+        args: Tuple of (idx, nearest_node, x, y, distance, remove_holes, crs).
     
     Returns:
         Tuple of (index, buffer geometry in WGS84).
     """
-    idx, nearest_node, x, y, distance, remove_holes, crs, G = args
+    global _GRAPH
+    idx, nearest_node, x, y, distance, remove_holes, crs = args
+    
     try:
-        logger.debug(f"Point {idx}: Processing nearest node {nearest_node}")
-
         # Calculate reachable nodes within distance
-        lengths = nx.single_source_dijkstra_path_length(G, nearest_node, weight='length', cutoff=distance)
-        reachable_nodes = list(lengths.keys())
-        logger.debug(f"Point {idx}: Found {len(reachable_nodes)} reachable nodes")
+        lengths = nx.single_source_dijkstra_path_length(_GRAPH, nearest_node, weight='length', cutoff=distance)
+        reachable_nodes = set(lengths.keys())
 
-        # Combine edge geometries
+        # Get subgraph with only reachable nodes - MUCH faster than iterating all edges
+        subgraph = _GRAPH.subgraph(reachable_nodes)
+        
+        # Extract edge geometries from subgraph
         edge_geoms = [
-            data['geometry'] for u, v, data in G.edges(data=True)
-            if u in reachable_nodes and v in reachable_nodes and 'geometry' in data
+            data['geometry'] for u, v, data in subgraph.edges(data=True)
+            if 'geometry' in data
         ]
-        logger.debug(f"Point {idx}: Found {len(edge_geoms)} edge geometries")
 
         if not edge_geoms:
-            logger.warning(f"No edge geometries for point {idx}, using circular buffer")
+            # Fallback to circular buffer
             point_utm = Point(x, y)
-            buffer = point_utm.buffer(distance)  # Fallback to circular buffer
+            buffer = point_utm.buffer(distance)
         else:
-            buffer = unary_union(edge_geoms).buffer(10)  # 10m buffer around edges
+            # Optimization: For large distances, simplify before union
+            if len(edge_geoms) > 1000:
+                # Simplify individual geometries to reduce complexity
+                edge_geoms = [geom.simplify(5) for geom in edge_geoms]
+            
+            # Union and buffer
+            network_union = unary_union(edge_geoms)
+            buffer = network_union.buffer(10).simplify(2)  # Simplify final result
 
         # Remove holes if requested
         if remove_holes and buffer.geom_type in ['Polygon', 'MultiPolygon']:
@@ -59,15 +76,12 @@ def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str, 
                 buffer = Polygon(buffer.exterior)
             elif buffer.geom_type == 'MultiPolygon':
                 buffer = MultiPolygon([Polygon(poly.exterior) for poly in buffer.geoms])
-            logger.debug(f"Point {idx}: Removed holes from geometry")
 
         if not buffer.is_valid:
             buffer = buffer.buffer(0)
-            logger.debug(f"Point {idx}: Fixed invalid geometry")
 
         # Convert to WGS84
         buffer_wgs84 = gpd.GeoSeries([buffer], crs=crs).to_crs('EPSG:4326').iloc[0]
-        logger.debug(f"Point {idx}: Converted to WGS84")
         return idx, buffer_wgs84
 
     except Exception as e:
@@ -76,7 +90,7 @@ def create_network_buffer(args: Tuple[int, int, float, float, float, bool, str, 
 
 def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: Dict) -> gpd.GeoDataFrame:
     """
-    Generates network-based buffers for points, preserving original columns, using a pre-downloaded OSM XML file.
+    Generates network-based buffers for points with performance optimizations.
 
     Args:
         points_gdf: GeoDataFrame with Point geometries.
@@ -113,10 +127,6 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
         logger.warning(f"Invalid buffer distance {distance} for {layer_name}, returning unchanged")
         return points_gdf.copy()
 
-    if not osm_file:
-        logger.error(f"No OSM file specified for {layer_name}")
-        raise ValueError(f"OSM file must be specified in buffer_params for {layer_name}")
-
     osm_file_path = os.path.abspath(osm_file)
     if not os.path.exists(osm_file_path):
         logger.error(f"OSM file not found: {osm_file_path}")
@@ -139,59 +149,61 @@ def apply_points_network_buffer(points_gdf: gpd.GeoDataFrame, layer_name: str, b
         G = ox.project_graph(G, to_crs="EPSG:32618")  # UTM Zone 18N for Montreal
         points_utm = points_gdf.to_crs("EPSG:32618").geometry
         utm_crs = G.graph['crs']
-        logger.debug(f"Projected to UTM CRS: {utm_crs}")
 
         # 3. Find nearest nodes
+        logger.info(f"Finding nearest nodes for {len(points_gdf)} points...")
         X = np.array([p.x for p in points_utm])
         Y = np.array([p.y for p in points_utm])
         nearest_nodes = ox.distance.nearest_nodes(G, X, Y)
-        logger.debug(f"Found nearest nodes for {len(points_gdf)} points")
+        logger.info(f"Nearest nodes found")
 
-        # 4. Process buffers with multiprocessing
-        num_cores = min(cpu_count() - 1, 4)
-        logger.info(f"Using {num_cores} CPU cores for processing")
-        chunk_size = 50
+        # 4. Process buffers with optimized multiprocessing
+        num_cores = cpu_count()  # Use ALL cores
+        chunk_size = 500  # Larger chunks = less overhead
+        logger.info(f"Using {num_cores} CPU cores processing all {len(points_gdf)} points")
+        
         buffer_gdf = points_gdf.copy()
+        
+        # Prepare ALL arguments at once (WITHOUT the graph)
+        logger.info("Preparing worker arguments...")
+        worker_args = [
+            (i, nearest_nodes[i], points_utm.iloc[i].x, points_utm.iloc[i].y, distance, use_envelope, utm_crs)
+            for i in range(len(points_gdf))
+        ]
 
-        for start in range(0, len(points_gdf), chunk_size):
-            end = min(start + chunk_size, len(points_gdf))
-            chunk_utm = points_utm[start:end]
-            chunk_nodes = nearest_nodes[start:end]
-            logger.info(f"Processing chunk {start//chunk_size + 1} ({start} to {end})")
+        # Create pool ONCE for all points
+        logger.info("Starting parallel processing...")
+        try:
+            with Pool(num_cores, initializer=_init_worker, initargs=(G,)) as pool:
+                results = list(tqdm(
+                    pool.imap_unordered(create_network_buffer, worker_args, chunksize=chunk_size),
+                    total=len(points_gdf),
+                    desc="Creating buffers"
+                ))
+        except Exception as e:
+            logger.warning(f"Multiprocessing failed: {e}. Falling back to single-threaded")
+            _init_worker(G)
+            results = [create_network_buffer(args) for args in tqdm(worker_args, desc="Creating buffers")]
 
-            # Prepare arguments for workers
-            worker_args = [
-                (i + start, chunk_nodes[i], chunk_utm.iloc[i].x, chunk_utm.iloc[i].y, distance, use_envelope, utm_crs, G)
-                for i in range(len(chunk_utm))
-            ]
-
-            try:
-                with Pool(num_cores) as pool:
-                    results = list(tqdm(
-                        pool.imap(create_network_buffer, worker_args),
-                        total=len(chunk_utm),
-                        desc=f"Chunk {start//chunk_size + 1}"
-                    ))
-            except Exception as e:
-                logger.warning(f"Multiprocessing failed for chunk {start//chunk_size + 1}: {e}. Falling back to single-threaded")
-                results = [create_network_buffer(args) for args in tqdm(worker_args, desc=f"Chunk {start//chunk_size + 1}")]
-
-            # Update geometries
-            valid_buffers = 0
-            for idx, buffer in results:
-                if buffer is not None:
-                    buffer_gdf.at[idx, 'geometry'] = buffer
-                    valid_buffers += 1
-            logger.info(f"Chunk {start//chunk_size + 1}: Generated {valid_buffers}/{len(chunk_utm)} valid buffers")
+        # Update all geometries at once
+        logger.info("Updating geometries...")
+        valid_buffers = 0
+        for idx, buffer in results:
+            if buffer is not None:
+                buffer_gdf.at[idx, 'geometry'] = buffer
+                valid_buffers += 1
+        
+        logger.info(f"Generated {valid_buffers}/{len(points_gdf)} valid buffers")
 
         # 5. Filter valid geometries and add metadata
         buffer_gdf = buffer_gdf[buffer_gdf.geometry.notnull()]
-        logger.info(f"Generated {len(buffer_gdf)}/{len(points_gdf)} valid buffer polygons")
 
         if not buffer_gdf.empty:
+            logger.info("Calculating areas...")
             buffer_gdf['area_km2'] = buffer_gdf.geometry.to_crs("EPSG:32618").area / 1_000_000
             buffer_gdf['buffer_type'] = 'network_buffer'
             buffer_gdf['buffer_layer'] = layer_name
+            logger.info(f"Successfully created {len(buffer_gdf)} network buffers")
         else:
             logger.warning(f"No valid buffers created for {layer_name}, returning original GDF")
             return points_gdf.copy()
@@ -214,11 +226,11 @@ def apply_lines_network_buffer(
       - mode="all" : buffer autour du centroïde + extrémités, puis union
     """
     if lines_gdf.empty:
-        print(f"La couche '{layer_name}' est vide.")
+        logger.info(f"La couche '{layer_name}' est vide.")
         return lines_gdf.copy()
 
     if layer_name not in buffer_params:
-        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
+        logger.info(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
         return lines_gdf.copy()
 
     if not all(lines_gdf.geometry.geom_type == "LineString"):
@@ -250,11 +262,11 @@ def apply_lines_network_buffer(
         if buffer_list:
             return gpd.GeoDataFrame(buffer_list, crs=lines_gdf.crs)
         else:
-            print(f"Aucun buffer valide généré pour {layer_name}")
+            logger.info(f"Aucun buffer valide généré pour {layer_name}")
             return lines_gdf.copy()
 
     except Exception as e:
-        print(f"Erreur dans apply_lines_network_buffer pour '{layer_name}': {e}")
+        logger.error(f"Erreur dans apply_lines_network_buffer pour '{layer_name}': {e}")
         return lines_gdf.copy()
 
 def apply_polygons_network_buffer(
@@ -269,11 +281,11 @@ def apply_polygons_network_buffer(
       - mode="all" : buffer autour du centroïde + coins du bounding box, puis union
     """
     if polygons_gdf.empty:
-        print(f"La couche '{layer_name}' est vide.")
+        logger.info(f"La couche '{layer_name}' est vide.")
         return polygons_gdf.copy()
 
     if layer_name not in buffer_params:
-        print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
+        logger.info(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
         return polygons_gdf.copy()
 
     if not polygons_gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all():
@@ -311,54 +323,9 @@ def apply_polygons_network_buffer(
         if buffer_list:
             return gpd.GeoDataFrame(buffer_list, crs=polygons_gdf.crs)
         else:
-            print(f"Aucun buffer valide généré pour {layer_name}")
+            logger.info(f"Aucun buffer valide généré pour {layer_name}")
             return polygons_gdf.copy()
 
     except Exception as e:
-        print(f"Erreur dans apply_polygons_network_buffer pour '{layer_name}': {e}")
+        logger.error(f"Erreur dans apply_polygons_network_buffer pour '{layer_name}': {e}")
         return polygons_gdf.copy()
-
-
-#TODO Add this logic too 
-# def apply_lines_network_buffer(lines_gdf: gpd.GeoDataFrame, layer_name: str, buffer_params: dict) -> gpd.GeoDataFrame:
-#     """
-#     Génère des zones tampon réseau pour chaque ligne (à partir de points équidistants).
-#     """
-#     buffer_gdf = lines_gdf.copy()
-    
-#     if layer_name not in buffer_params:
-#         print(f"Aucun paramètre trouvé pour la couche '{layer_name}'")
-#         return buffer_gdf
-    
-#     params = buffer_params[layer_name]
-#     distance = params.get("distance", 500)
-#     network_type = params.get("network_type", "walk")
-#     sample_distance = params.get("sample_distance", 50)  # Distance entre les points d'échantillonnage
-    
-#     if not all(buffer_gdf.geometry.geom_type == "LineString"):
-#         raise ValueError("Toutes les géométries doivent être de type LineString.")
-    
-#     try:
-#         # 1. Échantillonnage des points le long des lignes
-#         buffer_gdf['sample_points'] = buffer_gdf.geometry.apply(
-#             lambda geom: [Point(geom.interpolate(d).coords[0]) 
-#                          for d in np.arange(0, geom.length, sample_distance)]
-#         )
-        
-#         # 2. Explosion des points
-#         buffer_gdf = buffer_gdf.explode('sample_points')
-#         buffer_gdf['geometry'] = buffer_gdf['sample_points'].apply(lambda x: Point(x))
-#         buffer_gdf = buffer_gdf.drop(columns=['sample_points'])
-        
-#         # 3. Application du buffer réseau sur les points
-#         buffer_gdf = apply_points_network_buffer(buffer_gdf, layer_name, buffer_params)
-        
-#         # 4. Dissoudre les buffers par entité originale
-#         if 'buffer_id' in buffer_gdf.columns:
-#             buffer_gdf = buffer_gdf.dissolve(by='buffer_id').reset_index()
-        
-#     except Exception as e:
-#         print(f"Erreur majeure: {str(e)}")
-#         return lines_gdf
-    
-#     return buffer_gdf
